@@ -1,0 +1,25 @@
+{
+  "players": {
+    "117345632762866208709": {
+      "uid": "117345632762866208709",
+      "name": "Ismail",
+      "elo": 1000,
+      "wins": 0,
+      "losses": 0,
+      "matches": 0,
+      "league": "Bronz",
+      "createdAt": 1781548197853
+    },
+    "u_5ca33b4d": {
+      "uid": "u_5ca33b4d",
+      "name": "Oyuncu",
+      "elo": 1000,
+      "wins": 0,
+      "losses": 0,
+      "matches": 0,
+      "league": "Bronz",
+      "createdAt": 1781548698000
+    }
+  },
+  "matchHistory": []
+}

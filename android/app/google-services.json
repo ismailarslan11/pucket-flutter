@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "623091701096",
+    "project_id": "pucket-9413c",
+    "storage_bucket": "pucket-9413c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:623091701096:android:aa9ef8b47d701aeb88b2dd",
+        "android_client_info": {
+          "package_name": "com.pucket.pucket_flutter"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "623091701096-rhfs1o4hop8f3q2ul2q89n4aivml8qtd.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDSHTrlvhGpwrxKll_omD7qMeOnkM4QaEM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "623091701096-rhfs1o4hop8f3q2ul2q89n4aivml8qtd.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

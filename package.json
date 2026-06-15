@@ -1,0 +1,8 @@
+{
+  "name": "pucket-flutter-tools",
+  "private": true,
+  "description": "Firebase CLI for FlutterFire setup (tool/setup_firebase.sh)",
+  "devDependencies": {
+    "firebase-tools": "^14.0.0"
+  }
+}

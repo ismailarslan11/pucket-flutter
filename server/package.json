@@ -1,0 +1,9 @@
+{
+  "name": "pucket-server",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "lowdb": "^1.0.0",
+    "ws": "^8.18.0"
+  }
+}

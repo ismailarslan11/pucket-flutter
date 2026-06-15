@@ -1,0 +1,142 @@
+import 'dart:math' as math;
+
+import '../models/disc.dart';
+import 'game_constants.dart';
+
+class PhysicsEngine {
+  static double clamp(double v, double a, double b) =>
+      math.max(a, math.min(b, v));
+
+  static List<Disc> initDiscs() {
+    final m = GameConstants.discRadius + 8;
+    final discs = <Disc>[];
+
+    const redPositions = [
+      [0.2, 0.62],
+      [0.8, 0.62],
+      [0.5, 0.70],
+      [0.28, 0.82],
+      [0.72, 0.82],
+    ];
+    for (final p in redPositions) {
+      discs.add(Disc(
+        vx: clamp(GameConstants.vw * p[0], m, GameConstants.vw - m),
+        vy: clamp(GameConstants.vh * p[1], GameConstants.vHalf + m, GameConstants.vh - m),
+        owner: 0,
+      ));
+    }
+
+    const bluePositions = [
+      [0.2, 0.38],
+      [0.8, 0.38],
+      [0.5, 0.30],
+      [0.28, 0.18],
+      [0.72, 0.18],
+    ];
+    for (final p in bluePositions) {
+      discs.add(Disc(
+        vx: clamp(GameConstants.vw * p[0], m, GameConstants.vw - m),
+        vy: clamp(GameConstants.vh * p[1], m, GameConstants.vHalf - m),
+        owner: 1,
+      ));
+    }
+
+    return discs;
+  }
+
+  static void stepPhysics(List<Disc> discs) {
+    final dr = GameConstants.discRadius;
+    final wallTop = GameConstants.vHalf - 6;
+    final wallBot = GameConstants.vHalf + 6;
+
+    for (final d in discs) {
+      d.vx += d.vvx;
+      d.vy += d.vvy;
+      d.vvx *= GameConstants.friction;
+      d.vvy *= GameConstants.friction;
+      if (d.vvx.abs() < 0.03) d.vvx = 0;
+      if (d.vvy.abs() < 0.03) d.vvy = 0;
+
+      if (d.vx < dr) {
+        d.vx = dr;
+        d.vvx = d.vvx.abs() * GameConstants.restitution;
+      }
+      if (d.vx > GameConstants.vw - dr) {
+        d.vx = GameConstants.vw - dr;
+        d.vvx = -d.vvx.abs() * GameConstants.restitution;
+      }
+      if (d.vy < dr) {
+        d.vy = dr;
+        d.vvy = d.vvy.abs() * GameConstants.restitution;
+      }
+      if (d.vy > GameConstants.vh - dr) {
+        d.vy = GameConstants.vh - dr;
+        d.vvy = -d.vvy.abs() * GameConstants.restitution;
+      }
+
+      final inGap = d.vx > GameConstants.gapX && d.vx < GameConstants.gapX + GameConstants.gapW;
+      if (!inGap) {
+        if (d.vy + dr > wallTop && d.vy - dr < wallBot) {
+          if (d.vvy > 0 && d.vy < GameConstants.vHalf) {
+            d.vy = wallTop - dr;
+            d.vvy = -d.vvy.abs() * GameConstants.restitution;
+          } else if (d.vvy < 0 && d.vy > GameConstants.vHalf) {
+            d.vy = wallBot + dr;
+            d.vvy = d.vvy.abs() * GameConstants.restitution;
+          }
+        }
+      }
+    }
+
+    for (var i = 0; i < discs.length; i++) {
+      for (var j = i + 1; j < discs.length; j++) {
+        final a = discs[i];
+        final b = discs[j];
+        final dx = b.vx - a.vx;
+        final dy = b.vy - a.vy;
+        final dist = math.sqrt(dx * dx + dy * dy);
+        if (dist < dr * 2 && dist > 0) {
+          final nx = dx / dist;
+          final ny = dy / dist;
+          final overlap = dr * 2 - dist;
+          a.vx -= nx * overlap / 2;
+          a.vy -= ny * overlap / 2;
+          b.vx += nx * overlap / 2;
+          b.vy += ny * overlap / 2;
+          final dot = (b.vvx - a.vvx) * nx + (b.vvy - a.vvy) * ny;
+          if (dot < 0) {
+            a.vvx += dot * GameConstants.restitution * nx;
+            a.vvy += dot * GameConstants.restitution * ny;
+            b.vvx -= dot * GameConstants.restitution * nx;
+            b.vvy -= dot * GameConstants.restitution * ny;
+          }
+        }
+      }
+    }
+  }
+
+  static int? checkWinner(List<Disc> discs) {
+    if (discs.length < 10) return null;
+    final redIn = discs.where((d) => d.owner == 0 && d.vy >= GameConstants.vHalf).length;
+    final bluIn = discs.where((d) => d.owner == 1 && d.vy < GameConstants.vHalf).length;
+    final redCrossed = discs.where((d) => d.owner == 0 && d.vy < GameConstants.vHalf).length;
+    final bluCrossed = discs.where((d) => d.owner == 1 && d.vy >= GameConstants.vHalf).length;
+    if (redIn == 0 && redCrossed > 0) return 0;
+    if (bluIn == 0 && bluCrossed > 0) return 1;
+    return null;
+  }
+
+  static int findDiscAt(List<Disc> discs, double x, double y, int mySeat) {
+    for (var i = discs.length - 1; i >= 0; i--) {
+      final d = discs[i];
+      if (mySeat == 0 && d.vy < GameConstants.vHalf) continue;
+      if (mySeat == 1 && d.vy >= GameConstants.vHalf) continue;
+      final dx = x - d.vx;
+      final dy = y - d.vy;
+      if (dx * dx + dy * dy < (GameConstants.discRadius + 14) * (GameConstants.discRadius + 14)) {
+        return i;
+      }
+    }
+    return -1;
+  }
+}
