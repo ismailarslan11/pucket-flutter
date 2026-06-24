@@ -89,6 +89,16 @@
       "matches": 1,
       "league": "Bronz",
       "createdAt": 1782141684362
+    },
+    "u_dc1a4d22": {
+      "uid": "u_dc1a4d22",
+      "name": "xultrarslan",
+      "elo": 1000,
+      "wins": 0,
+      "losses": 0,
+      "matches": 0,
+      "league": "Bronz",
+      "createdAt": 1782335549127
     }
   },
   "matchHistory": [
@@ -106,5 +116,10 @@
       "loserEloChange": -16,
       "timestamp": 1782141742356
     }
-  ]
+  ],
+  "usernames": {
+    "zxqwerty99": "u1",
+    "ismail": "117345632762866208709",
+    "xultrarslan": "u_dc1a4d22"
+  }
 }

@@ -21,6 +21,7 @@ class _UsernameScreenState extends State<UsernameScreen> {
   bool _valid = false;
   bool _checking = false;
   bool _available = false;
+  bool _serverError = false;
   bool _submitting = false;
   String _hint = '2-16 karakter, harf ve rakam';
 
@@ -73,15 +74,25 @@ class _UsernameScreenState extends State<UsernameScreen> {
     setState(() {
       _checking = true;
       _available = false;
+      _serverError = false;
       _hint = 'Kontrol ediliyor...';
     });
     final uid = context.read<AuthService>().getUid();
-    final ok = await UsernameApi.checkAvailable(name, uid: uid);
+    final result = await UsernameApi.check(name, uid: uid);
     if (!mounted || _ctrl.text.trim() != name) return;
     setState(() {
       _checking = false;
-      _available = ok;
-      _hint = ok ? '✓ Bu ad müsait' : '✗ Bu kullanıcı adı alınmış';
+      _available = result.isAvailable;
+      _serverError = result.isServerError;
+      if (result.isAvailable) {
+        _hint = '✓ Bu ad müsait';
+      } else if (result.isTaken) {
+        _hint = '✗ Bu kullanıcı adı alınmış';
+      } else if (result.isInvalid) {
+        _hint = result.error ?? 'Geçersiz kullanıcı adı';
+      } else {
+        _hint = result.error ?? 'Kontrol edilemedi — yine de kaydetmeyi dene';
+      }
     });
   }
 
@@ -96,7 +107,7 @@ class _UsernameScreenState extends State<UsernameScreen> {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthService>();
     final initial = _ctrl.text.isNotEmpty ? _ctrl.text[0].toUpperCase() : '?';
-    final canSubmit = _valid && _available && !_checking && !_submitting;
+    final canSubmit = _valid && !_checking && !_submitting && (_available || _serverError);
 
     return Scaffold(
       body: Container(
@@ -190,9 +201,12 @@ class _UsernameScreenState extends State<UsernameScreen> {
                           style: TextStyle(
                             color: _available
                                 ? AppColors.green
-                                : (_valid && !_checking ? AppColors.red : const Color(0xFF555555)),
+                                : (_serverError
+                                    ? AppColors.gold
+                                    : (_valid && !_checking ? AppColors.red : const Color(0xFF555555))),
                             fontSize: 11,
                           ),
+                          textAlign: TextAlign.center,
                         ),
                         if (auth.lastError != null) ...[
                           const SizedBox(height: 8),
@@ -224,18 +238,22 @@ class _UsernameScreenState extends State<UsernameScreen> {
   }
 
   Future<void> _submit() async {
-    if (!_valid || !_available || _submitting) return;
+    if (!_valid || _submitting) return;
+    if (!_available && !_serverError) return;
     setState(() => _submitting = true);
     final auth = context.read<AuthService>();
     final ok = await auth.confirmUsername(_ctrl.text.trim());
     if (!mounted) return;
     if (!ok) {
+      final err = auth.lastError ?? 'Kaydedilemedi';
+      final taken = err.contains('alınmış');
       setState(() {
         _submitting = false;
         _available = false;
-        _hint = '✗ Bu kullanıcı adı alınmış';
+        _serverError = !taken;
+        _hint = taken ? '✗ Bu kullanıcı adı alınmış' : '⚠ $err';
       });
-      _scheduleCheck(_ctrl.text.trim());
+      if (taken) _scheduleCheck(_ctrl.text.trim());
     }
   }
 }

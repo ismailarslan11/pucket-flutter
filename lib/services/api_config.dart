@@ -1,24 +1,32 @@
 import 'package:flutter/foundation.dart';
 
-/// WebSocket sunucu adresi.
-/// Android emülatör: ws://10.0.2.2:8080
-/// Gerçek cihaz: ws://BILGISAYAR_IP:8080
-/// Production:
-///   flutter build apk --dart-define=WS_URL=wss://SUNUCU --dart-define=API_URL=https://SUNUCU
-///   veya: ./tool/build_release.sh apk
+/// Canlı sunucu (Render). Yerel test için:
+/// flutter run --dart-define=WS_URL=ws://localhost:8080 --dart-define=API_URL=http://localhost:8080
+const kProductionServer = 'https://pucket-flutter.onrender.com';
+const kLocalServerHttp = 'http://localhost:8080';
+const kLocalServerWs = 'ws://localhost:8080';
+
+/// macOS/Windows/Linux debug: yerel sunucu. Telefon release: Render.
+bool get useLocalDevServer {
+  if (kIsWeb) return true;
+  if (!kDebugMode) return false;
+  switch (defaultTargetPlatform) {
+    case TargetPlatform.macOS:
+    case TargetPlatform.windows:
+    case TargetPlatform.linux:
+      return true;
+    default:
+      return false;
+  }
+}
+
 String get kWsServerUrl {
   const fromEnv = String.fromEnvironment('WS_URL');
   if (fromEnv.isNotEmpty) return fromEnv;
 
-  assert(() {
-    // Debug: localhost uyarısı
-    return true;
-  }());
+  if (useLocalDevServer) return kLocalServerWs;
 
-  if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-    return 'ws://10.0.2.2:8080';
-  }
-  return 'ws://localhost:8080';
+  return 'wss://pucket-flutter.onrender.com';
 }
 
 String httpBaseFromWs(String wsUrl) {
@@ -36,5 +44,14 @@ const kHttpBaseUrl = String.fromEnvironment('API_URL', defaultValue: '');
 
 String get apiBaseUrl {
   if (kHttpBaseUrl.isNotEmpty) return kHttpBaseUrl;
-  return httpBaseFromWs(kWsServerUrl);
+
+  const ws = String.fromEnvironment('WS_URL');
+  if (ws.isNotEmpty) return httpBaseFromWs(ws);
+
+  if (useLocalDevServer) return kLocalServerHttp;
+
+  return kProductionServer;
 }
+
+bool get apiUsesProductionServer =>
+    !useLocalDevServer && apiBaseUrl.contains('onrender.com');

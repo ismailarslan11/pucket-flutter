@@ -18,37 +18,109 @@ class UsernameClaimResult {
       );
 }
 
+class UsernameCheckResult {
+  /// true = müsait, false = alınmış, null = sunucu/ bağlantı hatası
+  final bool? available;
+  final String? error;
+
+  UsernameCheckResult({required this.available, this.error});
+
+  bool get isAvailable => available == true;
+  bool get isTaken => available == false && error == null;
+  bool get isServerError => available == null;
+  bool get isInvalid => available == false && error != null;
+}
+
 class UsernameApi {
-  static Future<bool> checkAvailable(String username, {required String uid}) async {
+  static Duration get _timeout =>
+      apiUsesProductionServer ? const Duration(seconds: 45) : const Duration(seconds: 10);
+
+  /// Render free tier uyur; ilk istekte sunucuyu uyandır.
+  static Future<void> _wakeServerIfNeeded() async {
+    if (!apiUsesProductionServer) return;
     try {
-      final uri = Uri.parse('${apiBaseUrl}/username/check').replace(
-        queryParameters: {'name': username, 'uid': uid},
-      );
-      final res = await http.get(uri).timeout(const Duration(seconds: 8));
-      if (res.statusCode != 200) return false;
-      final j = jsonDecode(res.body) as Map<String, dynamic>;
-      return j['available'] as bool? ?? false;
-    } catch (_) {
-      return false;
+      await http.get(Uri.parse('$apiBaseUrl/health')).timeout(const Duration(seconds: 60));
+    } catch (_) {}
+  }
+
+  static Future<UsernameCheckResult> check(String username, {required String uid}) async {
+    await _wakeServerIfNeeded();
+
+    for (var attempt = 0; attempt < 2; attempt++) {
+      try {
+        final uri = Uri.parse('$apiBaseUrl/username/check').replace(
+          queryParameters: {'name': username, 'uid': uid},
+        );
+        final res = await http.get(uri).timeout(_timeout);
+        if (res.statusCode != 200) {
+          if (attempt == 0 && apiUsesProductionServer) {
+            await _wakeServerIfNeeded();
+            continue;
+          }
+          return UsernameCheckResult(
+            available: null,
+            error: 'Sunucu yanıt vermedi (${res.statusCode})',
+          );
+        }
+        final j = jsonDecode(res.body) as Map<String, dynamic>;
+        if (j['ok'] == false) {
+          return UsernameCheckResult(
+            available: false,
+            error: j['error'] as String? ?? 'Geçersiz kullanıcı adı',
+          );
+        }
+        return UsernameCheckResult(
+          available: j['available'] as bool? ?? false,
+          error: null,
+        );
+      } catch (_) {
+        if (attempt == 0 && apiUsesProductionServer) {
+          await _wakeServerIfNeeded();
+          continue;
+        }
+        return UsernameCheckResult(
+          available: null,
+          error: apiUsesProductionServer
+              ? 'Sunucu uyandırılıyor — biraz bekleyip tekrar dene'
+              : 'Sunucuya bağlanılamadı — terminalde: cd server && node server.js',
+        );
+      }
     }
+    return UsernameCheckResult(
+      available: null,
+      error: 'Sunucuya bağlanılamadı',
+    );
   }
 
   static Future<UsernameClaimResult> claim({
     required String uid,
     required String username,
   }) async {
+    await _wakeServerIfNeeded();
+
     try {
       final res = await http
           .post(
-            Uri.parse('${apiBaseUrl}/username/claim'),
+            Uri.parse('$apiBaseUrl/username/claim'),
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode({'uid': uid, 'username': username}),
           )
-          .timeout(const Duration(seconds: 10));
+          .timeout(_timeout);
+      if (res.statusCode == 404) {
+        return UsernameClaimResult(
+          ok: false,
+          error: 'Sunucu güncel değil — username API yok (server.js yeniden deploy)',
+        );
+      }
       final j = jsonDecode(res.body) as Map<String, dynamic>;
       return UsernameClaimResult.fromJson(j);
     } catch (_) {
-      return UsernameClaimResult(ok: false, error: 'Sunucuya bağlanılamadı');
+      return UsernameClaimResult(
+        ok: false,
+        error: apiUsesProductionServer
+            ? 'Sunucuya bağlanılamadı — Render uyanması 1 dk sürebilir'
+            : 'Sunucuya bağlanılamadı — yerel sunucu çalışıyor mu?',
+      );
     }
   }
 }

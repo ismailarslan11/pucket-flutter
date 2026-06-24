@@ -143,6 +143,20 @@ function claimUsername(uid, name) {
   return { ok: true, player };
 }
 
+function migrateUsernamesFromPlayers() {
+  const players = db.get('players').value() || {};
+  for (const [uid, p] of Object.entries(players)) {
+    if (!p?.name || p.name === 'Oyuncu') continue;
+    const key = normalizeUsernameKey(p.name);
+    if (!key) continue;
+    const owner = db.get(`usernames.${key}`).value();
+    if (!owner) {
+      db.set(`usernames.${key}`, uid).write();
+    }
+  }
+}
+migrateUsernamesFromPlayers();
+
 function makeCode() {
   return crypto.randomBytes(3).toString('hex').toUpperCase();
 }
