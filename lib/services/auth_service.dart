@@ -15,6 +15,7 @@ import '../models/rank_tier.dart';
 import '../models/user_profile.dart';
 import 'firebase_init.dart';
 import 'macos_google_sign_in.dart';
+import 'username_api.dart';
 
 enum AuthState { loading, unauthenticated, needsUsername, authenticated }
 
@@ -83,7 +84,7 @@ class AuthService extends ChangeNotifier {
 
   Future<void> _finishInitWithoutFirebase() async {
     if (user != null) {
-      authState = AuthState.authenticated;
+      authState = _needsUsernamePick() ? AuthState.needsUsername : AuthState.authenticated;
     } else {
       authState = AuthState.unauthenticated;
     }
@@ -268,7 +269,7 @@ class AuthService extends ChangeNotifier {
 
     if (!_firebaseReady) {
       await _loadGuestProfile();
-      authState = AuthState.authenticated;
+      authState = _needsUsernamePick() ? AuthState.needsUsername : AuthState.authenticated;
       loading = false;
       notifyListeners();
       return;
@@ -276,7 +277,7 @@ class AuthService extends ChangeNotifier {
 
     if (_isMacOS) {
       await _loadGuestProfile();
-      authState = AuthState.authenticated;
+      authState = _needsUsernamePick() ? AuthState.needsUsername : AuthState.authenticated;
       loading = false;
       notifyListeners();
       return;
@@ -286,16 +287,35 @@ class AuthService extends ChangeNotifier {
       await _auth!.signInAnonymously();
     } catch (_) {
       await _loadGuestProfile();
-      authState = AuthState.authenticated;
+      authState = _needsUsernamePick() ? AuthState.needsUsername : AuthState.authenticated;
       loading = false;
       notifyListeners();
     }
+  }
+
+  bool _needsUsernamePick() {
+    if (user == null) return true;
+    final n = user!.name.trim();
+    return n.isEmpty || n == 'Oyuncu' || n.length < 2;
   }
 
   Future<bool> confirmUsername(String username) async {
     if (user == null) return false;
     final name = username.trim();
     if (name.length < 2 || name.length > 16) return false;
+    if (!RegExp(r'^[a-zA-Z0-9_]+$').hasMatch(name)) return false;
+
+    loading = true;
+    lastError = null;
+    notifyListeners();
+
+    final claim = await UsernameApi.claim(uid: user!.uid, username: name);
+    if (!claim.ok) {
+      loading = false;
+      lastError = claim.error ?? 'Bu kullanıcı adı alınamadı';
+      notifyListeners();
+      return false;
+    }
 
     user!.name = name;
     final tier = RankTier.forElo(user!.elo);
@@ -309,17 +329,18 @@ class AuthService extends ChangeNotifier {
           'displayName': user!.name,
           'photoURL': user!.photoUrl ?? '',
           'elo': user!.elo,
-          'wins': 0,
-          'losses': 0,
-          'matches': 0,
+          'wins': user!.wins,
+          'losses': user!.losses,
+          'matches': user!.matches,
           'league': tier.name,
           'isAnonymous': user!.isAnonymous,
           'createdAt': FieldValue.serverTimestamp(),
-        });
+        }, SetOptions(merge: true));
       } catch (_) {}
     }
 
     await _persistLocal();
+    loading = false;
     authState = AuthState.authenticated;
     notifyListeners();
     return true;
@@ -395,7 +416,7 @@ class AuthService extends ChangeNotifier {
     }
     user = UserProfile(
       uid: uid,
-      name: prefs.getString(_nameKey) ?? 'Oyuncu',
+      name: prefs.getString(_nameKey) ?? '',
       elo: prefs.getInt(_eloKey) ?? 1000,
       league: prefs.getString(_leagueKey) ?? 'Bronz',
       isAnonymous: true,

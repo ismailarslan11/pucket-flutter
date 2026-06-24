@@ -7,7 +7,7 @@ const low = require('lowdb');
 const FileSync = require('lowdb/adapters/FileSync');
 const adapter = new FileSync(path.join(__dirname, 'db.json'));
 const db = low(adapter);
-db.defaults({ players: {}, matchHistory: [] }).write();
+db.defaults({ players: {}, matchHistory: [], usernames: {} }).write();
 
 const PORT = process.env.PORT || 8080;
 const RECONNECT_GRACE_MS = parseInt(process.env.RECONNECT_GRACE_MS || '60000', 10);
@@ -96,6 +96,51 @@ function getMatchHistory(uid, limit = 20) {
 function isGuestUid(uid) {
   if (!uid) return true;
   return uid.startsWith('guest_') || uid.startsWith('u_');
+}
+
+function validateUsername(name) {
+  const trimmed = (name || '').trim();
+  if (trimmed.length < 2 || trimmed.length > 16) return null;
+  if (!/^[a-zA-Z0-9_]+$/.test(trimmed)) return null;
+  return trimmed;
+}
+
+function normalizeUsernameKey(name) {
+  const v = validateUsername(name);
+  return v ? v.toLowerCase() : null;
+}
+
+function checkUsernameAvailable(name, uid) {
+  const key = normalizeUsernameKey(name);
+  if (!key) {
+    return { ok: false, available: false, error: 'Geçersiz kullanıcı adı' };
+  }
+  const owner = db.get(`usernames.${key}`).value();
+  return { ok: true, available: !owner || owner === uid, key };
+}
+
+function claimUsername(uid, name) {
+  if (!uid) return { ok: false, error: 'UID gerekli' };
+  const displayName = validateUsername(name);
+  if (!displayName) return { ok: false, error: 'Geçersiz kullanıcı adı (2-16 karakter, harf/rakam/_)' };
+
+  const key = displayName.toLowerCase();
+  const owner = db.get(`usernames.${key}`).value();
+  if (owner && owner !== uid) {
+    return { ok: false, error: 'Bu kullanıcı adı alınmış' };
+  }
+
+  const existing = getPlayer(uid);
+  if (existing?.name) {
+    const oldKey = normalizeUsernameKey(existing.name);
+    if (oldKey && oldKey !== key && db.get(`usernames.${oldKey}`).value() === uid) {
+      db.unset(`usernames.${oldKey}`).write();
+    }
+  }
+
+  db.set(`usernames.${key}`, uid).write();
+  const player = upsertPlayer(uid, displayName);
+  return { ok: true, player };
 }
 
 function makeCode() {
@@ -300,7 +345,18 @@ function sendStart(room) {
 
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
-  const cors = { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' };
+  const cors = {
+    'Access-Control-Allow-Origin': '*',
+    'Content-Type': 'application/json',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+  };
+
+  if (req.method === 'OPTIONS') {
+    res.writeHead(204, cors);
+    res.end();
+    return;
+  }
 
   if (url.pathname === '/' || url.pathname === '/health') {
     res.writeHead(200, { 'Content-Type': 'text/plain' });
@@ -326,6 +382,34 @@ const server = http.createServer((req, res) => {
     const uid = decodeURIComponent(url.pathname.split('/match-history/')[1]);
     res.writeHead(200, cors);
     res.end(JSON.stringify(getMatchHistory(uid)));
+    return;
+  }
+
+  if (url.pathname === '/username/check') {
+    const name = url.searchParams.get('name') || '';
+    const uid = url.searchParams.get('uid') || '';
+    const result = checkUsernameAvailable(name, uid);
+    res.writeHead(200, cors);
+    res.end(JSON.stringify(result));
+    return;
+  }
+
+  if (url.pathname === '/username/claim' && req.method === 'POST') {
+    let body = '';
+    req.on('data', (chunk) => {
+      body += chunk;
+    });
+    req.on('end', () => {
+      try {
+        const data = JSON.parse(body || '{}');
+        const result = claimUsername(data.uid, data.username);
+        res.writeHead(result.ok ? 200 : 409, cors);
+        res.end(JSON.stringify(result));
+      } catch {
+        res.writeHead(400, cors);
+        res.end(JSON.stringify({ ok: false, error: 'Geçersiz istek' }));
+      }
+    });
     return;
   }
 
