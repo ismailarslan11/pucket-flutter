@@ -32,6 +32,7 @@ DEFINES=(
 echo "→ WS_URL=$WS_URL"
 echo "→ API_URL=$API_URL"
 echo "→ Build: $TARGET"
+echo "→ AdMob: test ID'leri (gerçek gelir için AdMob Console ID'lerini dart-define ile ver)"
 
 if [[ "$TARGET" == "appbundle" ]]; then
   flutter build appbundle --release "${DEFINES[@]}"

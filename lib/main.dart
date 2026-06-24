@@ -7,6 +7,7 @@ import 'screens/auth_screen.dart';
 import 'screens/menu_screen.dart';
 import 'screens/tutorial_screen.dart';
 import 'screens/username_screen.dart';
+import 'services/ad_service.dart';
 import 'services/api_config.dart';
 import 'services/audio_service.dart';
 import 'services/auth_service.dart';
@@ -31,6 +32,8 @@ void main() async {
   await auth.initFirebase();
 
   final audio = AudioService(settings);
+  final ads = AdService(settings);
+  await ads.init();
 
   runApp(
     MultiProvider(
@@ -38,6 +41,7 @@ void main() async {
         ChangeNotifierProvider.value(value: settings),
         ChangeNotifierProvider.value(value: auth),
         ChangeNotifierProvider.value(value: audio),
+        ChangeNotifierProvider.value(value: ads),
         ChangeNotifierProvider(
           create: (ctx) => GameController(
             ctx.read<SettingsService>(),

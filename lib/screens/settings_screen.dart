@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../services/ad_service.dart';
 import '../services/audio_service.dart';
 import '../services/settings_service.dart';
 import 'legal_screen.dart';
@@ -76,6 +77,18 @@ class SettingsScreen extends StatelessWidget {
                       value: settings.vibrationOn,
                       activeThumbColor: AppColors.green,
                       onChanged: settings.setVibration,
+                    ),
+                  ),
+                  _row(
+                    'Reklamlar',
+                    'Banner + maç arası reklamlar (gelir)',
+                    Switch(
+                      value: settings.adsOn,
+                      activeThumbColor: AppColors.green,
+                      onChanged: (v) {
+                        settings.setAds(v);
+                        context.read<AdService>().onAdsSettingChanged();
+                      },
                     ),
                   ),
                   const SizedBox(height: 8),

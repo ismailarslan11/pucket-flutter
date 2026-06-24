@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/rank_tier.dart';
 import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/ad_banner_widget.dart';
 import '../widgets/pucket_button.dart';
 import 'app_router.dart';
 import 'rank_screen.dart';
@@ -186,6 +187,7 @@ class MenuScreen extends StatelessWidget {
                   ),
                 ),
               ),
+              const AdBannerWidget(),
             ],
           ),
         ),

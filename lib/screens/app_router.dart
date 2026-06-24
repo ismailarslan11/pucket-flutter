@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../game/ai_bot.dart';
 import '../game/game_controller.dart';
+import '../services/ad_service.dart';
 import 'difficulty_screen.dart';
 import 'game_screen.dart';
 import 'instructions_screen.dart';
@@ -15,7 +16,9 @@ import 'profile_screen.dart';
 import 'tutorial_screen.dart';
 
 class AppRouter {
-  static void goMenu(BuildContext context) {
+  static Future<void> goMenu(BuildContext context) async {
+    await context.read<AdService>().showInterstitialOnMenuReturn();
+    if (!context.mounted) return;
     context.read<GameController>().leave();
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const MenuScreen()),

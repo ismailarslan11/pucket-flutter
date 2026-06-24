@@ -38,7 +38,8 @@ PUCKET Gizlilik Politikası (özet)
 • Hesap: Google/Apple girişinde ad, e-posta ve profil fotoğrafı Firebase üzerinden işlenebilir.
 • Oyun verisi: ELO, maç sonuçları ve kullanıcı adı sunucuda saklanır.
 • Misafir mod: Yerel cihazda geçici kimlik tutulur; ranked için Google girişi gerekir.
-• Üçüncü taraflar: Firebase (Google), oyun sunucusu.
+• Reklam: Google AdMob banner ve tam ekran reklamlar; cihaz tanımlayıcıları kullanılabilir.
+• Üçüncü taraflar: Firebase (Google), AdMob (Google), oyun sunucusu.
 • Veri silme: Ayarlar > Hesap > çıkış yaparak oturumu kapatabilirsiniz. Kalıcı silme için destek ile iletişime geçin.
 • İletişim: uygulama geliştiricisi ile Play/App Store üzerinden.
 ''';

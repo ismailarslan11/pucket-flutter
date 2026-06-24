@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../game/ai_bot.dart';
 import '../game/game_controller.dart';
 import '../models/rank_tier.dart';
+import '../services/ad_service.dart';
 import '../services/auth_service.dart';
 import '../services/settings_service.dart';
 import '../theme/app_theme.dart';
@@ -76,6 +77,7 @@ class _GameScreenState extends State<GameScreen> {
       };
       game.onEloResult = (r) {
         if (mounted) {
+          context.read<AdService>().maybeShowInterstitial(matchFinished: true);
           setState(() {
             _eloResult = r;
             _showElo = true;
@@ -131,6 +133,7 @@ class _GameScreenState extends State<GameScreen> {
   void _showRoundOverlay(GameController game) {
     final won = game.lastWinner == game.mySeat;
     final score = '${game.roundWins[0]} - ${game.roundWins[1]}';
+    context.read<AdService>().maybeShowInterstitial(matchFinished: game.matchFinished);
     if (game.matchFinished) {
       _showEndOverlay(
         won ? '🏆 MAÇ KAZANDIN!' : '💀 MAÇ KAYBETTİN',
