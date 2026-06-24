@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 import '../models/disc.dart';
+import '../services/audio_service.dart';
 import '../services/auth_service.dart';
 import '../services/settings_service.dart';
 import '../services/websocket_service.dart';
@@ -45,15 +46,23 @@ class EloResult {
 }
 
 class GameController extends ChangeNotifier {
-  GameController(this.settings, {required this.wsUrl, this.auth});
+  GameController(
+    this.settings, {
+    required this.wsUrl,
+    this.auth,
+    this.audio,
+  });
 
   final SettingsService settings;
   final AuthService? auth;
+  final AudioService? audio;
   final String wsUrl;
   final WebSocketService ws = WebSocketService();
   final AiBot aiBot = AiBot();
 
   static const roundsToWin = 2;
+  static const maxPauseSeconds = 60;
+  static const afkForfeitSeconds = 120;
 
   List<Disc> discs = [];
   GamePhase phase = GamePhase.idle;
@@ -61,8 +70,20 @@ class GameController extends ChangeNotifier {
   String roomCode = '';
   bool lobbyWaiting = true;
   bool aiMode = false;
+  bool isBotFallback = false;
   bool isRanked = false;
   AiLevel aiLevel = AiLevel.medium;
+
+  String opponentName = '';
+  int opponentElo = 1000;
+  String opponentLeague = 'Bronz';
+  String sessionToken = '';
+
+  bool reconnecting = false;
+  bool opponentDisconnected = false;
+  int opponentGraceLeft = 0;
+  bool myRematchPending = false;
+  bool opponentRematchRequested = false;
 
   final roundWins = [0, 0];
   int currentRound = 1;
@@ -74,12 +95,24 @@ class GameController extends ChangeNotifier {
   int countdown = 3;
   DragState? drag;
   int _frameCount = 0;
+  int _lastMovingDiscs = 0;
 
   Timer? _secTimer;
   Timer? _cdTimer;
+  Timer? _pauseTimer;
+  Timer? _graceTimer;
+  Timer? _afkTimer;
+
+  bool pauseByOpponent = false;
+  int pauseSecondsLeft = 0;
 
   void Function(String message)? onToast;
   void Function()? onOpponentLeft;
+  void Function()? onOpponentDisconnected;
+  void Function()? onOpponentReconnected;
+  void Function()? onReconnecting;
+  void Function()? onReconnected;
+  void Function()? onRematchRequest;
   void Function()? onGameStart;
   void Function()? onProfileRefresh;
   void Function(EloResult result)? onEloResult;
@@ -87,16 +120,26 @@ class GameController extends ChangeNotifier {
   void tick(double nowMs) {
     if (phase != GamePhase.playing) return;
 
-    if (mySeat == 0 || aiMode) {
+    if (mySeat == 0 || aiMode || mySeat == 1) {
       PhysicsEngine.stepPhysics(discs);
+
+      final moving = discs.where((d) => d.vvx.abs() > 0.05 || d.vvy.abs() > 0.05).length;
+      if (moving > _lastMovingDiscs && moving > 0) {
+        audio?.playHit();
+      }
+      _lastMovingDiscs = moving;
+
       _frameCount++;
       if (aiMode && aiBot.shouldThink(nowMs, aiLevel)) {
         if (aiBot.think(discs, aiLevel)) _haptic(25);
       } else if (!aiMode && mySeat == 0) {
         if (_frameCount % 2 == 0) _sendState();
       }
-      final winner = PhysicsEngine.checkWinner(discs);
-      if (winner != null) _endRound(winner, broadcast: true);
+
+      if (mySeat == 0 || aiMode) {
+        final winner = PhysicsEngine.checkWinner(discs);
+        if (winner != null) _endRound(winner, broadcast: true);
+      }
     }
     notifyListeners();
   }
@@ -104,13 +147,18 @@ class GameController extends ChangeNotifier {
   void resetRound() {
     _secTimer?.cancel();
     _cdTimer?.cancel();
+    _afkTimer?.cancel();
+    _clearPauseState();
     seconds = 0;
     drag = null;
     _frameCount = 0;
+    _lastMovingDiscs = 0;
     aiBot.reset();
     discs = PhysicsEngine.initDiscs();
     phase = GamePhase.idle;
     lastWinner = null;
+    myRematchPending = false;
+    opponentRematchRequested = false;
     notifyListeners();
   }
 
@@ -140,26 +188,43 @@ class GameController extends ChangeNotifier {
           seconds++;
           notifyListeners();
         });
+        _startAfkTimer();
         notifyListeners();
       }
     });
   }
 
-  void startAiGame(AiLevel level) {
+  void _startAfkTimer() {
+    _afkTimer?.cancel();
+    if (aiMode) return;
+    _afkTimer = Timer(const Duration(seconds: afkForfeitSeconds), () {
+      if (phase != GamePhase.playing) return;
+      onToast?.call('AFK — maç sonlandırıldı');
+      leave();
+      onOpponentLeft?.call();
+    });
+  }
+
+  void startAiGame(AiLevel level, {bool botFallback = false}) {
     ws.disconnect();
     aiMode = true;
+    isBotFallback = botFallback;
     isRanked = false;
     aiLevel = level;
     mySeat = 0;
     roomCode = 'BOT';
+    opponentName = 'Bot';
+    opponentElo = 1000;
     resetMatch();
     startCountdown();
   }
 
   void startOnlineGame(int seat, String room) {
     aiMode = false;
+    isBotFallback = false;
     mySeat = seat;
     roomCode = room;
+    ws.setSession(uid: auth?.getUid(), sessionToken: sessionToken, roomCode: room);
     resetMatch();
     startCountdown();
   }
@@ -167,17 +232,35 @@ class GameController extends ChangeNotifier {
   Future<bool> openConnection({
     required String uid,
     required String name,
+    String? idToken,
   }) async {
     ws.onMessage = _handleWs;
     ws.onError = () => onToast?.call('Bağlantı hatası');
+    ws.onReconnected = () {
+      reconnecting = false;
+      onReconnected?.call();
+      notifyListeners();
+    };
     ws.onClose = () {
-      if (phase == GamePhase.playing || phase == GamePhase.countdown) {
+      if (ws.isReconnecting) {
+        reconnecting = true;
+        onReconnecting?.call();
+        notifyListeners();
+        return;
+      }
+      if (!aiMode && (phase == GamePhase.playing || phase == GamePhase.countdown)) {
         onOpponentLeft?.call();
       }
     };
     final ok = await ws.connect(wsUrl);
     if (!ok) return false;
-    ws.send({'type': 'login', 'uid': uid, 'name': name});
+    ws.setSession(uid: uid, sessionToken: sessionToken, roomCode: roomCode.isNotEmpty ? roomCode : null);
+    ws.send({
+      'type': 'login',
+      'uid': uid,
+      'name': name,
+      if (idToken != null) 'idToken': idToken,
+    });
     return true;
   }
 
@@ -194,6 +277,43 @@ class GameController extends ChangeNotifier {
     ws.disconnect();
   }
 
+  void _applyOpponentInfo(Map<String, dynamic> msg) {
+    opponentName = msg['oppName'] as String? ?? opponentName;
+    opponentElo = (msg['oppElo'] as num?)?.toInt() ?? opponentElo;
+    opponentLeague = msg['oppLeague'] as String? ?? opponentLeague;
+    if (msg['sessionToken'] is String) {
+      sessionToken = msg['sessionToken'] as String;
+      ws.setSession(uid: auth?.getUid(), sessionToken: sessionToken, roomCode: roomCode);
+    }
+  }
+
+  void _restoreSnapshot(Map<String, dynamic>? snap) {
+    if (snap == null) return;
+    final states = snap['discs'];
+    if (states is List) {
+      for (var i = 0; i < states.length && i < discs.length; i++) {
+        final s = states[i] as List;
+        discs[i].vx = (s[0] as num).toDouble();
+        discs[i].vy = (s[1] as num).toDouble();
+        discs[i].vvx = (s[2] as num).toDouble();
+        discs[i].vvy = (s[3] as num).toDouble();
+      }
+    }
+    if (snap['roundWins'] is List) {
+      final rw = snap['roundWins'] as List;
+      roundWins[0] = (rw[0] as num).toInt();
+      roundWins[1] = (rw[1] as num).toInt();
+    }
+    if (snap['currentRound'] != null) {
+      currentRound = (snap['currentRound'] as num).toInt();
+    }
+    if (snap['phase'] == 'gameover') {
+      phase = GamePhase.gameover;
+    } else if (snap['phase'] == 'playing') {
+      phase = GamePhase.playing;
+    }
+  }
+
   void _handleWs(Map<String, dynamic> msg) {
     switch (msg['type']) {
       case 'profile':
@@ -207,10 +327,12 @@ class GameController extends ChangeNotifier {
         mySeat = msg['seat'] as int;
         roomCode = msg['room'] as String;
         lobbyWaiting = msg['waiting'] as bool? ?? true;
+        _applyOpponentInfo(msg);
         notifyListeners();
         break;
       case 'start':
         isRanked = false;
+        _applyOpponentInfo(msg);
         startOnlineGame(mySeat, roomCode);
         onGameStart?.call();
         break;
@@ -218,11 +340,41 @@ class GameController extends ChangeNotifier {
         isRanked = true;
         mySeat = msg['seat'] as int;
         roomCode = msg['room'] as String;
+        _applyOpponentInfo(msg);
         notifyListeners();
         Future.delayed(const Duration(milliseconds: 1800), () {
           startOnlineGame(mySeat, roomCode);
           onGameStart?.call();
         });
+        break;
+      case 'reconnected':
+        reconnecting = false;
+        opponentDisconnected = false;
+        _graceTimer?.cancel();
+        mySeat = msg['seat'] as int;
+        roomCode = msg['room'] as String;
+        _applyOpponentInfo(msg);
+        _restoreSnapshot(msg['snapshot'] as Map<String, dynamic>?);
+        onReconnected?.call();
+        notifyListeners();
+        break;
+      case 'opponent_disconnected':
+        opponentDisconnected = true;
+        opponentGraceLeft = (msg['graceSeconds'] as num?)?.toInt() ?? 60;
+        _graceTimer?.cancel();
+        _graceTimer = Timer.periodic(const Duration(seconds: 1), (t) {
+          opponentGraceLeft--;
+          if (opponentGraceLeft <= 0) t.cancel();
+          notifyListeners();
+        });
+        onOpponentDisconnected?.call();
+        notifyListeners();
+        break;
+      case 'opponent_reconnected':
+        opponentDisconnected = false;
+        _graceTimer?.cancel();
+        onOpponentReconnected?.call();
+        notifyListeners();
         break;
       case 'state':
         if (mySeat == 1 && msg['discs'] != null) {
@@ -243,6 +395,7 @@ class GameController extends ChangeNotifier {
           if (idx < discs.length) {
             discs[idx].vvx = (msg['vvx'] as num).toDouble();
             discs[idx].vvy = (msg['vvy'] as num).toDouble();
+            audio?.playShot();
             notifyListeners();
           }
         }
@@ -263,6 +416,11 @@ class GameController extends ChangeNotifier {
           _secTimer?.cancel();
           matchFinished = roundWins[winner] >= roundsToWin;
           _haptic(winner == mySeat ? 50 : 30);
+          if (winner == mySeat) {
+            audio?.playWin();
+          } else {
+            audio?.playLose();
+          }
         }
         notifyListeners();
         break;
@@ -291,6 +449,25 @@ class GameController extends ChangeNotifier {
           onProfileRefresh?.call();
         }
         break;
+      case 'rematch_request':
+        if ((msg['seat'] as num?)?.toInt() != mySeat) {
+          opponentRematchRequested = true;
+          onRematchRequest?.call();
+          notifyListeners();
+        }
+        break;
+      case 'rematch_accepted':
+        myRematchPending = false;
+        opponentRematchRequested = false;
+        resetMatch();
+        startCountdown();
+        break;
+      case 'rematch_declined':
+        myRematchPending = false;
+        opponentRematchRequested = false;
+        onToast?.call('Rakip rematch istemedi');
+        notifyListeners();
+        break;
       case 'newMatch':
         resetMatch();
         startCountdown();
@@ -303,8 +480,20 @@ class GameController extends ChangeNotifier {
         resetRound();
         startCountdown();
         break;
+      case 'pause':
+        if (phase == GamePhase.playing) {
+          _pauseGame(byOpponent: true, broadcast: false);
+        }
+        break;
+      case 'resume':
+        if (phase == GamePhase.paused) {
+          _resumeFromPause(broadcast: false);
+        }
+        break;
       case 'opponent_left':
         phase = GamePhase.idle;
+        opponentDisconnected = false;
+        _graceTimer?.cancel();
         onOpponentLeft?.call();
         break;
       case 'error':
@@ -315,7 +504,7 @@ class GameController extends ChangeNotifier {
 
   void _sendState() {
     final anyMoving = discs.any((d) => d.vvx.abs() > 0.01 || d.vvy.abs() > 0.01);
-    if (!anyMoving) return;
+    if (!anyMoving && phase != GamePhase.playing) return;
     ws.send({
       'type': 'state',
       'discs': discs
@@ -326,6 +515,10 @@ class GameController extends ChangeNotifier {
                 (d.vvy * 100).round() / 100,
               ])
           .toList(),
+      'roundWins': roundWins.toList(),
+      'currentRound': currentRound,
+      'phase': phase.name,
+      'seconds': seconds,
     });
   }
 
@@ -334,11 +527,17 @@ class GameController extends ChangeNotifier {
 
     phase = GamePhase.gameover;
     _secTimer?.cancel();
+    _afkTimer?.cancel();
     lastWinner = winner;
     roundWins[winner]++;
     currentRound++;
     matchFinished = roundWins[winner] >= roundsToWin;
     _haptic(winner == mySeat ? 50 : 30);
+    if (winner == mySeat) {
+      audio?.playWin();
+    } else {
+      audio?.playLose();
+    }
 
     if (broadcast) {
       ws.send({
@@ -368,14 +567,37 @@ class GameController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void rematch() {
+  void requestRematch() {
+    if (aiMode) {
+      rematchLocal();
+      return;
+    }
+    myRematchPending = true;
+    ws.send({'type': 'rematch_request'});
+    if (opponentRematchRequested) {
+      ws.send({'type': 'rematch_request'});
+    }
+    notifyListeners();
+  }
+
+  void acceptRematch() {
+    opponentRematchRequested = false;
+    ws.send({'type': 'rematch_request'});
+  }
+
+  void declineRematch() {
+    opponentRematchRequested = false;
+    myRematchPending = false;
+    ws.send({'type': 'rematch_decline'});
+    notifyListeners();
+  }
+
+  void rematchLocal() {
     pendingEloResult = null;
     if (matchFinished) {
-      if (!aiMode) ws.send({'type': 'newMatch'});
       resetMatch();
       startCountdown();
     } else {
-      if (!aiMode) ws.send({'type': 'nextRound'});
       resetRound();
       startCountdown();
     }
@@ -383,6 +605,7 @@ class GameController extends ChangeNotifier {
 
   void onPointerDown(double vx, double vy) {
     if (phase != GamePhase.playing) return;
+    _startAfkTimer();
     final idx = PhysicsEngine.findDiscAt(discs, vx, vy, mySeat);
     if (idx == -1) return;
     final d = discs[idx];
@@ -416,6 +639,8 @@ class GameController extends ChangeNotifier {
         discs[drag!.discIndex].vvx = vvx;
         discs[drag!.discIndex].vvy = vvy;
       } else {
+        discs[drag!.discIndex].vvx = vvx;
+        discs[drag!.discIndex].vvy = vvy;
         ws.send({
           'type': 'shot',
           'disc': drag!.discIndex,
@@ -423,6 +648,7 @@ class GameController extends ChangeNotifier {
           'vvy': vvy,
         });
       }
+      audio?.playShot();
       _haptic(25);
     }
     drag = null;
@@ -430,27 +656,77 @@ class GameController extends ChangeNotifier {
   }
 
   void togglePause() {
-    if (phase == GamePhase.gameover) return;
+    if (phase == GamePhase.gameover || phase == GamePhase.countdown) return;
     if (phase == GamePhase.paused) {
-      phase = GamePhase.playing;
-      _secTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-        seconds++;
-        notifyListeners();
-      });
+      if (pauseByOpponent) return;
+      _resumeFromPause(broadcast: !aiMode);
     } else if (phase == GamePhase.playing) {
-      phase = GamePhase.paused;
-      _secTimer?.cancel();
+      _pauseGame(byOpponent: false, broadcast: !aiMode);
+    }
+  }
+
+  void _pauseGame({required bool byOpponent, required bool broadcast}) {
+    if (phase != GamePhase.playing) return;
+    phase = GamePhase.paused;
+    pauseByOpponent = byOpponent;
+    _secTimer?.cancel();
+    _startPauseTimer();
+    if (broadcast && ws.isConnected) {
+      ws.send({'type': 'pause'});
     }
     notifyListeners();
+  }
+
+  void _resumeFromPause({required bool broadcast}) {
+    if (phase != GamePhase.paused) return;
+    _pauseTimer?.cancel();
+    pauseByOpponent = false;
+    pauseSecondsLeft = 0;
+    phase = GamePhase.playing;
+    _secTimer?.cancel();
+    _secTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      seconds++;
+      notifyListeners();
+    });
+    _startAfkTimer();
+    if (broadcast && ws.isConnected) {
+      ws.send({'type': 'resume'});
+    }
+    notifyListeners();
+  }
+
+  void _startPauseTimer() {
+    _pauseTimer?.cancel();
+    pauseSecondsLeft = maxPauseSeconds;
+    _pauseTimer = Timer.periodic(const Duration(seconds: 1), (t) {
+      pauseSecondsLeft--;
+      if (pauseSecondsLeft <= 0) {
+        t.cancel();
+        _resumeFromPause(broadcast: !aiMode);
+      }
+      notifyListeners();
+    });
+  }
+
+  void _clearPauseState() {
+    _pauseTimer?.cancel();
+    pauseByOpponent = false;
+    pauseSecondsLeft = 0;
   }
 
   void leave() {
     ws.disconnect();
     _secTimer?.cancel();
     _cdTimer?.cancel();
+    _graceTimer?.cancel();
+    _afkTimer?.cancel();
+    _clearPauseState();
     phase = GamePhase.idle;
     aiMode = false;
+    isBotFallback = false;
     isRanked = false;
+    reconnecting = false;
+    opponentDisconnected = false;
     roundWins[0] = 0;
     roundWins[1] = 0;
     currentRound = 1;
@@ -466,6 +742,14 @@ class GameController extends ChangeNotifier {
   int blueRemaining() =>
       discs.where((d) => d.owner == 1 && d.vy < GameConstants.vHalf).length;
 
+  int mySideRemaining() => mySeat == 0 ? redRemaining() + blueRemainingOnRedSide() : blueRemaining() + redRemainingOnBlueSide();
+
+  int blueRemainingOnRedSide() =>
+      discs.where((d) => d.owner == 1 && d.vy >= GameConstants.vHalf).length;
+
+  int redRemainingOnBlueSide() =>
+      discs.where((d) => d.owner == 0 && d.vy < GameConstants.vHalf).length;
+
   void _haptic(int ms) {
     if (!settings.vibrationOn) return;
     if (ms > 100) {
@@ -479,6 +763,8 @@ class GameController extends ChangeNotifier {
   void dispose() {
     _secTimer?.cancel();
     _cdTimer?.cancel();
+    _graceTimer?.cancel();
+    _afkTimer?.cancel();
     ws.disconnect();
     super.dispose();
   }

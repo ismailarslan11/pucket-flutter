@@ -1,5 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
@@ -78,6 +81,16 @@ class AuthScreen extends StatelessWidget {
                                   : () {},
                             ),
                           ),
+                          if (!kIsWeb &&
+                              defaultTargetPlatform == TargetPlatform.iOS &&
+                              auth.firebaseAvailable) ...[
+                            const SizedBox(height: 12),
+                            SignInWithAppleButton(
+                              onPressed: () => auth.signInWithApple(),
+                              height: 48,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ],
                           if (!auth.firebaseAvailable)
                             const Padding(
                               padding: EdgeInsets.only(top: 6),

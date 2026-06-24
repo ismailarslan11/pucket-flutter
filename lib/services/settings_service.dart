@@ -7,13 +7,19 @@ class SettingsService extends ChangeNotifier {
   bool vibrationOn = true;
   double musicVolume = 0.7;
   double sfxVolume = 0.8;
+  bool tutorialSeen = false;
 
   static const _key = 'pucket_settings';
+  static const _tutorialKey = 'pucket_tutorial_seen';
 
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
+    tutorialSeen = prefs.getBool(_tutorialKey) ?? false;
     final json = prefs.getString(_key);
-    if (json == null) return;
+    if (json == null) {
+      notifyListeners();
+      return;
+    }
     try {
       final parts = json.split('|');
       if (parts.length >= 5) {
@@ -24,6 +30,13 @@ class SettingsService extends ChangeNotifier {
         sfxVolume = double.tryParse(parts[4]) ?? 0.8;
       }
     } catch (_) {}
+    notifyListeners();
+  }
+
+  Future<void> markTutorialSeen() async {
+    tutorialSeen = true;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_tutorialKey, true);
     notifyListeners();
   }
 

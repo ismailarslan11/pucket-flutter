@@ -1,0 +1,7 @@
+# Bu dosyayı key.properties olarak kopyalayın ve değerleri doldurun.
+# key.properties asla git'e eklenmemeli (android/.gitignore'da).
+
+storePassword=YOUR_KEYSTORE_PASSWORD
+keyPassword=YOUR_KEY_PASSWORD
+keyAlias=pucket
+storeFile=../pucket-release.jks

@@ -3,10 +3,17 @@ import 'package:flutter/foundation.dart';
 /// WebSocket sunucu adresi.
 /// Android emülatör: ws://10.0.2.2:8080
 /// Gerçek cihaz: ws://BILGISAYAR_IP:8080
-/// Override: flutter run --dart-define=WS_URL=ws://...
+/// Production:
+///   flutter build apk --dart-define=WS_URL=wss://SUNUCU --dart-define=API_URL=https://SUNUCU
+///   veya: ./tool/build_release.sh apk
 String get kWsServerUrl {
   const fromEnv = String.fromEnvironment('WS_URL');
   if (fromEnv.isNotEmpty) return fromEnv;
+
+  assert(() {
+    // Debug: localhost uyarısı
+    return true;
+  }());
 
   if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
     return 'ws://10.0.2.2:8080';

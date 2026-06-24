@@ -22,6 +22,7 @@ class _QueueScreenState extends State<QueueScreen> {
   String _status = 'Rakip aranıyor...';
   bool _spinning = true;
   bool _showPreview = false;
+  String? _oppName;
   int? _myElo;
   int? _oppElo;
   Timer? _msgTimer;
@@ -96,7 +97,8 @@ class _QueueScreenState extends State<QueueScreen> {
         _spinning = false;
         _showPreview = true;
         _myElo = context.read<AuthService>().user?.elo;
-        _oppElo = _myElo;
+        _oppElo = game.opponentElo;
+        _oppName = game.opponentName;
       });
     }
   }
@@ -108,9 +110,9 @@ class _QueueScreenState extends State<QueueScreen> {
       _spinning = false;
     });
     Future.delayed(const Duration(milliseconds: 1200), () {
-      if (mounted && _game != null) {
+      if (mounted) {
         _game!.leave();
-        AppRouter.startAi(context, AiLevel.hard);
+        AppRouter.startBotFallback(context, level: AiLevel.hard);
       }
     });
   }
@@ -197,7 +199,7 @@ class _QueueScreenState extends State<QueueScreen> {
                       Text(_status, style: const TextStyle(color: Color(0xFF666666), fontSize: 12)),
                       if (_showPreview) ...[
                         const SizedBox(height: 14),
-                        _vsPreview(_myElo ?? 1000, _oppElo ?? 1000),
+                        _vsPreview(_myElo ?? 1000, _oppElo ?? 1000, _oppName ?? 'Rakip'),
                       ],
                     ],
                   ),
@@ -219,7 +221,7 @@ class _QueueScreenState extends State<QueueScreen> {
     );
   }
 
-  Widget _vsPreview(int myElo, int oppElo) {
+  Widget _vsPreview(int myElo, int oppElo, String oppName) {
     final myTier = RankTier.forElo(myElo);
     final oppTier = RankTier.forElo(oppElo);
     return Container(
@@ -245,6 +247,7 @@ class _QueueScreenState extends State<QueueScreen> {
             child: Column(
               children: [
                 const Text('RAKİP', style: TextStyle(fontSize: 9, color: Color(0xFF555555))),
+                Text(oppName, style: const TextStyle(fontSize: 10, color: Color(0xFF888888))),
                 Text('$oppElo', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: AppColors.blue)),
                 Text(oppTier.name, style: const TextStyle(fontSize: 10, color: Color(0xFF666666))),
               ],

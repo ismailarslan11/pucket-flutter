@@ -5,8 +5,10 @@ import 'package:provider/provider.dart';
 import 'game/game_controller.dart';
 import 'screens/auth_screen.dart';
 import 'screens/menu_screen.dart';
+import 'screens/tutorial_screen.dart';
 import 'screens/username_screen.dart';
 import 'services/api_config.dart';
+import 'services/audio_service.dart';
 import 'services/auth_service.dart';
 import 'services/firebase_init.dart';
 import 'services/settings_service.dart';
@@ -28,16 +30,20 @@ void main() async {
   await auth.loadLocalCache();
   await auth.initFirebase();
 
+  final audio = AudioService(settings);
+
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider.value(value: settings),
         ChangeNotifierProvider.value(value: auth),
+        ChangeNotifierProvider.value(value: audio),
         ChangeNotifierProvider(
           create: (ctx) => GameController(
             ctx.read<SettingsService>(),
             wsUrl: kWsServerUrl,
             auth: ctx.read<AuthService>(),
+            audio: ctx.read<AudioService>(),
           ),
         ),
       ],
@@ -60,7 +66,7 @@ class PucketApp extends StatelessWidget {
           case AuthState.needsUsername:
             home = const UsernameScreen();
           case AuthState.authenticated:
-            home = const MenuScreen();
+            home = const _AuthenticatedHome();
           case AuthState.unauthenticated:
             home = const AuthScreen();
         }
@@ -73,6 +79,41 @@ class PucketApp extends StatelessWidget {
         );
       },
     );
+  }
+}
+
+class _AuthenticatedHome extends StatefulWidget {
+  const _AuthenticatedHome();
+
+  @override
+  State<_AuthenticatedHome> createState() => _AuthenticatedHomeState();
+}
+
+class _AuthenticatedHomeState extends State<_AuthenticatedHome> {
+  bool _tutorialChecked = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final settings = context.read<SettingsService>();
+      final audio = context.read<AudioService>();
+      await audio.playMenuMusic();
+      if (!settings.tutorialSeen && mounted) {
+        await Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const TutorialScreen()),
+        );
+      }
+      if (mounted) setState(() => _tutorialChecked = true);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_tutorialChecked) {
+      return const _Splash();
+    }
+    return const MenuScreen();
   }
 }
 

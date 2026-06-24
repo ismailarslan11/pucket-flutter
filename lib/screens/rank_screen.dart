@@ -21,6 +21,7 @@ class _RankScreenState extends State<RankScreen> {
   List<UserProfile> _leaderboard = [];
   bool _loading = true;
   String? _filter;
+  String? _loadError;
 
   @override
   void initState() {
@@ -29,6 +30,7 @@ class _RankScreenState extends State<RankScreen> {
   }
 
   Future<void> _load() async {
+    setState(() => _loadError = null);
     try {
       final res = await http
           .get(Uri.parse('$apiBaseUrl/leaderboard'))
@@ -38,8 +40,12 @@ class _RankScreenState extends State<RankScreen> {
         _leaderboard = list
             .map((e) => UserProfile.fromServer(e as Map<String, dynamic>))
             .toList();
+      } else {
+        _loadError = 'Sunucu yanıt vermedi (${res.statusCode})';
       }
-    } catch (_) {}
+    } catch (_) {
+      _loadError = 'Sıralama yüklenemedi — sunucu çalışıyor mu?';
+    }
     if (mounted) setState(() => _loading = false);
   }
 
@@ -97,7 +103,13 @@ class _RankScreenState extends State<RankScreen> {
               child: _loading
                   ? const Center(child: CircularProgressIndicator(color: AppColors.green))
                   : list.isEmpty
-                      ? const Center(child: Text('Bu ligde oyuncu yok', style: TextStyle(color: Color(0xFF444444))))
+                      ? Center(
+                          child: Text(
+                            _loadError ?? 'Bu ligde oyuncu yok',
+                            style: const TextStyle(color: Color(0xFF666666)),
+                            textAlign: TextAlign.center,
+                          ),
+                        )
                       : ListView.builder(
                           itemCount: list.length,
                           itemBuilder: (_, i) {

@@ -115,14 +115,37 @@ class PhysicsEngine {
     }
   }
 
+  static const int discsPerPlayer = 5;
+
   static int? checkWinner(List<Disc> discs) {
-    if (discs.length < 10) return null;
-    final redIn = discs.where((d) => d.owner == 0 && d.vy >= GameConstants.vHalf).length;
-    final bluIn = discs.where((d) => d.owner == 1 && d.vy < GameConstants.vHalf).length;
-    final redCrossed = discs.where((d) => d.owner == 0 && d.vy < GameConstants.vHalf).length;
-    final bluCrossed = discs.where((d) => d.owner == 1 && d.vy >= GameConstants.vHalf).length;
-    if (redIn == 0 && redCrossed > 0) return 0;
-    if (bluIn == 0 && bluCrossed > 0) return 1;
+    if (discs.length < discsPerPlayer * 2) return null;
+
+    // Kırmızı kazanır: 5 kırmızı üstte + altta (kendi yarısı) hiç pul kalmaz
+    final redOnBottom =
+        discs.where((d) => d.owner == 0 && d.vy >= GameConstants.vHalf).length;
+    final redOnTop =
+        discs.where((d) => d.owner == 0 && d.vy < GameConstants.vHalf).length;
+    final bluOnBottom =
+        discs.where((d) => d.owner == 1 && d.vy >= GameConstants.vHalf).length;
+
+    if (redOnBottom == 0 &&
+        redOnTop == discsPerPlayer &&
+        bluOnBottom == 0) {
+      return 0;
+    }
+
+    // Mavi kazanır: 5 mavi altta + üstte (kendi yarısı) hiç pul kalmaz
+    final bluOnTop =
+        discs.where((d) => d.owner == 1 && d.vy < GameConstants.vHalf).length;
+    final bluOnBottomSide =
+        discs.where((d) => d.owner == 1 && d.vy >= GameConstants.vHalf).length;
+
+    if (bluOnTop == 0 &&
+        bluOnBottomSide == discsPerPlayer &&
+        redOnTop == 0) {
+      return 1;
+    }
+
     return null;
   }
 

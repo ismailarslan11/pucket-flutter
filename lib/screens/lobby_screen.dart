@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../game/game_controller.dart';
 import '../services/auth_service.dart';
@@ -318,9 +319,6 @@ class _LobbyScreenState extends State<LobbyScreen> {
 
   void _shareCode() {
     if (_roomCode == '——') return;
-    Clipboard.setData(ClipboardData(text: 'PUCKET oynuyorum! Oda kodum: $_roomCode'));
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Paylaşım metni kopyalandı!')),
-    );
+    SharePlus.instance.share(ShareParams(text: 'PUCKET oynuyorum! Oda kodum: $_roomCode'));
   }
 }

@@ -11,6 +11,8 @@ import 'lobby_screen.dart';
 import 'menu_screen.dart';
 import 'queue_screen.dart';
 import 'settings_screen.dart';
+import 'profile_screen.dart';
+import 'tutorial_screen.dart';
 
 class AppRouter {
   static void goMenu(BuildContext context) {
@@ -72,7 +74,17 @@ class AppRouter {
   }
 
   static void startBotFallback(BuildContext context, {AiLevel level = AiLevel.medium}) {
-    context.read<GameController>().leave();
-    startAi(context, level);
+    final game = context.read<GameController>();
+    game.leave();
+    game.startAiGame(level, botFallback: true);
+    goGame(context);
+  }
+
+  static void goProfile(BuildContext context) {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen()));
+  }
+
+  static void goTutorial(BuildContext context) {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => const TutorialScreen()));
   }
 }

@@ -6,7 +6,6 @@ import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/pucket_button.dart';
 import 'app_router.dart';
-import 'auth_screen.dart';
 import 'rank_screen.dart';
 
 class MenuScreen extends StatelessWidget {
@@ -169,7 +168,13 @@ class MenuScreen extends StatelessWidget {
                       PucketButton(
                         label: 'NASIL OYNANIR?',
                         secondary: true,
-                        onPressed: () => AppRouter.goInstructions(context),
+                        onPressed: () => AppRouter.goTutorial(context),
+                      ),
+                      const SizedBox(height: 14),
+                      PucketButton(
+                        label: '👤 PROFİLİM',
+                        secondary: true,
+                        onPressed: () => AppRouter.goProfile(context),
                       ),
                       const SizedBox(height: 14),
                       PucketButton(
@@ -192,30 +197,7 @@ class MenuScreen extends StatelessWidget {
     if (auth.user?.isAnonymous ?? true) {
       auth.signInWithGoogle();
     } else {
-      showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          backgroundColor: AppColors.card,
-          title: const Text('Hesap'),
-          content: Text('${auth.user?.name} — çıkış yapmak istiyor musun?'),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('İptal')),
-            TextButton(
-              onPressed: () async {
-                Navigator.pop(ctx);
-                await auth.signOut();
-                if (context.mounted) {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (_) => const AuthScreen()),
-                  );
-                }
-              },
-              child: const Text('Çıkış', style: TextStyle(color: AppColors.red)),
-            ),
-          ],
-        ),
-      );
+      AppRouter.goProfile(context);
     }
   }
 }

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../services/audio_service.dart';
 import '../services/settings_service.dart';
+import 'legal_screen.dart';
 import '../theme/app_theme.dart';
 import '../widgets/pucket_button.dart';
 
@@ -76,11 +78,23 @@ class SettingsScreen extends StatelessWidget {
                       onChanged: settings.setVibration,
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 8),
+                  TextButton(
+                    onPressed: () => LegalScreen.showPrivacy(context),
+                    child: const Text('Gizlilik Politikası', style: TextStyle(color: Color(0xFF666666))),
+                  ),
+                  TextButton(
+                    onPressed: () => LegalScreen.showTerms(context),
+                    child: const Text('Kullanım Şartları', style: TextStyle(color: Color(0xFF666666))),
+                  ),
+                  const SizedBox(height: 16),
                   PucketButton(
                     label: 'KAYDET & GERİ',
                     width: 260,
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: () {
+                      context.read<AudioService>().onSettingsChanged();
+                      Navigator.pop(context);
+                    },
                   ),
                 ],
               ),

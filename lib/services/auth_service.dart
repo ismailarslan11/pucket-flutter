@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:uuid/uuid.dart';
 
 import '../config/google_auth_config.dart';
@@ -214,6 +215,48 @@ class AuthService extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       lastError = 'Google girişi başarısız: $e';
+      loading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> signInWithApple() async {
+    if (!_firebaseReady || _isMacOS) {
+      lastError = 'Apple girişi bu platformda kullanılamıyor';
+      notifyListeners();
+      return;
+    }
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.iOS) {
+      lastError = 'Apple girişi yalnızca iOS\'ta desteklenir';
+      notifyListeners();
+      return;
+    }
+
+    loading = true;
+    lastError = null;
+    notifyListeners();
+
+    try {
+      final apple = await SignInWithApple.getAppleIDCredential(
+        scopes: [AppleIDAuthorizationScopes.email, AppleIDAuthorizationScopes.fullName],
+      );
+      final oauth = OAuthProvider('apple.com').credential(
+        idToken: apple.identityToken,
+        accessToken: apple.authorizationCode,
+      );
+      await _auth!.signInWithCredential(oauth);
+    } on SignInWithAppleAuthorizationException catch (e) {
+      if (e.code != AuthorizationErrorCode.canceled) {
+        lastError = 'Apple girişi başarısız';
+      }
+      loading = false;
+      notifyListeners();
+    } on FirebaseAuthException catch (e) {
+      lastError = e.message ?? 'Apple girişi başarısız';
+      loading = false;
+      notifyListeners();
+    } catch (_) {
+      lastError = 'Apple girişi başarısız';
       loading = false;
       notifyListeners();
     }

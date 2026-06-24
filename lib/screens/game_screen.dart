@@ -53,6 +53,27 @@ class _GameScreenState extends State<GameScreen> {
           _showEndOverlay('RAKİP AYRILDI', 'Bağlantı kesildi.', false, 'MENÜYE DÖN');
         }
       };
+      game.onRematchRequest = () {
+        if (!mounted) return;
+        showDialog<void>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            backgroundColor: AppColors.card,
+            title: const Text('Tekrar oyna?'),
+            content: const Text('Rakip yeni maç istiyor.'),
+            actions: [
+              TextButton(onPressed: () {
+                game.declineRematch();
+                Navigator.pop(ctx);
+              }, child: const Text('Hayır')),
+              TextButton(onPressed: () {
+                game.acceptRematch();
+                Navigator.pop(ctx);
+              }, child: const Text('Evet')),
+            ],
+          ),
+        );
+      };
       game.onEloResult = (r) {
         if (mounted) {
           setState(() {
@@ -97,6 +118,13 @@ class _GameScreenState extends State<GameScreen> {
         _showRoundOverlay(game);
       }
     }
+
+    if (game.phase == GamePhase.paused && _lastPhase != GamePhase.paused) {
+      setState(() => _showPause = true);
+    } else if (game.phase == GamePhase.playing && _lastPhase == GamePhase.paused) {
+      setState(() => _showPause = false);
+    }
+
     _lastPhase = game.phase;
   }
 
@@ -132,6 +160,28 @@ class _GameScreenState extends State<GameScreen> {
         child: Column(
           children: [
             _topBar(game),
+            if (game.reconnecting)
+              Container(
+                width: double.infinity,
+                color: const Color(0xFF3A2A00),
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: const Text(
+                  'Bağlantı yeniden kuruluyor...',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: AppColors.gold, fontSize: 11, fontWeight: FontWeight.w700),
+                ),
+              ),
+            if (game.opponentDisconnected)
+              Container(
+                width: double.infinity,
+                color: const Color(0xFF2A1010),
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: Text(
+                  'Rakip bağlantısı koptu — ${game.opponentGraceLeft} sn bekleniyor',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: AppColors.red, fontSize: 11, fontWeight: FontWeight.w700),
+                ),
+              ),
             _roundRow(game, timer),
             Expanded(
               child: Stack(
@@ -152,8 +202,10 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   Widget _topBar(GameController game) {
-    final lbl0 = game.aiMode ? 'SEN 🔴' : 'KIRMIZI';
-    final lbl1 = game.aiMode ? 'BOT 🔵' : 'MAVİ';
+    final lbl0 = game.aiMode ? (game.isBotFallback ? 'SEN 🔴' : 'SEN 🔴') : 'KIRMIZI';
+    final lbl1 = game.aiMode
+        ? (game.isBotFallback ? 'BOT 🤖' : 'BOT 🔵')
+        : (game.opponentName.isNotEmpty ? game.opponentName.toUpperCase() : 'MAVİ');
 
     return Container(
       height: 52,
@@ -165,6 +217,23 @@ class _GameScreenState extends State<GameScreen> {
       child: Row(
         children: [
           Expanded(child: _scoreBox(lbl0, game.roundWins[0], AppColors.red)),
+          if (!game.aiMode && game.opponentName.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    game.isRanked ? 'RANKED' : 'ONLINE',
+                    style: const TextStyle(fontSize: 7, color: Color(0xFF555555), letterSpacing: 1),
+                  ),
+                  Text(
+                    '${game.opponentElo}',
+                    style: const TextStyle(fontSize: 10, color: AppColors.gold, fontWeight: FontWeight.w800),
+                  ),
+                ],
+              ),
+            ),
           Expanded(
             child: Row(
               mainAxisAlignment: MainAxisAlignment.end,
@@ -231,8 +300,15 @@ class _GameScreenState extends State<GameScreen> {
           if (game.roomCode.isNotEmpty) ...[
             const SizedBox(width: 8),
             Text(
-              game.aiMode ? 'BOT' : game.roomCode,
-              style: const TextStyle(color: Color(0xFF444444), fontSize: 9, letterSpacing: 1),
+              game.aiMode
+                  ? (game.isBotFallback ? 'BOT MODU' : 'BOT')
+                  : game.roomCode,
+              style: TextStyle(
+                color: game.isBotFallback ? AppColors.gold : const Color(0xFF444444),
+                fontSize: 9,
+                letterSpacing: 1,
+                fontWeight: game.isBotFallback ? FontWeight.w800 : FontWeight.normal,
+              ),
             ),
           ],
         ],
@@ -283,9 +359,9 @@ class _GameScreenState extends State<GameScreen> {
         children: [
           Text('🔴 ${game.redRemaining()}', style: const TextStyle(color: AppColors.red, fontWeight: FontWeight.w900, fontSize: 15)),
           const SizedBox(width: 8),
-          const Text('KALAN DİSK', style: TextStyle(color: Color(0xFF444444), fontSize: 10, letterSpacing: 1)),
+          const Text('SENİN YARINDA', style: TextStyle(color: Color(0xFF444444), fontSize: 10, letterSpacing: 1)),
           const SizedBox(width: 8),
-          Text('🔵 ${game.blueRemaining()}', style: const TextStyle(color: AppColors.blue, fontWeight: FontWeight.w900, fontSize: 15)),
+          Text('${game.mySideRemaining()} pul', style: const TextStyle(color: AppColors.gold, fontWeight: FontWeight.w900, fontSize: 15)),
         ],
       ),
     );
@@ -322,7 +398,16 @@ class _GameScreenState extends State<GameScreen> {
                   width: 260,
                   onPressed: () {
                     setState(() => _showOverlay = false);
-                    game.rematch();
+                    if (game.aiMode) {
+                      game.rematchLocal();
+                    } else {
+                      game.requestRematch();
+                      if (game.myRematchPending) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Rematch isteği gönderildi — rakip onayı bekleniyor')),
+                        );
+                      }
+                    }
                   },
                 ),
               ],
@@ -418,6 +503,7 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   Widget _buildPause(GameController game) {
+    final isOpponentPause = game.pauseByOpponent && !game.aiMode;
     return Container(
       color: Colors.black.withValues(alpha: 0.88),
       child: Center(
@@ -426,16 +512,36 @@ class _GameScreenState extends State<GameScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('⏸ DURAKLATILDI', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: AppColors.gold)),
-              const SizedBox(height: 20),
-              PucketButton(
-                label: '▶ DEVAM ET',
-                width: 260,
-                onPressed: () {
-                  game.togglePause();
-                  setState(() => _showPause = false);
-                },
+              Text(
+                isOpponentPause ? '⏸ OYUN DURDURULDU' : '⏸ DURAKLATILDI',
+                style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: AppColors.gold),
+                textAlign: TextAlign.center,
               ),
+              const SizedBox(height: 12),
+              Text(
+                isOpponentPause
+                    ? 'Rakip oyunu durdurdu.\nEn fazla ${GameController.maxPauseSeconds} saniye beklenir.'
+                    : 'Oyun duraklatıldı.\nEn fazla ${GameController.maxPauseSeconds} saniye.',
+                style: const TextStyle(fontSize: 14, color: Color(0xFFAAAAAA), height: 1.4),
+                textAlign: TextAlign.center,
+              ),
+              if (game.pauseSecondsLeft > 0) ...[
+                const SizedBox(height: 16),
+                Text(
+                  'Kalan: ${game.pauseSecondsLeft} sn',
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white),
+                ),
+              ],
+              const SizedBox(height: 20),
+              if (!isOpponentPause)
+                PucketButton(
+                  label: '▶ DEVAM ET',
+                  width: 260,
+                  onPressed: () {
+                    game.togglePause();
+                    setState(() => _showPause = false);
+                  },
+                ),
               if (game.aiMode) ...[
                 const SizedBox(height: 12),
                 PucketButton(
