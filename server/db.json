@@ -109,6 +109,16 @@
       "matches": 0,
       "league": "Bronz",
       "createdAt": 1782391721488
+    },
+    "u_ea434801": {
+      "uid": "u_ea434801",
+      "name": "iso",
+      "elo": 1000,
+      "wins": 0,
+      "losses": 0,
+      "matches": 0,
+      "league": "Bronz",
+      "createdAt": 1782404632837
     }
   },
   "matchHistory": [
@@ -131,6 +141,7 @@
     "zxqwerty99": "u1",
     "ismail": "117345632762866208709",
     "xultrarslan": "u_dc1a4d22",
-    "ismai": "u_10d039a3"
+    "ismai": "u_10d039a3",
+    "iso": "u_ea434801"
   }
 }
