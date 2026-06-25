@@ -14,7 +14,7 @@
       "uid": "u_5ca33b4d",
       "name": "Oyuncu",
       "elo": 1000,
-      "wins": 0,
+      "wins": 22,
       "losses": 0,
       "matches": 0,
       "league": "Bronz",
@@ -73,7 +73,7 @@
     "u_f205dad9": {
       "uid": "u_f205dad9",
       "name": "Oyuncu",
-      "elo": 984,
+      "elo": 984200,
       "wins": 0,
       "losses": 1,
       "matches": 1,
@@ -93,7 +93,7 @@
     "u_dc1a4d22": {
       "uid": "u_dc1a4d22",
       "name": "xultrarslan",
-      "elo": 1000,
+      "elo": 2000,
       "wins": 0,
       "losses": 0,
       "matches": 0,

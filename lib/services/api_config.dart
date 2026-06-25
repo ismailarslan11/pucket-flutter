@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 
 /// Canlı sunucu (Render). Yerel test için:
 /// flutter run --dart-define=WS_URL=ws://localhost:8080 --dart-define=API_URL=http://localhost:8080
-const kProductionServer = 'https://pucket-flutter.onrender.com';
+const kProductionServer = 'https://pucket-flutter-2.onrender.com';
 const kLocalServerHttp = 'http://localhost:8080';
 const kLocalServerWs = 'ws://localhost:8080';
 
@@ -26,7 +26,7 @@ String get kWsServerUrl {
 
   if (useLocalDevServer) return kLocalServerWs;
 
-  return 'wss://pucket-flutter.onrender.com';
+  return 'wss://pucket-flutter-2.onrender.com';
 }
 
 String httpBaseFromWs(String wsUrl) {
