@@ -82,7 +82,6 @@ class _QueueScreenState extends State<QueueScreen> {
       _botFallback();
     });
 
-    // Listen for matched via game controller notify
     game.addListener(_onGameUpdate);
   }
 
@@ -130,90 +129,103 @@ class _QueueScreenState extends State<QueueScreen> {
     final auth = context.watch<AuthService>();
     final user = auth.user;
     final tier = user != null ? RankTier.forElo(user.elo) : RankTier.tiers.first;
+    final cardWidth = (MediaQuery.sizeOf(context).width - 48).clamp(280.0, 420.0);
 
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: RadialGradient(
-            center: Alignment(0, -0.3),
-            radius: 1.2,
-            colors: [Color(0xFF0D1A2A), AppColors.bg],
+      body: SizedBox.expand(
+        child: Container(
+          decoration: const BoxDecoration(
+            gradient: RadialGradient(
+              center: Alignment(0, -0.3),
+              radius: 1.2,
+              colors: [Color(0xFF0D1A2A), AppColors.bg],
+            ),
           ),
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text(
-                  '🏆 RANKED MAÇ',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w900,
-                    color: Color(0xFF60AAFF),
-                    letterSpacing: 3,
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              child: Column(
+                children: [
+                  const Spacer(flex: 2),
+                  const Text(
+                    '🏆 RANKED MAÇ',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
+                      color: Color(0xFF60AAFF),
+                      letterSpacing: 3,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 18),
-                Container(
-                  width: 300,
-                  padding: const EdgeInsets.all(22),
-                  decoration: BoxDecoration(
-                    color: AppColors.card,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: AppColors.border),
-                  ),
-                  child: Column(
-                    children: [
-                      if (_spinning)
-                        const Padding(
-                          padding: EdgeInsets.only(bottom: 14),
-                          child: SizedBox(
-                            width: 32,
-                            height: 32,
-                            child: CircularProgressIndicator(strokeWidth: 3, color: AppColors.green),
+                  const SizedBox(height: 18),
+                  SizedBox(
+                    width: cardWidth,
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(22),
+                      decoration: BoxDecoration(
+                        color: AppColors.card,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (_spinning)
+                            const Padding(
+                              padding: EdgeInsets.only(bottom: 14),
+                              child: SizedBox(
+                                width: 32,
+                                height: 32,
+                                child: CircularProgressIndicator(strokeWidth: 3, color: AppColors.green),
+                              ),
+                            ),
+                          const Text(
+                            'ELO PUANINIZ',
+                            style: TextStyle(fontSize: 9, color: Color(0xFF555555), letterSpacing: 3),
                           ),
-                        ),
-                      const Text(
-                        'ELO PUANINIZ',
-                        style: TextStyle(fontSize: 9, color: Color(0xFF555555), letterSpacing: 3),
+                          Text(
+                            '${user?.elo ?? 1000}',
+                            style: const TextStyle(fontSize: 44, fontWeight: FontWeight.w900, color: AppColors.gold),
+                          ),
+                          Container(
+                            margin: const EdgeInsets.only(top: 8),
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: tier.color),
+                            ),
+                            child: Text(
+                              '${tier.emoji} ${tier.name}',
+                              style: TextStyle(color: tier.color, fontWeight: FontWeight.w700, fontSize: 11),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            _status,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(color: Color(0xFF666666), fontSize: 12),
+                          ),
+                          if (_showPreview) ...[
+                            const SizedBox(height: 14),
+                            _vsPreview(_myElo ?? 1000, _oppElo ?? 1000, _oppName ?? 'Rakip'),
+                          ],
+                        ],
                       ),
-                      Text(
-                        '${user?.elo ?? 1000}',
-                        style: const TextStyle(fontSize: 44, fontWeight: FontWeight.w900, color: AppColors.gold),
-                      ),
-                      Container(
-                        margin: const EdgeInsets.only(top: 8),
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: tier.color),
-                        ),
-                        child: Text(
-                          '${tier.emoji} ${tier.name}',
-                          style: TextStyle(color: tier.color, fontWeight: FontWeight.w700, fontSize: 11),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(_status, style: const TextStyle(color: Color(0xFF666666), fontSize: 12)),
-                      if (_showPreview) ...[
-                        const SizedBox(height: 14),
-                        _vsPreview(_myElo ?? 1000, _oppElo ?? 1000, _oppName ?? 'Rakip'),
-                      ],
-                    ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: 18),
-                PucketButton(
-                  label: 'KUYRUKTAN ÇIK',
-                  secondary: true,
-                  onPressed: () {
-                    context.read<GameController>().leaveQueue();
-                    Navigator.pop(context);
-                  },
-                ),
-              ],
+                  const Spacer(flex: 3),
+                  PucketButton(
+                    label: 'KUYRUKTAN ÇIK',
+                    secondary: true,
+                    width: cardWidth,
+                    onPressed: () {
+                      context.read<GameController>().leaveQueue();
+                      Navigator.pop(context);
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                ],
+              ),
             ),
           ),
         ),
@@ -225,6 +237,7 @@ class _QueueScreenState extends State<QueueScreen> {
     final myTier = RankTier.forElo(myElo);
     final oppTier = RankTier.forElo(oppElo);
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: const Color(0xFF111111),
@@ -247,7 +260,7 @@ class _QueueScreenState extends State<QueueScreen> {
             child: Column(
               children: [
                 const Text('RAKİP', style: TextStyle(fontSize: 9, color: Color(0xFF555555))),
-                Text(oppName, style: const TextStyle(fontSize: 10, color: Color(0xFF888888))),
+                Text(oppName, style: const TextStyle(fontSize: 10, color: Color(0xFF888888)), textAlign: TextAlign.center),
                 Text('$oppElo', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: AppColors.blue)),
                 Text(oppTier.name, style: const TextStyle(fontSize: 10, color: Color(0xFF666666))),
               ],

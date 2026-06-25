@@ -93,10 +93,33 @@ class PucketApp extends StatelessWidget {
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
-          builder: (context, child) => Directionality(
-            textDirection: settings.language.isRtl ? TextDirection.rtl : TextDirection.ltr,
-            child: child ?? const SizedBox.shrink(),
-          ),
+          builder: (context, child) {
+            final content = child ?? const SizedBox.shrink();
+            return Directionality(
+              textDirection: settings.language.isRtl ? TextDirection.rtl : TextDirection.ltr,
+              child: ColoredBox(
+                color: AppColors.bg,
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final w = constraints.maxWidth;
+                    final h = constraints.maxHeight;
+                    // BlueStacks / geniş ekran: içeriği ortala, arka plan tüm alanı kaplasın
+                    if (w > h * 0.72) {
+                      final phoneWidth = h * 0.56;
+                      return Center(
+                        child: SizedBox(
+                          width: phoneWidth,
+                          height: h,
+                          child: content,
+                        ),
+                      );
+                    }
+                    return content;
+                  },
+                ),
+              ),
+            );
+          },
           home: home,
         );
       },
