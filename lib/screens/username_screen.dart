@@ -18,6 +18,7 @@ class UsernameScreen extends StatefulWidget {
 class _UsernameScreenState extends State<UsernameScreen> {
   final _ctrl = TextEditingController();
   Timer? _debounce;
+  int _checkGen = 0;
   bool _valid = false;
   bool _checking = false;
   bool _available = false;
@@ -71,6 +72,7 @@ class _UsernameScreenState extends State<UsernameScreen> {
 
   Future<void> _checkAvailability(String name) async {
     if (!_valid || name.isEmpty) return;
+    final gen = ++_checkGen;
     setState(() {
       _checking = true;
       _available = false;
@@ -79,7 +81,12 @@ class _UsernameScreenState extends State<UsernameScreen> {
     });
     final uid = context.read<AuthService>().getUid();
     final result = await UsernameApi.check(name, uid: uid);
-    if (!mounted || _ctrl.text.trim() != name) return;
+    if (!mounted) return;
+    if (gen != _checkGen) return;
+    if (_ctrl.text.trim() != name) {
+      setState(() => _checking = false);
+      return;
+    }
     setState(() {
       _checking = false;
       _available = result.isAvailable;
@@ -91,7 +98,7 @@ class _UsernameScreenState extends State<UsernameScreen> {
       } else if (result.isInvalid) {
         _hint = result.error ?? 'Geçersiz kullanıcı adı';
       } else {
-        _hint = result.error ?? 'Kontrol edilemedi — yine de kaydetmeyi dene';
+        _hint = result.error ?? 'Kontrol edilemedi — yine de devam edebilirsin';
       }
     });
   }

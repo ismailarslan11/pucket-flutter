@@ -331,8 +331,20 @@ class AuthService extends ChangeNotifier {
 
     final claim = await UsernameApi.claim(uid: user!.uid, username: name);
     if (!claim.ok) {
+      final err = claim.error ?? 'Bu kullanıcı adı alınamadı';
+      final taken = err.contains('alınmış');
+      if (!taken && user!.isAnonymous) {
+        user!.name = name;
+        final tier = RankTier.forElo(user!.elo);
+        user!.league = tier.name;
+        await _persistLocal();
+        loading = false;
+        authState = AuthState.authenticated;
+        notifyListeners();
+        return true;
+      }
       loading = false;
-      lastError = claim.error ?? 'Bu kullanıcı adı alınamadı';
+      lastError = err;
       notifyListeners();
       return false;
     }
