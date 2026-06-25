@@ -37,10 +37,17 @@ class AuthService extends ChangeNotifier {
   bool get isLoggedIn => authState == AuthState.authenticated && user != null;
   bool get firebaseAvailable => _firebaseReady;
 
+  /// Google giriş butonu aktif mi?
+  bool get googleSignInAvailable {
+    if (_isMacOS) return GoogleAuthConfig.hasIosClientId;
+    if (kIsWeb) return _firebaseReady && _auth != null;
+    return _firebaseReady;
+  }
+
   bool get _isMacOS => !kIsWeb && defaultTargetPlatform == TargetPlatform.macOS;
 
   Future<void> _initGoogleSignIn() async {
-    if (_isMacOS) return;
+    if (_isMacOS || kIsWeb) return;
     final googleSignIn = GoogleSignIn.instance;
     await googleSignIn.initialize(
       clientId: GoogleAuthConfig.hasIosClientId ? GoogleAuthConfig.iosClientId : null,
@@ -50,6 +57,12 @@ class AuthService extends ChangeNotifier {
   }
 
   Future<void> initFirebase() async {
+    if (_isMacOS) {
+      _firebaseReady = GoogleAuthConfig.hasIosClientId;
+      await _finishInitWithoutFirebase();
+      return;
+    }
+
     if (!firebaseEnabled || Firebase.apps.isEmpty) {
       _firebaseReady = false;
       await _finishInitWithoutFirebase();
@@ -57,29 +70,34 @@ class AuthService extends ChangeNotifier {
     }
 
     try {
-      if (!_isMacOS) {
-        _auth = FirebaseAuth.instance;
-        _db = FirebaseFirestore.instance;
+      _auth = FirebaseAuth.instance;
+      _db = FirebaseFirestore.instance;
+      try {
         await _initGoogleSignIn();
-        _auth!.authStateChanges().listen(_onAuthChanged);
-        _firebaseReady = true;
-
-        Future.delayed(const Duration(seconds: 2), () {
-          if (authState == AuthState.loading) {
-            authState = AuthState.unauthenticated;
-            notifyListeners();
-          }
-        });
-        return;
+      } catch (_) {
+        // Web'de Firebase popup kullanılır; GoogleSignIn plugin init şart değil
       }
-
-      // macOS: Firebase Auth keychain + imza gerektirir — Google OAuth + yerel profil
-      _firebaseReady = GoogleAuthConfig.hasIosClientId;
-      await _finishInitWithoutFirebase();
+      _auth!.authStateChanges().listen(_onAuthChanged);
+      _firebaseReady = true;
+      await _syncAuthFromFirebaseUser(_auth!.currentUser);
     } catch (_) {
       _firebaseReady = false;
       await _finishInitWithoutFirebase();
     }
+  }
+
+  Future<void> _syncAuthFromFirebaseUser(User? fbUser) async {
+    if (fbUser == null) {
+      if (user == null) {
+        authState = AuthState.unauthenticated;
+      } else {
+        authState = _needsUsernamePick() ? AuthState.needsUsername : AuthState.authenticated;
+      }
+      loading = false;
+      notifyListeners();
+      return;
+    }
+    await _onAuthChanged(fbUser);
   }
 
   Future<void> _finishInitWithoutFirebase() async {
@@ -134,7 +152,7 @@ class AuthService extends ChangeNotifier {
   }
 
   Future<void> signInWithGoogle() async {
-    if (!_firebaseReady) {
+    if (!googleSignInAvailable) {
       lastError = 'Google girişi şu an kullanılamıyor — misafir olarak devam edin';
       notifyListeners();
       return;
@@ -146,6 +164,8 @@ class AuthService extends ChangeNotifier {
     try {
       if (kIsWeb) {
         await _auth!.signInWithPopup(GoogleAuthProvider());
+        loading = false;
+        notifyListeners();
         return;
       }
 

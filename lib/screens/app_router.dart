@@ -3,7 +3,9 @@ import 'package:provider/provider.dart';
 
 import '../game/ai_bot.dart';
 import '../game/game_controller.dart';
+import '../models/career_opponent.dart';
 import '../services/ad_service.dart';
+import 'career_screen.dart';
 import 'difficulty_screen.dart';
 import 'game_screen.dart';
 import 'instructions_screen.dart';
@@ -32,6 +34,18 @@ class AppRouter {
 
   static void goDifficulty(BuildContext context) {
     Navigator.push(context, MaterialPageRoute(builder: (_) => const DifficultyScreen()));
+  }
+
+  static void goCareer(BuildContext context) {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => const CareerScreen()));
+  }
+
+  static void returnToCareer(BuildContext context) {
+    context.read<GameController>().leave();
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const CareerScreen()),
+      (_) => false,
+    );
   }
 
   static void goInstructions(BuildContext context) {
@@ -69,6 +83,11 @@ class AppRouter {
       context,
       MaterialPageRoute(builder: (_) => const GameScreen()),
     );
+  }
+
+  static void startCareer(BuildContext context, CareerOpponent opponent) {
+    context.read<GameController>().startCareerGame(opponent);
+    goGame(context);
   }
 
   static void startAi(BuildContext context, AiLevel level) {

@@ -1,6 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../l10n/app_language.dart';
+import '../l10n/app_localizations.dart';
+
 class SettingsService extends ChangeNotifier {
   bool musicOn = true;
   bool sfxOn = true;
@@ -9,13 +12,18 @@ class SettingsService extends ChangeNotifier {
   double sfxVolume = 0.8;
   bool tutorialSeen = false;
   bool adsOn = true;
+  AppLanguage language = AppLanguage.tr;
 
   static const _key = 'pucket_settings';
   static const _tutorialKey = 'pucket_tutorial_seen';
+  static const _langKey = 'pucket_language';
+
+  AppLocalizations get l10n => AppLocalizations(language);
 
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
     tutorialSeen = prefs.getBool(_tutorialKey) ?? false;
+    language = AppLanguage.fromCode(prefs.getString(_langKey));
     final json = prefs.getString(_key);
     if (json == null) {
       notifyListeners();
@@ -48,6 +56,14 @@ class SettingsService extends ChangeNotifier {
       _key,
       '${musicOn ? 1 : 0}|${sfxOn ? 1 : 0}|${vibrationOn ? 1 : 0}|$musicVolume|$sfxVolume|${adsOn ? 1 : 0}',
     );
+  }
+
+  Future<void> setLanguage(AppLanguage lang) async {
+    if (language == lang) return;
+    language = lang;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_langKey, lang.code);
+    notifyListeners();
   }
 
   void setMusic(bool v) {

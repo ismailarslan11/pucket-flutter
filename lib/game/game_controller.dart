@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
+import '../models/career_opponent.dart';
 import '../models/disc.dart';
 import '../services/audio_service.dart';
 import '../services/auth_service.dart';
@@ -72,6 +73,8 @@ class GameController extends ChangeNotifier {
   bool aiMode = false;
   bool isBotFallback = false;
   bool isRanked = false;
+  bool careerMode = false;
+  CareerOpponent? careerOpponent;
   AiLevel aiLevel = AiLevel.medium;
 
   String opponentName = '';
@@ -208,6 +211,8 @@ class GameController extends ChangeNotifier {
   void startAiGame(AiLevel level, {bool botFallback = false}) {
     ws.disconnect();
     aiMode = true;
+    careerMode = false;
+    careerOpponent = null;
     isBotFallback = botFallback;
     isRanked = false;
     aiLevel = level;
@@ -215,6 +220,24 @@ class GameController extends ChangeNotifier {
     roomCode = 'BOT';
     opponentName = 'Bot';
     opponentElo = 1000;
+    opponentLeague = 'Bronz';
+    resetMatch();
+    startCountdown();
+  }
+
+  void startCareerGame(CareerOpponent opponent) {
+    ws.disconnect();
+    aiMode = true;
+    careerMode = true;
+    careerOpponent = opponent;
+    isBotFallback = false;
+    isRanked = false;
+    aiLevel = opponent.aiLevel;
+    mySeat = 0;
+    roomCode = 'CAREER';
+    opponentName = opponent.name;
+    opponentElo = opponent.displayElo;
+    opponentLeague = opponent.leagueName;
     resetMatch();
     startCountdown();
   }
@@ -222,6 +245,8 @@ class GameController extends ChangeNotifier {
   void startOnlineGame(int seat, String room) {
     aiMode = false;
     isBotFallback = false;
+    careerMode = false;
+    careerOpponent = null;
     mySeat = seat;
     roomCode = room;
     ws.setSession(uid: auth?.getUid(), sessionToken: sessionToken, roomCode: room);
@@ -725,6 +750,8 @@ class GameController extends ChangeNotifier {
     aiMode = false;
     isBotFallback = false;
     isRanked = false;
+    careerMode = false;
+    careerOpponent = null;
     reconnecting = false;
     opponentDisconnected = false;
     roundWins[0] = 0;

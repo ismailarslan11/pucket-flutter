@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
+import '../l10n/l10n_extension.dart';
 import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
 
@@ -13,6 +14,8 @@ class AuthScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthService>();
+    final l10n = context.l10n;
+    final googleOk = auth.googleSignInAvailable;
 
     return Scaffold(
       body: Container(
@@ -47,9 +50,9 @@ class AuthScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 6),
-                  const Text(
-                    'ONLINE MULTIPLAYER',
-                    style: TextStyle(color: AppColors.gold, letterSpacing: 4, fontSize: 10),
+                  Text(
+                    l10n.onlineMultiplayer,
+                    style: const TextStyle(color: AppColors.gold, letterSpacing: 4, fontSize: 10),
                   ),
                   const SizedBox(height: 28),
                   Container(
@@ -62,9 +65,9 @@ class AuthScreen extends StatelessWidget {
                     ),
                     child: Column(
                       children: [
-                        const Text(
-                          'Devam etmek için giriş yap',
-                          style: TextStyle(color: Color(0xFF666666), fontSize: 13),
+                        Text(
+                          l10n.authContinueLogin,
+                          style: const TextStyle(color: Color(0xFF666666), fontSize: 13),
                         ),
                         const SizedBox(height: 16),
                         if (auth.loading)
@@ -73,13 +76,11 @@ class AuthScreen extends StatelessWidget {
                             child: CircularProgressIndicator(color: AppColors.green),
                           )
                         else ...[
-                          Opacity(
-                            opacity: auth.firebaseAvailable ? 1 : 0.45,
-                            child: _GoogleButton(
-                              onPressed: auth.firebaseAvailable
-                                  ? () => auth.signInWithGoogle()
-                                  : () {},
-                            ),
+                          _GoogleButton(
+                            enabled: googleOk,
+                            label: l10n.authGoogle,
+                            onPressed: () => auth.signInWithGoogle(),
+                            notConfiguredMsg: l10n.authGoogleNotConfigured,
                           ),
                           if (!kIsWeb &&
                               defaultTargetPlatform == TargetPlatform.iOS &&
@@ -91,22 +92,22 @@ class AuthScreen extends StatelessWidget {
                               borderRadius: BorderRadius.circular(8),
                             ),
                           ],
-                          if (!auth.firebaseAvailable)
-                            const Padding(
-                              padding: EdgeInsets.only(top: 6),
+                          if (!googleOk)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 6),
                               child: Text(
-                                'Google girişi için: bash tool/setup_firebase.sh',
+                                l10n.authGoogleSetup,
                                 textAlign: TextAlign.center,
-                                style: TextStyle(color: Color(0xFF555555), fontSize: 10),
+                                style: const TextStyle(color: Color(0xFF555555), fontSize: 10),
                               ),
                             ),
                           const SizedBox(height: 14),
                           Row(
                             children: [
                               Expanded(child: Container(height: 1, color: AppColors.border)),
-                              const Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 10),
-                                child: Text('veya', style: TextStyle(color: Color(0xFF444444), fontSize: 11)),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 10),
+                                child: Text(l10n.or, style: const TextStyle(color: Color(0xFF444444), fontSize: 11)),
                               ),
                               Expanded(child: Container(height: 1, color: AppColors.border)),
                             ],
@@ -115,7 +116,7 @@ class AuthScreen extends StatelessWidget {
                           OutlinedButton.icon(
                             onPressed: () => auth.signInAsGuest(),
                             icon: const Text('👤', style: TextStyle(fontSize: 16)),
-                            label: const Text('Misafir Olarak Devam Et'),
+                            label: Text(l10n.authGuest),
                             style: OutlinedButton.styleFrom(
                               foregroundColor: const Color(0xFF666666),
                               side: const BorderSide(color: AppColors.border),
@@ -128,10 +129,10 @@ class AuthScreen extends StatelessWidget {
                           Text(auth.lastError!, style: const TextStyle(color: AppColors.red, fontSize: 12)),
                         ],
                         const SizedBox(height: 12),
-                        const Text(
-                          'Google ile giriş yaparak sıralama listesine katılır,\nilerlemen kaydedilir.',
+                        Text(
+                          l10n.authRankedHint,
                           textAlign: TextAlign.center,
-                          style: TextStyle(color: Color(0xFF444444), fontSize: 10, height: 1.6),
+                          style: const TextStyle(color: Color(0xFF444444), fontSize: 10, height: 1.6),
                         ),
                       ],
                     ),
@@ -147,34 +148,52 @@ class AuthScreen extends StatelessWidget {
 }
 
 class _GoogleButton extends StatelessWidget {
-  const _GoogleButton({required this.onPressed});
+  const _GoogleButton({
+    required this.enabled,
+    required this.label,
+    required this.onPressed,
+    required this.notConfiguredMsg,
+  });
+
+  final bool enabled;
+  final String label;
   final VoidCallback onPressed;
+  final String notConfiguredMsg;
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(8),
-      child: InkWell(
-        onTap: onPressed,
+    return Opacity(
+      opacity: enabled ? 1 : 0.5,
+      child: Material(
+        color: Colors.white,
         borderRadius: BorderRadius.circular(8),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 13),
-          child: const Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.g_mobiledata, color: Color(0xFF4285F4), size: 28),
-              SizedBox(width: 8),
-              Text(
-                'Google ile Giriş Yap',
-                style: TextStyle(
-                  color: Color(0xFF333333),
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
+        child: InkWell(
+          onTap: enabled
+              ? onPressed
+              : () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(notConfiguredMsg), duration: const Duration(seconds: 3)),
+                  );
+                },
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 13),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.g_mobiledata, color: Color(0xFF4285F4), size: 28),
+                const SizedBox(width: 8),
+                Text(
+                  label,
+                  style: const TextStyle(
+                    color: Color(0xFF333333),
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

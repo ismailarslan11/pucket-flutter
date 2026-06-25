@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../l10n/app_localizations.dart';
+import '../l10n/app_language.dart';
+import '../l10n/l10n_extension.dart';
 import '../services/ad_service.dart';
 import '../services/audio_service.dart';
 import '../services/settings_service.dart';
@@ -14,6 +17,7 @@ class SettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final settings = context.watch<SettingsService>();
+    final l10n = context.l10n;
 
     return Scaffold(
       backgroundColor: const Color(0xFF0E0E0E),
@@ -32,9 +36,9 @@ class SettingsScreen extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(24, 52, 24, 24),
               child: Column(
                 children: [
-                  const Text(
-                    '⚙ AYARLAR',
-                    style: TextStyle(
+                  Text(
+                    l10n.settingsTitle,
+                    style: const TextStyle(
                       fontSize: 26,
                       fontWeight: FontWeight.w900,
                       color: AppColors.green,
@@ -42,9 +46,10 @@ class SettingsScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 16),
+                  _languageRow(context, settings, l10n),
                   _row(
-                    'Müzik',
-                    'Menü arkaplan müziği',
+                    l10n.settingsMusic,
+                    l10n.settingsMusicSub,
                     Switch(
                       value: settings.musicOn,
                       activeThumbColor: AppColors.green,
@@ -52,27 +57,19 @@ class SettingsScreen extends StatelessWidget {
                     ),
                   ),
                   _row(
-                    'Ses Efektleri',
-                    'Fırlatma, çarpışma sesleri',
+                    l10n.settingsSfx,
+                    l10n.settingsSfxSub,
                     Switch(
                       value: settings.sfxOn,
                       activeThumbColor: AppColors.green,
                       onChanged: settings.setSfx,
                     ),
                   ),
-                  _sliderRow(
-                    'Müzik Ses',
-                    settings.musicVolume,
-                    settings.setMusicVolume,
-                  ),
-                  _sliderRow(
-                    'Efekt Ses',
-                    settings.sfxVolume,
-                    settings.setSfxVolume,
-                  ),
+                  _sliderRow(l10n.settingsMusicVol, settings.musicVolume, settings.setMusicVolume),
+                  _sliderRow(l10n.settingsSfxVol, settings.sfxVolume, settings.setSfxVolume),
                   _row(
-                    'Titreşim',
-                    'Atış ve kazanma titreşimi',
+                    l10n.settingsVibration,
+                    l10n.settingsVibrationSub,
                     Switch(
                       value: settings.vibrationOn,
                       activeThumbColor: AppColors.green,
@@ -80,8 +77,8 @@ class SettingsScreen extends StatelessWidget {
                     ),
                   ),
                   _row(
-                    'Reklamlar',
-                    'Banner + maç arası reklamlar (gelir)',
+                    l10n.settingsAds,
+                    l10n.settingsAdsSub,
                     Switch(
                       value: settings.adsOn,
                       activeThumbColor: AppColors.green,
@@ -94,15 +91,15 @@ class SettingsScreen extends StatelessWidget {
                   const SizedBox(height: 8),
                   TextButton(
                     onPressed: () => LegalScreen.showPrivacy(context),
-                    child: const Text('Gizlilik Politikası', style: TextStyle(color: Color(0xFF666666))),
+                    child: Text(l10n.privacyPolicy, style: const TextStyle(color: Color(0xFF666666))),
                   ),
                   TextButton(
                     onPressed: () => LegalScreen.showTerms(context),
-                    child: const Text('Kullanım Şartları', style: TextStyle(color: Color(0xFF666666))),
+                    child: Text(l10n.termsOfUse, style: const TextStyle(color: Color(0xFF666666))),
                   ),
                   const SizedBox(height: 16),
                   PucketButton(
-                    label: 'KAYDET & GERİ',
+                    label: l10n.saveAndBack,
                     width: 260,
                     onPressed: () {
                       context.read<AudioService>().onSettingsChanged();
@@ -114,6 +111,46 @@ class SettingsScreen extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _languageRow(BuildContext context, SettingsService settings, AppLocalizations l10n) {
+    return Container(
+      constraints: const BoxConstraints(maxWidth: 340),
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: Color(0xFF222222))),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.settingsLanguage,
+            style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFDDDDDD), fontSize: 13),
+          ),
+          Text(l10n.settingsLanguageSub, style: const TextStyle(color: Color(0xFF666666), fontSize: 11)),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: AppLanguage.values.map((lang) {
+              final selected = settings.language == lang;
+              return ChoiceChip(
+                label: Text('${lang.flag} ${lang.label}'),
+                selected: selected,
+                selectedColor: AppColors.green.withValues(alpha: 0.25),
+                side: BorderSide(color: selected ? AppColors.green : const Color(0xFF333333)),
+                labelStyle: TextStyle(
+                  color: selected ? AppColors.green : const Color(0xFFAAAAAA),
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.normal,
+                  fontSize: 12,
+                ),
+                onSelected: (_) => settings.setLanguage(lang),
+              );
+            }).toList(),
+          ),
+        ],
       ),
     );
   }

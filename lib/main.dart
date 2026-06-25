@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 
 import 'game/game_controller.dart';
+import 'l10n/app_language.dart';
 import 'screens/auth_screen.dart';
 import 'screens/menu_screen.dart';
 import 'screens/tutorial_screen.dart';
@@ -11,6 +13,7 @@ import 'services/ad_service.dart';
 import 'services/api_config.dart';
 import 'services/audio_service.dart';
 import 'services/auth_service.dart';
+import 'services/career_service.dart';
 import 'services/firebase_init.dart';
 import 'services/settings_service.dart';
 import 'theme/app_theme.dart';
@@ -31,6 +34,9 @@ void main() async {
   await auth.loadLocalCache();
   await auth.initFirebase();
 
+  final career = CareerService();
+  await career.load();
+
   final audio = AudioService(settings);
   final ads = AdService(settings);
   await ads.init();
@@ -40,6 +46,7 @@ void main() async {
       providers: [
         ChangeNotifierProvider.value(value: settings),
         ChangeNotifierProvider.value(value: auth),
+        ChangeNotifierProvider.value(value: career),
         ChangeNotifierProvider.value(value: audio),
         ChangeNotifierProvider.value(value: ads),
         ChangeNotifierProvider(
@@ -61,8 +68,8 @@ class PucketApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<AuthService>(
-      builder: (context, auth, _) {
+    return Consumer2<AuthService, SettingsService>(
+      builder: (context, auth, settings, _) {
         final Widget home;
         switch (auth.authState) {
           case AuthState.loading:
@@ -79,6 +86,17 @@ class PucketApp extends StatelessWidget {
           title: 'PUCKET',
           debugShowCheckedModeBanner: false,
           theme: AppTheme.dark,
+          locale: settings.language.locale,
+          supportedLocales: AppLanguage.values.map((l) => l.locale),
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          builder: (context, child) => Directionality(
+            textDirection: settings.language.isRtl ? TextDirection.rtl : TextDirection.ltr,
+            child: child ?? const SizedBox.shrink(),
+          ),
           home: home,
         );
       },

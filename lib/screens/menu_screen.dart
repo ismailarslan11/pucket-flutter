@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../l10n/l10n_extension.dart';
 import '../models/rank_tier.dart';
 import '../services/auth_service.dart';
+import '../services/career_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/ad_banner_widget.dart';
 import '../widgets/pucket_button.dart';
@@ -15,6 +17,8 @@ class MenuScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthService>();
+    final career = context.watch<CareerService>();
+    final l10n = context.l10n;
     final user = auth.user;
     final tier = user != null ? RankTier.forElo(user.elo) : null;
 
@@ -72,7 +76,7 @@ class MenuScreen extends StatelessWidget {
                               overflow: TextOverflow.ellipsis,
                             ),
                             Text(
-                              '${user.elo} ELO  •  ${user.wins}G ${user.losses}M',
+                              '${user.elo} ELO  •  ${user.wins}${l10n.winsLosses} ${user.losses}M',
                               style: const TextStyle(color: Color(0xFF666666), fontSize: 10),
                             ),
                           ],
@@ -90,7 +94,7 @@ class MenuScreen extends StatelessWidget {
                             border: Border.all(color: tier.color),
                           ),
                           child: Text(
-                            '${tier.emoji} ${tier.name}',
+                            '${tier.emoji} ${l10n.tierName(tier)}',
                             style: TextStyle(color: tier.color, fontWeight: FontWeight.w700, fontSize: 11),
                           ),
                         ),
@@ -121,44 +125,55 @@ class MenuScreen extends StatelessWidget {
                           ),
                         ),
                       ),
-                      const Text(
-                        'ONLINE MULTIPLAYER',
-                        style: TextStyle(color: AppColors.gold, fontSize: 10, letterSpacing: 4),
+                      Text(
+                        l10n.onlineMultiplayer,
+                        style: const TextStyle(color: AppColors.gold, fontSize: 10, letterSpacing: 4),
                       ),
                       const SizedBox(height: 28),
                       PucketButton(
-                        label: '🏆 RANKED MAÇ',
+                        label: l10n.menuRanked,
                         gradient: const LinearGradient(colors: [Color(0xFF2060C0), AppColors.green]),
                         shadowColor: const Color(0xFF1040A0),
                         onPressed: () => AppRouter.goQueue(context),
                       ),
                       const SizedBox(height: 14),
                       PucketButton(
-                        label: '⚡ HIZLI EŞLEŞTİR',
+                        label: l10n.menuQuick,
                         onPressed: () => AppRouter.goLobby(context, quickMatch: true),
                       ),
                       const SizedBox(height: 14),
                       PucketButton(
-                        label: '🏠 ODA OLUŞTUR',
+                        label: l10n.menuCreateRoom,
                         onPressed: () => AppRouter.goLobby(context, createRoom: true),
                       ),
                       const SizedBox(height: 14),
                       PucketButton(
-                        label: '🔑 ODAYA KATIL',
+                        label: l10n.menuJoinRoom,
                         onPressed: () => AppRouter.goJoin(context),
                       ),
                       const SizedBox(height: 14),
                       PucketButton(
-                        label: '🤖 BİLGİSAYARA KARŞI',
+                        label: l10n.menuCareer,
+                        subtitle: l10n.careerSubtitle(
+                          career.careerPoints,
+                          '${career.currentLeague.emoji} ${l10n.tierName(career.currentLeague)}',
+                        ),
+                        gradient: const LinearGradient(colors: [Color(0xFF6A3093), Color(0xFF2A1A4A)]),
+                        shadowColor: const Color(0xFF1A0A2A),
+                        onPressed: () => AppRouter.goCareer(context),
+                      ),
+                      const SizedBox(height: 14),
+                      PucketButton(
+                        label: l10n.menuVsBot,
                         color: const Color(0xFF252525),
                         shadowColor: const Color(0xFF111111),
                         onPressed: () => AppRouter.goDifficulty(context),
                       ),
                       const SizedBox(height: 20),
-                      const _DividerRow(label: 'daha fazla'),
+                      _DividerRow(label: l10n.more),
                       const SizedBox(height: 10),
                       PucketButton(
-                        label: '🏅 SIRALAMALAR',
+                        label: l10n.menuLeaderboard,
                         secondary: true,
                         onPressed: () => Navigator.push(
                           context,
@@ -167,19 +182,19 @@ class MenuScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 14),
                       PucketButton(
-                        label: 'NASIL OYNANIR?',
+                        label: l10n.menuTutorial,
                         secondary: true,
                         onPressed: () => AppRouter.goTutorial(context),
                       ),
                       const SizedBox(height: 14),
                       PucketButton(
-                        label: '👤 PROFİLİM',
+                        label: l10n.menuProfile,
                         secondary: true,
                         onPressed: () => AppRouter.goProfile(context),
                       ),
                       const SizedBox(height: 14),
                       PucketButton(
-                        label: '⚙ AYARLAR',
+                        label: l10n.menuSettings,
                         secondary: true,
                         onPressed: () => AppRouter.goSettings(context),
                       ),
