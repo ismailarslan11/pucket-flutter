@@ -68,6 +68,8 @@ class GameController extends ChangeNotifier {
   List<Disc> discs = [];
   GamePhase phase = GamePhase.idle;
   int mySeat = 0;
+  /// Sunucunun atadığı host (koltuk 0). AI modunda her zaman true.
+  bool isOnlineHost = true;
   String roomCode = '';
   bool lobbyWaiting = true;
   bool aiMode = false;
@@ -100,6 +102,7 @@ class GameController extends ChangeNotifier {
   int countdown = 3;
   DragState? drag;
   int _frameCount = 0;
+  int _dragMoveCounter = 0;
   int _lastMovingDiscs = 0;
   int _visualGeneration = 0;
 
@@ -127,11 +130,17 @@ class GameController extends ChangeNotifier {
   void Function()? onGameStart;
   void Function()? onProfileRefresh;
   void Function(EloResult result)? onEloResult;
+  void Function()? onRoundEnd;
+
+  void _setSeat(int seat) {
+    mySeat = seat;
+    if (!aiMode) isOnlineHost = seat == 0;
+  }
 
   void tick(double nowMs) {
     if (phase != GamePhase.playing) return;
 
-    if (aiMode || mySeat == 0) {
+    if (aiMode || isOnlineHost) {
       PhysicsEngine.stepPhysics(discs);
 
       final moving = discs.where((d) => d.vvx.abs() > 0.05 || d.vvy.abs() > 0.05).length;
@@ -143,9 +152,8 @@ class GameController extends ChangeNotifier {
       _frameCount++;
       if (aiMode && aiBot.shouldThink(nowMs, aiLevel)) {
         if (aiBot.think(discs, aiLevel)) _haptic(25);
-      } else if (!aiMode && mySeat == 0) {
-        // ~20/s yeterli — 30/s JSON + rebuild kasma yapıyordu
-        if (_frameCount % 3 == 0) _sendState();
+      } else if (!aiMode && isOnlineHost) {
+        if (_frameCount % 2 == 0) _sendState();
       }
 
       PhysicsEngine.settleGateDiscs(discs);
@@ -155,6 +163,24 @@ class GameController extends ChangeNotifier {
         return;
       }
 
+      _visualGeneration++;
+      notifyListeners();
+    } else {
+      _tickClientVisual();
+    }
+  }
+
+  void _tickClientVisual() {
+    var moved = false;
+    for (final d in discs) {
+      if (d.vvx.abs() < 0.02 && d.vvy.abs() < 0.02) continue;
+      d.vx += d.vvx;
+      d.vy += d.vvy;
+      d.vvx *= GameConstants.friction;
+      d.vvy *= GameConstants.friction;
+      moved = true;
+    }
+    if (moved) {
       _visualGeneration++;
       notifyListeners();
     }
@@ -231,7 +257,7 @@ class GameController extends ChangeNotifier {
     isBotFallback = botFallback;
     isRanked = false;
     aiLevel = level;
-    mySeat = 0;
+    _setSeat(0);
     if (botFallback) {
       final profile = BotFallbackProfile.generate(playerElo: auth?.user?.elo ?? 1000);
       roomCode = profile.roomCode;
@@ -257,7 +283,7 @@ class GameController extends ChangeNotifier {
     isBotFallback = false;
     isRanked = false;
     aiLevel = opponent.aiLevel;
-    mySeat = 0;
+    _setSeat(0);
     roomCode = 'CAREER';
     opponentName = opponent.name;
     opponentElo = opponent.displayElo;
@@ -275,7 +301,7 @@ class GameController extends ChangeNotifier {
     isBotFallback = false;
     isRanked = false;
     aiLevel = level;
-    mySeat = 0;
+    _setSeat(0);
     roomCode = 'TRAINING';
     opponentName = label;
     opponentElo = 0;
@@ -290,7 +316,7 @@ class GameController extends ChangeNotifier {
     careerMode = false;
     trainingMode = false;
     careerOpponent = null;
-    mySeat = seat;
+    _setSeat(seat);
     roomCode = room;
     ws.setSession(uid: auth?.getUid(), sessionToken: sessionToken, roomCode: room);
     resetMatch();
@@ -392,12 +418,12 @@ class GameController extends ChangeNotifier {
     if (aiMode) return;
     final fromYourSeat = (msg['yourSeat'] as num?)?.toInt();
     if (fromYourSeat != null && fromYourSeat >= 0 && fromYourSeat <= 1) {
-      mySeat = fromYourSeat;
+      _setSeat(fromYourSeat);
       return;
     }
     final fromSeat = (msg['seat'] as num?)?.toInt();
     if (fromSeat != null && fromSeat >= 0 && fromSeat <= 1) {
-      mySeat = fromSeat;
+      _setSeat(fromSeat);
     }
   }
 
@@ -412,7 +438,7 @@ class GameController extends ChangeNotifier {
         }
         break;
       case 'joined':
-        mySeat = msg['seat'] as int;
+        _setSeat((msg['seat'] as num).toInt());
         roomCode = msg['room'] as String;
         lobbyWaiting = msg['waiting'] as bool? ?? true;
         _applyOpponentInfo(msg);
@@ -429,7 +455,7 @@ class GameController extends ChangeNotifier {
       case 'start':
         isRanked = false;
         if (msg['seat'] != null) {
-          mySeat = (msg['seat'] as num).toInt();
+          _setSeat((msg['seat'] as num).toInt());
         }
         if (msg['room'] is String) {
           roomCode = msg['room'] as String;
@@ -440,7 +466,7 @@ class GameController extends ChangeNotifier {
         break;
       case 'matched':
         isRanked = msg['ranked'] as bool? ?? true;
-        mySeat = msg['seat'] as int;
+        _setSeat((msg['seat'] as num).toInt());
         roomCode = msg['room'] as String;
         _applyOpponentInfo(msg);
         notifyListeners();
@@ -453,7 +479,7 @@ class GameController extends ChangeNotifier {
         reconnecting = false;
         opponentDisconnected = false;
         _graceTimer?.cancel();
-        mySeat = msg['seat'] as int;
+        _setSeat((msg['seat'] as num).toInt());
         roomCode = msg['room'] as String;
         if (msg['ranked'] == true) isRanked = true;
         _applyOpponentInfo(msg);
@@ -480,7 +506,7 @@ class GameController extends ChangeNotifier {
         notifyListeners();
         break;
       case 'state':
-        if (aiMode || mySeat == 0) break;
+        if (aiMode || isOnlineHost) break;
         var changed = false;
         if (msg['discs'] is List && phase == GamePhase.playing) {
           changed = _applyDiscStates(msg['discs'] as List);
@@ -514,7 +540,7 @@ class GameController extends ChangeNotifier {
         }
         break;
       case 'shot':
-        if (mySeat == 0 && msg['disc'] != null) {
+        if (isOnlineHost && msg['disc'] != null) {
           final idx = msg['disc'] as int;
           if (idx < discs.length) {
             discs[idx].vvx = (msg['vvx'] as num).toDouble();
@@ -528,7 +554,7 @@ class GameController extends ChangeNotifier {
         _applyRoundEndFromNetwork(msg);
         break;
       case 'matchEnd':
-        if (mySeat != 0) {
+        if (!isOnlineHost) {
           final w = msg['winner'] as int;
           _finishRoundFromRemote(w);
         }
@@ -633,13 +659,15 @@ class GameController extends ChangeNotifier {
       audio?.playLose();
     }
 
-    if (matchFinished && isRanked && mySeat != 0) {
+    if (matchFinished && isRanked && !isOnlineHost) {
       ws.send({
         'type': 'matchEnd',
         'winner': winner,
         'ranked': true,
       });
     }
+    _visualGeneration++;
+    onRoundEnd?.call();
     notifyListeners();
   }
 
@@ -652,10 +680,10 @@ class GameController extends ChangeNotifier {
       final nvx = (s[2] as num).toDouble();
       final nvy = (s[3] as num).toDouble();
       final d = discs[i];
-      if ((d.vx - nx).abs() > 0.05 ||
-          (d.vy - ny).abs() > 0.05 ||
-          (d.vvx - nvx).abs() > 0.02 ||
-          (d.vvy - nvy).abs() > 0.02) {
+      if ((d.vx - nx).abs() > 0.02 ||
+          (d.vy - ny).abs() > 0.02 ||
+          (d.vvx - nvx).abs() > 0.01 ||
+          (d.vvy - nvy).abs() > 0.01) {
         d.vx = nx;
         d.vy = ny;
         d.vvx = nvx;
@@ -667,7 +695,7 @@ class GameController extends ChangeNotifier {
   }
 
   void _sendState() {
-    if (aiMode || mySeat != 0) return;
+    if (aiMode || !isOnlineHost) return;
     final anyMoving = discs.any((d) => d.vvx.abs() > 0.01 || d.vvy.abs() > 0.01);
     if (!anyMoving) return;
     ws.send({
@@ -689,7 +717,7 @@ class GameController extends ChangeNotifier {
   }
 
   void _sendGameOverSync(int winner) {
-    if (aiMode || mySeat != 0) return;
+    if (aiMode || !isOnlineHost) return;
     ws.send({
       'type': 'state',
       'discs': discs
@@ -710,7 +738,7 @@ class GameController extends ChangeNotifier {
 
   void _endRound(int winner, {required bool broadcast}) {
     if (phase == GamePhase.gameover) return;
-    if (!aiMode && mySeat != 0) return;
+    if (!aiMode && !isOnlineHost) return;
 
     phase = GamePhase.gameover;
     _secTimer?.cancel();
@@ -743,6 +771,8 @@ class GameController extends ChangeNotifier {
       }
     }
 
+    _visualGeneration++;
+    onRoundEnd?.call();
     notifyListeners();
   }
 
@@ -821,8 +851,11 @@ class GameController extends ChangeNotifier {
     if (drag == null) return;
     drag!.currentVx = vx;
     drag!.currentVy = vy;
-    _visualGeneration++;
-    notifyListeners();
+    _dragMoveCounter++;
+    if (_dragMoveCounter.isEven) {
+      _visualGeneration++;
+      notifyListeners();
+    }
   }
 
   void onPointerUp() {
@@ -834,7 +867,7 @@ class GameController extends ChangeNotifier {
     if (lim > 6) {
       final vvx = (dx / dist) * lim * GameConstants.slingPower;
       final vvy = (dy / dist) * lim * GameConstants.slingPower;
-      if (aiMode || mySeat == 0) {
+      if (aiMode || isOnlineHost) {
         discs[drag!.discIndex].vvx = vvx;
         discs[drag!.discIndex].vvy = vvy;
       } else {
@@ -920,6 +953,7 @@ class GameController extends ChangeNotifier {
     _clearPauseState();
     phase = GamePhase.idle;
     aiMode = false;
+    isOnlineHost = true;
     isBotFallback = false;
     isRanked = false;
     careerMode = false;

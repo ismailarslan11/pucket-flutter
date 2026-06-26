@@ -6,18 +6,13 @@ const kProductionServer = 'https://pucket-flutter-2.onrender.com';
 const kLocalServerHttp = 'http://localhost:8080';
 const kLocalServerWs = 'ws://localhost:8080';
 
-/// macOS/Windows/Linux native debug: yerel sunucu. Web, iOS, Android, release: Render.
+/// Varsayılan: Render (tüm platformlar). Yerel sunucu için:
+/// flutter run --dart-define=USE_LOCAL_SERVER=true
+/// veya --dart-define=WS_URL=ws://localhost:8080 --dart-define=API_URL=http://localhost:8080
 bool get useLocalDevServer {
-  if (!kDebugMode) return false;
-  if (kIsWeb) return false;
-  switch (defaultTargetPlatform) {
-    case TargetPlatform.macOS:
-    case TargetPlatform.windows:
-    case TargetPlatform.linux:
-      return true;
-    default:
-      return false;
-  }
+  const useLocal = String.fromEnvironment('USE_LOCAL_SERVER');
+  if (useLocal == 'true' || useLocal == '1') return true;
+  return false;
 }
 
 String get kWsServerUrl {

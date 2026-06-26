@@ -46,6 +46,7 @@ class _GameScreenState extends State<GameScreen> {
   bool _showCareer = false;
   GameController? _game;
   Timer? _eloFallbackTimer;
+  int _lastRoundAdKey = -1;
 
   @override
   void didChangeDependencies() {
@@ -118,6 +119,12 @@ class _GameScreenState extends State<GameScreen> {
             _showElo = true;
           });
         }
+      };
+      game.onRoundEnd = () {
+        if (!mounted) return;
+        final g = _game;
+        if (g == null) return;
+        _maybeShowRoundAd(g);
       };
     });
   }
@@ -192,16 +199,26 @@ class _GameScreenState extends State<GameScreen> {
       setState(() => _showPause = false);
     }
 
-    // Yedek: roundEnd/state kaçırılsa bile gameover overlay göster
+    // Yedek: roundEnd kaçırılsa bile reklam / yan etkiler
     if (game.phase == GamePhase.gameover &&
-        !_showOverlay &&
         !_showElo &&
         !_showCareer &&
         !(game.isRanked && game.matchFinished && !game.isBotFallback)) {
-      _showRoundOverlay(game);
+      _maybeShowRoundAd(game);
     }
 
     _lastPhase = game.phase;
+  }
+
+  void _maybeShowRoundAd(GameController game) {
+    if (game.lastWinner == null) return;
+    final adKey = game.currentRound * 10 + game.lastWinner!;
+    if (_lastRoundAdKey == adKey) return;
+    _lastRoundAdKey = adKey;
+    context.read<AdService>().maybeShowInterstitial(
+      matchFinished: game.matchFinished,
+      skip: game.trainingMode,
+    );
   }
 
   void _scheduleEloFallback(GameController game) {
@@ -238,34 +255,8 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   void _showRoundOverlay(GameController game) {
-    final l10n = context.l10n;
-    final won = game.lastWinner == game.mySeat;
-    final score = '${game.roundWins[0]} - ${game.roundWins[1]}';
-    context.read<AdService>().maybeShowInterstitial(
-      matchFinished: game.matchFinished,
-      skip: game.trainingMode,
-    );
-    if (game.matchFinished) {
-      _showEndOverlay(
-        title: won ? l10n.matchWon : l10n.matchLost,
-        sub: won ? l10n.congrats(score) : l10n.sorry(score),
-        primaryLabel: l10n.newMatch,
-        onPrimary: () {
-          if (game.aiMode || game.trainingMode) {
-            game.rematchLocal();
-          } else {
-            game.requestRematch();
-          }
-        },
-      );
-    } else {
-      _showEndOverlay(
-        title: l10n.roundEnded(game.currentRound - 1),
-        sub: '${won ? l10n.roundWon : l10n.roundLost}\n$score',
-        primaryLabel: l10n.nextRound,
-        onPrimary: game.continueToNextRound,
-      );
-    }
+    // Overlay artık game.phase üzerinden doğrudan çiziliyor; burada sadece reklam tetiklenir.
+    _maybeShowRoundAd(game);
   }
 
   @override
@@ -325,9 +316,15 @@ class _GameScreenState extends State<GameScreen> {
                     listenable: game,
                     builder: (context, _) {
                       final g = context.read<GameController>();
+                      final phaseOverlay = _phaseOverlay(g, l10n);
                       return Stack(
                         children: [
-                          if (_showOverlay && !_showElo && !_showCareer) _buildOverlay(g, l10n),
+                          if (phaseOverlay != null) phaseOverlay,
+                          if (_showOverlay &&
+                              g.phase != GamePhase.gameover &&
+                              !_showElo &&
+                              !_showCareer)
+                            _buildOverlay(g, l10n),
                           if (_showElo && _eloResult != null) _buildEloOverlay(g, _eloResult!),
                           if (_showCareer && _careerResult != null) _buildCareerOverlay(g, _careerResult!),
                           if (_showPause) _buildPause(g),
@@ -538,7 +535,62 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
+  Widget? _phaseOverlay(GameController game, l10n) {
+    if (game.phase != GamePhase.gameover || _showElo || _showCareer) return null;
+    if (game.isRanked && game.matchFinished && !game.isBotFallback) return null;
+    if (game.lastWinner == null) return null;
+    return _buildRoundEndOverlay(game, l10n);
+  }
+
+  Widget _buildRoundEndOverlay(GameController game, l10n) {
+    final won = game.lastWinner == game.mySeat;
+    final score = '${game.roundWins[0]} - ${game.roundWins[1]}';
+    final title = game.matchFinished
+        ? (won ? l10n.matchWon : l10n.matchLost)
+        : l10n.roundEnded(game.currentRound - 1);
+    final sub = game.matchFinished
+        ? (won ? l10n.congrats(score) : l10n.sorry(score))
+        : '${won ? l10n.roundWon : l10n.roundLost}\n$score';
+    final primaryLabel = game.matchFinished ? l10n.newMatch : l10n.nextRound;
+    final onPrimary = game.matchFinished
+        ? () {
+            if (game.aiMode || game.trainingMode) {
+              game.rematchLocal();
+            } else {
+              game.requestRematch();
+            }
+          }
+        : game.continueToNextRound;
+
+    return _buildOverlayContent(
+      game,
+      l10n,
+      title: title,
+      sub: sub,
+      primaryLabel: primaryLabel,
+      onPrimary: onPrimary,
+    );
+  }
+
   Widget _buildOverlay(GameController game, l10n) {
+    return _buildOverlayContent(
+      game,
+      l10n,
+      title: _overlayTitle,
+      sub: _overlaySub,
+      primaryLabel: _overlayPrimaryLabel,
+      onPrimary: _overlayPrimaryAction,
+    );
+  }
+
+  Widget _buildOverlayContent(
+    GameController game,
+    l10n, {
+    required String title,
+    required String sub,
+    String? primaryLabel,
+    VoidCallback? onPrimary,
+  }) {
     return Container(
       color: Colors.black.withValues(alpha: 0.82),
       child: Center(
@@ -548,28 +600,30 @@ class _GameScreenState extends State<GameScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                _overlayTitle,
+                title,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: _overlayTitle.length <= 2 ? 88 : 32,
+                  fontSize: title.length <= 2 ? 88 : 32,
                   fontWeight: FontWeight.w900,
-                  color: _overlayTitle.length <= 2 ? AppColors.green : AppColors.gold,
+                  color: title.length <= 2 ? AppColors.green : AppColors.gold,
                 ),
               ),
               const SizedBox(height: 14),
               Text(
-                _overlaySub,
+                sub,
                 textAlign: TextAlign.center,
                 style: const TextStyle(color: Color(0xFF777777), fontSize: 13, height: 1.6),
               ),
-              if (_overlayPrimaryLabel != null && _overlayPrimaryAction != null) ...[
+              if (primaryLabel != null && onPrimary != null) ...[
                 const SizedBox(height: 20),
                 PucketButton(
-                  label: _overlayPrimaryLabel!,
+                  label: primaryLabel,
                   width: 260,
                   onPressed: () {
-                    setState(() => _showOverlay = false);
-                    _overlayPrimaryAction!();
+                    if (game.phase != GamePhase.gameover) {
+                      setState(() => _showOverlay = false);
+                    }
+                    onPrimary();
                     if (!game.aiMode &&
                         !game.trainingMode &&
                         game.matchFinished &&
