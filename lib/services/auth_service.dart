@@ -49,8 +49,12 @@ class AuthService extends ChangeNotifier {
   Future<void> _initGoogleSignIn() async {
     if (_isMacOS || kIsWeb) return;
     final googleSignIn = GoogleSignIn.instance;
+    // Android: clientId google-services.json'dan gelir; iOS client ID vermeyin.
+    final iosOnlyClientId = !kIsWeb &&
+        defaultTargetPlatform == TargetPlatform.iOS &&
+        GoogleAuthConfig.hasIosClientId;
     await googleSignIn.initialize(
-      clientId: GoogleAuthConfig.hasIosClientId ? GoogleAuthConfig.iosClientId : null,
+      clientId: iosOnlyClientId ? GoogleAuthConfig.iosClientId : null,
       serverClientId:
           GoogleAuthConfig.hasWebClientId ? GoogleAuthConfig.webClientId : null,
     );
@@ -226,7 +230,14 @@ class AuthService extends ChangeNotifier {
       notifyListeners();
     } on PlatformException catch (e) {
       if (e.code != 'CANCELED') {
-        lastError = e.message ?? 'Google girişi iptal edildi';
+        final msg = e.message ?? '';
+        lastError = switch (e.code) {
+          'sign_in_failed' when msg.contains('10') || msg.contains('DEVELOPER_ERROR') =>
+            'Google giriş yapılandırması hatalı — Firebase\'e SHA-1 ekleyin (tool/setup_firebase.sh)',
+          'sign_in_failed' when msg.contains('12500') || msg.contains('SIGN_IN_REQUIRED') =>
+            'Google Play Hizmetleri güncel değil veya eksik',
+          _ => msg.isNotEmpty ? msg : 'Google girişi başarısız',
+        };
       }
       loading = false;
       notifyListeners();

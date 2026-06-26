@@ -92,12 +92,44 @@ echo "==> iOS Info.plist Google URL scheme güncelleniyor"
 bash "$ROOT/tool/apply_ios_google_plist.sh"
 
 if [[ -f android/app/google-services.json ]]; then
+  ANDROID_APP_ID="1:623091701096:android:aa9ef8b47d701aeb88b2dd"
+  if [[ -f "$HOME/.android/debug.keystore" ]]; then
+    KEYTOOL="${JAVA_HOME:-}/bin/keytool"
+    if [[ ! -x "$KEYTOOL" ]] && [[ -x "/Applications/Android Studio.app/Contents/jbr/Contents/Home/bin/keytool" ]]; then
+      KEYTOOL="/Applications/Android Studio.app/Contents/jbr/Contents/Home/bin/keytool"
+    fi
+    if [[ -x "$KEYTOOL" ]]; then
+      SHA1=$("$KEYTOOL" -list -v \
+        -keystore "$HOME/.android/debug.keystore" \
+        -alias androiddebugkey \
+        -storepass android -keypass android 2>/dev/null | awk -F': ' '/SHA1:/ {print $2; exit}')
+      SHA256=$("$KEYTOOL" -list -v \
+        -keystore "$HOME/.android/debug.keystore" \
+        -alias androiddebugkey \
+        -storepass android -keypass android 2>/dev/null | awk -F': ' '/SHA256:/ {print $2; exit}')
+      if [[ -n "$SHA1" ]]; then
+        echo "==> Firebase Android SHA-1 kaydediliyor"
+        firebase apps:android:sha:create "$ANDROID_APP_ID" "$SHA1" --project=pucket-9413c 2>/dev/null || true
+      fi
+      if [[ -n "$SHA256" ]]; then
+        firebase apps:android:sha:create "$ANDROID_APP_ID" "$SHA256" --project=pucket-9413c 2>/dev/null || true
+      fi
+      echo "==> google-services.json güncelleniyor"
+      firebase apps:sdkconfig ANDROID "$ANDROID_APP_ID" --project=pucket-9413c --out android/app/google-services.json 2>/dev/null || true
+    fi
+  fi
   echo "==> Android debug SHA-1 (Firebase Console → Android app → SHA certificate):"
   if [[ -f "$HOME/.android/debug.keystore" ]]; then
-    keytool -list -v \
-      -keystore "$HOME/.android/debug.keystore" \
-      -alias androiddebugkey \
-      -storepass android -keypass android 2>/dev/null | grep "SHA1:" || true
+    KEYTOOL="${JAVA_HOME:-}/bin/keytool"
+    if [[ ! -x "$KEYTOOL" ]] && [[ -x "/Applications/Android Studio.app/Contents/jbr/Contents/Home/bin/keytool" ]]; then
+      KEYTOOL="/Applications/Android Studio.app/Contents/jbr/Contents/Home/bin/keytool"
+    fi
+    if [[ -x "$KEYTOOL" ]]; then
+      "$KEYTOOL" -list -v \
+        -keystore "$HOME/.android/debug.keystore" \
+        -alias androiddebugkey \
+        -storepass android -keypass android 2>/dev/null | grep "SHA1:" || true
+    fi
   else
     echo "   (Henüz debug.keystore yok — ilk Android build'den sonra tekrar çalıştırın)"
   fi

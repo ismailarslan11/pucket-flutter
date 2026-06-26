@@ -3,10 +3,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:share_plus/share_plus.dart';
 
 import '../game/game_controller.dart';
 import '../services/auth_service.dart';
+import '../services/share_service.dart';
 import '../services/websocket_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/pucket_button.dart';
@@ -319,6 +319,6 @@ class _LobbyScreenState extends State<LobbyScreen> {
 
   void _shareCode() {
     if (_roomCode == '——') return;
-    SharePlus.instance.share(ShareParams(text: 'PUCKET oynuyorum! Oda kodum: $_roomCode'));
+    ShareService.shareRoomInvite(_roomCode);
   }
 }

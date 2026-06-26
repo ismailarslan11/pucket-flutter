@@ -7,7 +7,16 @@ const low = require('lowdb');
 const FileSync = require('lowdb/adapters/FileSync');
 const adapter = new FileSync(path.join(__dirname, 'db.json'));
 const db = low(adapter);
-db.defaults({ players: {}, matchHistory: [], usernames: {} }).write();
+db.defaults({
+  players: {},
+  matchHistory: [],
+  usernames: {},
+  playerMeta: {},
+  career: {},
+  reports: [],
+  tournament: { weekId: '', entries: [], bracket: [] },
+  season: { id: 1, name: 'Sezon 1', startDate: Date.now() },
+}).write();
 
 const PORT = process.env.PORT || 8080;
 const RECONNECT_GRACE_MS = parseInt(process.env.RECONNECT_GRACE_MS || '60000', 10);
@@ -163,6 +172,112 @@ function makeCode() {
 
 function makeSessionToken() {
   return crypto.randomBytes(16).toString('hex');
+}
+
+function todayKey() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function weekKey() {
+  const d = new Date();
+  const oneJan = new Date(d.getFullYear(), 0, 1);
+  const week = Math.ceil(((d - oneJan) / 86400000 + oneJan.getDay() + 1) / 7);
+  return `${d.getFullYear()}-W${week}`;
+}
+
+function getSeasonInfo() {
+  const season = db.get('season').value() || { id: 1, name: 'Sezon 1', startDate: Date.now() };
+  return season;
+}
+
+function defaultQuests() {
+  return { date: todayKey(), play: 0, win: 0, career: 0, claimed: false };
+}
+
+function getPlayerMeta(uid) {
+  if (!uid) return null;
+  const meta = db.get(`playerMeta.${uid}`).value();
+  if (!meta) {
+    const fresh = {
+      quests: defaultQuests(),
+      streak: 0,
+      lastLoginDate: '',
+      achievements: [],
+      cosmetics: { discColor: 'green', boardTheme: 'classic' },
+      fcmToken: '',
+      seasonWins: 0,
+    };
+    db.set(`playerMeta.${uid}`, fresh).write();
+    return fresh;
+  }
+  if (meta.quests?.date !== todayKey()) {
+    meta.quests = defaultQuests();
+    db.set(`playerMeta.${uid}.quests`, meta.quests).write();
+  }
+  return meta;
+}
+
+function touchLoginStreak(uid) {
+  const meta = getPlayerMeta(uid);
+  const today = todayKey();
+  if (meta.lastLoginDate === today) return meta;
+  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  meta.streak = meta.lastLoginDate === yesterday ? (meta.streak || 0) + 1 : 1;
+  meta.lastLoginDate = today;
+  db.set(`playerMeta.${uid}`, meta).write();
+  return meta;
+}
+
+function bumpQuest(uid, field) {
+  const meta = getPlayerMeta(uid);
+  if (meta.quests.date !== todayKey()) meta.quests = defaultQuests();
+  meta.quests[field] = (meta.quests[field] || 0) + 1;
+  db.set(`playerMeta.${uid}.quests`, meta.quests).write();
+  return meta.quests;
+}
+
+function grantAchievement(uid, id) {
+  const meta = getPlayerMeta(uid);
+  if (!meta.achievements.includes(id)) {
+    meta.achievements.push(id);
+    db.set(`playerMeta.${uid}.achievements`, meta.achievements).write();
+  }
+}
+
+function getCareerData(uid) {
+  return db.get(`career.${uid}`).value() || null;
+}
+
+function saveCareerData(uid, data) {
+  db.set(`career.${uid}`, data).write();
+  return data;
+}
+
+function getTournamentState() {
+  const wk = weekKey();
+  let t = db.get('tournament').value() || { weekId: '', entries: [], scores: {} };
+  if (t.weekId !== wk) {
+    t = { weekId: wk, entries: [], scores: {} };
+    db.set('tournament', t).write();
+  }
+  return t;
+}
+
+function readJsonBody(req) {
+  return new Promise((resolve, reject) => {
+    let body = '';
+    req.on('data', (chunk) => {
+      body += chunk;
+    });
+    req.on('end', () => {
+      try {
+        resolve(JSON.parse(body || '{}'));
+      } catch {
+        reject(new Error('invalid json'));
+      }
+    });
+    req.on('error', reject);
+  });
 }
 
 const matchmakingQueue = [];
@@ -326,6 +441,7 @@ function sendMatchInfo(room, seat0Uid, seat1Uid) {
     oppElo: p1.elo,
     oppLeague: getLeague(p1.elo).name,
     oppName: p1.name,
+    oppUid: seat1Uid,
   });
   room.send(1, {
     type: 'matched',
@@ -338,6 +454,7 @@ function sendMatchInfo(room, seat0Uid, seat1Uid) {
     oppElo: p0.elo,
     oppLeague: getLeague(p0.elo).name,
     oppName: p0.name,
+    oppUid: seat0Uid,
   });
 }
 
@@ -409,21 +526,174 @@ const server = http.createServer((req, res) => {
   }
 
   if (url.pathname === '/username/claim' && req.method === 'POST') {
-    let body = '';
-    req.on('data', (chunk) => {
-      body += chunk;
-    });
-    req.on('end', () => {
-      try {
-        const data = JSON.parse(body || '{}');
+    readJsonBody(req)
+      .then((data) => {
         const result = claimUsername(data.uid, data.username);
         res.writeHead(result.ok ? 200 : 409, cors);
         res.end(JSON.stringify(result));
-      } catch {
+      })
+      .catch(() => {
         res.writeHead(400, cors);
         res.end(JSON.stringify({ ok: false, error: 'Geçersiz istek' }));
-      }
-    });
+      });
+    return;
+  }
+
+  if (url.pathname === '/season') {
+    res.writeHead(200, cors);
+    res.end(JSON.stringify(getSeasonInfo()));
+    return;
+  }
+
+  if (url.pathname === '/season/leaderboard') {
+    const season = getSeasonInfo();
+    const all = Object.entries(db.get('playerMeta').value() || {})
+      .map(([uid, meta]) => {
+        const p = getPlayer(uid);
+        if (!p) return null;
+        return { uid, name: p.name, seasonWins: meta.seasonWins || 0, elo: p.elo };
+      })
+      .filter(Boolean)
+      .sort((a, b) => b.seasonWins - a.seasonWins || b.elo - a.elo)
+      .slice(0, 50);
+    res.writeHead(200, cors);
+    res.end(JSON.stringify({ season, leaderboard: all }));
+    return;
+  }
+
+  if (url.pathname.startsWith('/meta/')) {
+    const uid = decodeURIComponent(url.pathname.split('/meta/')[1]);
+    if (req.method === 'GET') {
+      touchLoginStreak(uid);
+      res.writeHead(200, cors);
+      res.end(JSON.stringify(getPlayerMeta(uid)));
+      return;
+    }
+    if (req.method === 'POST') {
+      readJsonBody(req)
+        .then((data) => {
+          const meta = getPlayerMeta(uid);
+          if (data.action === 'claim_quests') {
+            const q = meta.quests;
+            if (q.claimed) {
+              res.writeHead(409, cors);
+              res.end(JSON.stringify({ ok: false, error: 'Zaten alındı' }));
+              return;
+            }
+            if (q.play < 3 || q.win < 1 || q.career < 1) {
+              res.writeHead(409, cors);
+              res.end(JSON.stringify({ ok: false, error: 'Görevler tamamlanmadı' }));
+              return;
+            }
+            q.claimed = true;
+            db.set(`playerMeta.${uid}.quests`, q).write();
+            res.writeHead(200, cors);
+            res.end(JSON.stringify({ ok: true, meta: getPlayerMeta(uid), reward: 50 }));
+            return;
+          }
+          if (data.cosmetics) {
+            db.set(`playerMeta.${uid}.cosmetics`, { ...meta.cosmetics, ...data.cosmetics }).write();
+          }
+          if (data.fcmToken) {
+            db.set(`playerMeta.${uid}.fcmToken`, data.fcmToken).write();
+          }
+          if (data.questBump) {
+            bumpQuest(uid, data.questBump);
+          }
+          res.writeHead(200, cors);
+          res.end(JSON.stringify({ ok: true, meta: getPlayerMeta(uid) }));
+        })
+        .catch(() => {
+          res.writeHead(400, cors);
+          res.end(JSON.stringify({ ok: false, error: 'Geçersiz istek' }));
+        });
+      return;
+    }
+  }
+
+  if (url.pathname.startsWith('/career/')) {
+    const uid = decodeURIComponent(url.pathname.split('/career/')[1]);
+    if (req.method === 'GET') {
+      res.writeHead(200, cors);
+      res.end(JSON.stringify(getCareerData(uid) || {}));
+      return;
+    }
+    if (req.method === 'POST') {
+      readJsonBody(req)
+        .then((data) => {
+          saveCareerData(uid, data);
+          bumpQuest(uid, 'career');
+          res.writeHead(200, cors);
+          res.end(JSON.stringify({ ok: true }));
+        })
+        .catch(() => {
+          res.writeHead(400, cors);
+          res.end(JSON.stringify({ ok: false }));
+        });
+      return;
+    }
+  }
+
+  if (url.pathname === '/tournament') {
+    const t = getTournamentState();
+    const leaderboard = Object.entries(t.scores || {})
+      .map(([uid, pts]) => {
+        const p = getPlayer(uid);
+        return p ? { uid, name: p.name, points: pts } : null;
+      })
+      .filter(Boolean)
+      .sort((a, b) => b.points - a.points)
+      .slice(0, 20);
+    res.writeHead(200, cors);
+    res.end(JSON.stringify({ weekId: t.weekId, entries: t.entries, leaderboard }));
+    return;
+  }
+
+  if (url.pathname === '/tournament/join' && req.method === 'POST') {
+    readJsonBody(req)
+      .then((data) => {
+        const uid = data.uid;
+        if (!uid) {
+          res.writeHead(400, cors);
+          res.end(JSON.stringify({ ok: false }));
+          return;
+        }
+        upsertPlayer(uid, data.name);
+        const t = getTournamentState();
+        if (!t.entries.includes(uid)) {
+          t.entries.push(uid);
+          t.scores[uid] = t.scores[uid] || 0;
+          db.set('tournament', t).write();
+        }
+        res.writeHead(200, cors);
+        res.end(JSON.stringify({ ok: true, tournament: t }));
+      })
+      .catch(() => {
+        res.writeHead(400, cors);
+        res.end(JSON.stringify({ ok: false }));
+      });
+    return;
+  }
+
+  if (url.pathname === '/report' && req.method === 'POST') {
+    readJsonBody(req)
+      .then((data) => {
+        db.get('reports')
+          .push({
+            reporter: data.reporter || '',
+            reported: data.reported || '',
+            reason: data.reason || '',
+            room: data.room || '',
+            timestamp: Date.now(),
+          })
+          .write();
+        res.writeHead(200, cors);
+        res.end(JSON.stringify({ ok: true }));
+      })
+      .catch(() => {
+        res.writeHead(400, cors);
+        res.end(JSON.stringify({ ok: false }));
+      });
     return;
   }
 
@@ -629,8 +899,23 @@ wss.on('connection', (ws) => {
             loserEloChange: loserLoss,
             ranked: true,
             timestamp: Date.now(),
+            seasonId: getSeasonInfo().id,
           })
           .write();
+
+        bumpQuest(winnerUid, 'play');
+        bumpQuest(loserUid, 'play');
+        bumpQuest(winnerUid, 'win');
+        grantAchievement(winnerUid, 'first_win');
+        if (newWinner.wins >= 10) grantAchievement(winnerUid, 'ten_wins');
+        const wMeta = getPlayerMeta(winnerUid);
+        wMeta.seasonWins = (wMeta.seasonWins || 0) + 1;
+        db.set(`playerMeta.${winnerUid}.seasonWins`, wMeta.seasonWins).write();
+        const t = getTournamentState();
+        if (t.entries.includes(winnerUid)) {
+          t.scores[winnerUid] = (t.scores[winnerUid] || 0) + 3;
+          db.set('tournament', t).write();
+        }
 
         room.send(winnerSeat, {
           type: 'eloResult',
@@ -682,7 +967,7 @@ wss.on('connection', (ws) => {
         break;
 
       case 'ping':
-        ws.send(JSON.stringify({ type: 'pong', t: Date.now() }));
+        ws.send(JSON.stringify({ type: 'pong', t: msg.t || Date.now(), serverT: Date.now() }));
         break;
     }
   });

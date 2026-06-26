@@ -9,9 +9,13 @@ import '../models/rank_tier.dart';
 import '../services/ad_service.dart';
 import '../services/auth_service.dart';
 import '../services/career_service.dart';
+import '../services/meta_api.dart';
+import '../services/player_meta_service.dart';
 import '../services/settings_service.dart';
+import '../services/share_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/game_board.dart';
+import '../widgets/ping_indicator.dart';
 import '../widgets/pucket_button.dart';
 import 'app_router.dart';
 
@@ -30,7 +34,6 @@ class _GameScreenState extends State<GameScreen> {
   String _overlayTitle = '';
   String _overlaySub = '';
   bool _showRematch = false;
-  String _rematchLabel = 'DEVAM';
   int _lastCountdown = -1;
   GamePhase? _lastPhase;
   EloResult? _eloResult;
@@ -85,6 +88,8 @@ class _GameScreenState extends State<GameScreen> {
       game.onEloResult = (r) {
         if (mounted) {
           context.read<AdService>().maybeShowInterstitial(matchFinished: true);
+          final uid = context.read<AuthService>().getUid();
+          context.read<PlayerMetaService>().onMatchPlayed(uid, won: r.won, ranked: true);
           setState(() {
             _eloResult = r;
             _showElo = true;
@@ -125,8 +130,10 @@ class _GameScreenState extends State<GameScreen> {
       if (game.careerMode && game.matchFinished && game.careerOpponent != null) {
         final won = game.lastWinner == game.mySeat;
         final career = context.read<CareerService>();
-        career.recordResult(opponent: game.careerOpponent!, won: won).then((result) {
+        final uid = context.read<AuthService>().getUid();
+        career.recordResult(opponent: game.careerOpponent!, won: won, uid: uid).then((result) async {
           if (!mounted) return;
+          if (won) await context.read<PlayerMetaService>().onCareerWin(uid);
           context.read<AdService>().maybeShowInterstitial(matchFinished: true);
           setState(() {
             _careerResult = result;
@@ -253,7 +260,11 @@ class _GameScreenState extends State<GameScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    game.careerMode ? l10n.careerMode : (game.isRanked ? l10n.ranked : l10n.online),
+                    game.trainingMode
+                        ? l10n.trainingMode
+                        : game.careerMode
+                            ? l10n.careerMode
+                            : (game.isRanked ? l10n.ranked : l10n.online),
                     style: TextStyle(
                       fontSize: 7,
                       color: game.careerMode ? AppColors.gold : const Color(0xFF555555),
@@ -335,6 +346,10 @@ class _GameScreenState extends State<GameScreen> {
           _pip(game.roundWins[1] > 1, AppColors.blue),
           const SizedBox(width: 8),
           Text(timer, style: const TextStyle(color: AppColors.gold, fontWeight: FontWeight.bold, fontSize: 11)),
+          if (!game.aiMode && game.pingMs != null) ...[
+            const SizedBox(width: 6),
+            PingIndicator(pingMs: game.pingMs),
+          ],
           if (game.roomCode.isNotEmpty) ...[
             const SizedBox(width: 8),
             Text(
@@ -434,7 +449,7 @@ class _GameScreenState extends State<GameScreen> {
               if (_showRematch) ...[
                 const SizedBox(height: 20),
                 PucketButton(
-                  label: _rematchLabel,
+                  label: l10n.rematch,
                   width: 260,
                   onPressed: () {
                     setState(() => _showOverlay = false);
@@ -448,6 +463,26 @@ class _GameScreenState extends State<GameScreen> {
                         );
                       }
                     }
+                  },
+                ),
+              ],
+              if (game.matchFinished) ...[
+                const SizedBox(height: 14),
+                PucketButton(
+                  label: l10n.shareResult,
+                  secondary: true,
+                  width: 260,
+                  onPressed: () {
+                    final auth = context.read<AuthService>();
+                    final won = game.lastWinner == game.mySeat;
+                    ShareService.shareMatchResult(
+                      playerName: auth.getName(),
+                      won: won,
+                      score: '${game.roundWins[0]} - ${game.roundWins[1]}',
+                      eloChange: _eloResult?.eloChange,
+                      newElo: _eloResult?.newElo,
+                      league: _eloResult?.newLeague,
+                    );
                   },
                 ),
               ],
@@ -626,6 +661,14 @@ class _GameScreenState extends State<GameScreen> {
               ),
               Text(l10n.eloPoints, style: const TextStyle(color: Color(0xFF666666), fontSize: 12)),
               Text('${result.newElo} ELO', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
+              if (game.opponentName.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Text(
+                  '${l10n.opponentProfile}: ${game.opponentName} · ${game.opponentElo} ELO · ${game.opponentLeague}',
+                  style: const TextStyle(color: Color(0xFF777777), fontSize: 11),
+                  textAlign: TextAlign.center,
+                ),
+              ],
               const SizedBox(height: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -645,6 +688,23 @@ class _GameScreenState extends State<GameScreen> {
                   ),
                 ),
               const SizedBox(height: 18),
+              PucketButton(
+                label: l10n.shareResult,
+                secondary: true,
+                width: 260,
+                onPressed: () {
+                  final auth = context.read<AuthService>();
+                  ShareService.shareMatchResult(
+                    playerName: auth.getName(),
+                    won: result.won,
+                    score: '${game.roundWins[0]} - ${game.roundWins[1]}',
+                    eloChange: result.eloChange,
+                    newElo: result.newElo,
+                    league: result.newLeague,
+                  );
+                },
+              ),
+              const SizedBox(height: 12),
               PucketButton(
                 label: l10n.ok,
                 width: 260,
@@ -697,7 +757,7 @@ class _GameScreenState extends State<GameScreen> {
               if (game.pauseSecondsLeft > 0) ...[
                 const SizedBox(height: 16),
                 Text(
-                  'Kalan: ${game.pauseSecondsLeft} sn',
+                  l10n.pauseRemaining.replaceAll('{sec}', '${game.pauseSecondsLeft}'),
                   style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white),
                 ),
               ],
@@ -734,6 +794,25 @@ class _GameScreenState extends State<GameScreen> {
                   _showPause = false;
                 }),
               ),
+              const SizedBox(height: 12),
+              if (!game.aiMode && game.opponentUid.isNotEmpty)
+                PucketButton(
+                  label: l10n.reportPlayer,
+                  secondary: true,
+                  width: 260,
+                  onPressed: () async {
+                    final auth = context.read<AuthService>();
+                    await MetaApi.reportPlayer(
+                      reporter: auth.getUid(),
+                      reported: game.opponentUid,
+                      reason: 'in-game report',
+                      room: game.roomCode,
+                    );
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.reportSent)));
+                    }
+                  },
+                ),
               const SizedBox(height: 12),
               PucketButton(label: l10n.backToMenu, secondary: true, width: 260, onPressed: () => AppRouter.goMenu(context)),
             ],
@@ -795,7 +874,6 @@ class _GameScreenState extends State<GameScreen> {
       _overlayTitle = title;
       _overlaySub = sub;
       _showRematch = rematch;
-      _rematchLabel = buttonLabel;
     });
   }
 }

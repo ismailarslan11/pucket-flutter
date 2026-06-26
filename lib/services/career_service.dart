@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/career_opponent.dart';
 import '../models/career_result.dart';
 import '../models/rank_tier.dart';
+import 'meta_api.dart';
 
 class CareerService extends ChangeNotifier {
   int careerPoints = 0;
@@ -86,6 +87,7 @@ class CareerService extends ChangeNotifier {
   Future<CareerMatchResult> recordResult({
     required CareerOpponent opponent,
     required bool won,
+    String? uid,
   }) async {
     var pointsEarned = 0;
     var firstTimeWin = false;
@@ -113,6 +115,7 @@ class CareerService extends ChangeNotifier {
     }
 
     await _save();
+    if (uid != null) await syncToCloud(uid);
     notifyListeners();
 
     return CareerMatchResult(
@@ -126,4 +129,44 @@ class CareerService extends ChangeNotifier {
       careerComplete: careerComplete,
     );
   }
+
+  Future<void> syncFromCloud(String uid) async {
+    final remote = await MetaApi.fetchCareer(uid);
+    if (remote == null || remote.isEmpty) {
+      await syncToCloud(uid);
+      return;
+    }
+    try {
+      careerPoints = (remote['points'] as num?)?.toInt() ?? careerPoints;
+      careerWins = (remote['wins'] as num?)?.toInt() ?? careerWins;
+      careerLosses = (remote['losses'] as num?)?.toInt() ?? careerLosses;
+      currentLeagueIndex = (remote['league'] as num?)?.toInt() ?? currentLeagueIndex;
+      final ids = remote['defeated'] as List?;
+      if (ids != null) {
+        _defeatedIds
+          ..clear()
+          ..addAll(ids.map((e) => e.toString()));
+      }
+      await _save();
+      notifyListeners();
+    } catch (_) {}
+  }
+
+  Future<void> syncToCloud(String uid) async {
+    await MetaApi.saveCareer(uid, {
+      'points': careerPoints,
+      'wins': careerWins,
+      'losses': careerLosses,
+      'league': currentLeagueIndex,
+      'defeated': _defeatedIds.toList(),
+    });
+  }
+
+  Map<String, dynamic> toCloudJson() => {
+        'points': careerPoints,
+        'wins': careerWins,
+        'losses': careerLosses,
+        'league': currentLeagueIndex,
+        'defeated': _defeatedIds.toList(),
+      };
 }

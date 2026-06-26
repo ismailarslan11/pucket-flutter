@@ -191,6 +191,61 @@ class AppLocalizations {
   String get queueNoServer => _t('queueNoServer');
   String get queueCancel => _t('queueCancel');
 
+  // ── Extras ──
+  String get menuTraining => _t('menuTraining');
+  String get menuTournament => _t('menuTournament');
+  String get menuCosmetics => _t('menuCosmetics');
+  String get menuInvite => _t('menuInvite');
+  String get dailyQuests => _t('dailyQuests');
+  String get questPlay3 => _t('questPlay3');
+  String get questWin1 => _t('questWin1');
+  String get questCareer1 => _t('questCareer1');
+  String get questClaim => _t('questClaim');
+  String get questClaimed => _t('questClaimed');
+  String get questInProgress => _t('questInProgress');
+  String get trainingDesc => _t('trainingDesc');
+  String get trainingShooting => _t('trainingShooting');
+  String get trainingDefense => _t('trainingDefense');
+  String get trainingFull => _t('trainingFull');
+  String get trainingMode => _t('trainingMode');
+  String get tournamentDesc => _t('tournamentDesc');
+  String get tournamentJoin => _t('tournamentJoin');
+  String get tournamentLeaderboard => _t('tournamentLeaderboard');
+  String get tournamentEmpty => _t('tournamentEmpty');
+  String get points => _t('points');
+  String get cosmeticsDisc => _t('cosmeticsDisc');
+  String get cosmeticsBoard => _t('cosmeticsBoard');
+  String boardThemeName(String key) {
+    switch (key) {
+      case 'neon':
+        return _t('boardThemeNeon');
+      case 'wood':
+        return _t('boardThemeWood');
+      default:
+        return _t('boardThemeClassic');
+    }
+  }
+
+  String get shareResult => _t('shareResult');
+  String get reportPlayer => _t('reportPlayer');
+  String get reportSent => _t('reportSent');
+  String get opponentProfile => _t('opponentProfile');
+  String get profileTitle => _t('profileTitle');
+  String get profileEmpty => _t('profileEmpty');
+  String get matchHistory => _t('matchHistory');
+  String get refresh => _t('refresh');
+  String get noHistory => _t('noHistory');
+  String get rankedLabel => _t('rankedLabel');
+  String get casualLabel => _t('casualLabel');
+  String get achievements => _t('achievements');
+  String seasonLabel(String name) => _t('seasonLabel').replaceAll('{name}', name);
+  String get seasonWins => _t('seasonWins');
+  String get rankTitle => _t('rankTitle');
+  String get rankAll => _t('rankAll');
+  String get rankError => _t('rankError');
+  String get rematch => _t('rematch');
+  String get pauseRemaining => _t('pauseRemaining');
+
   static const _all = <String, Map<String, String>>{
     'tr': _tr,
     'en': _en,
@@ -332,6 +387,51 @@ const _tr = {
   'queueSearching': 'Rakip aranıyor...',
   'queueNoServer': 'Sunucu yok — bot moduna geçiliyor',
   'queueCancel': 'İPTAL',
+  'menuTraining': '🏋️ ANTRENMAN',
+  'menuTournament': '🏆 HAFTALIK KUPA',
+  'menuCosmetics': '🎨 KOZMETİK',
+  'menuInvite': '📤 ARKADAŞ DAVET',
+  'dailyQuests': 'Günlük Görevler',
+  'questPlay3': '3 maç oyna',
+  'questWin1': '1 maç kazan',
+  'questCareer1': '1 kariyer galibiyeti',
+  'questClaim': 'ÖDÜLÜ AL (+50 KP)',
+  'questClaimed': 'Ödül alındı',
+  'questInProgress': 'Görevler devam ediyor',
+  'trainingDesc': 'Tek disk veya bot ile pratik yap. ELO etkilenmez.',
+  'trainingShooting': '🎯 Atış Pratiği',
+  'trainingDefense': '🛡 Savunma Pratiği',
+  'trainingFull': '⚔ Tam Antrenman Maçı',
+  'trainingMode': 'ANTRENMAN',
+  'tournamentDesc': 'Haftalık kupaya katıl, ranked galibiyetlerle puan kazan.',
+  'tournamentJoin': 'TURNUVAYA KATIL',
+  'tournamentLeaderboard': 'HAFTALIK SIRALAMA',
+  'tournamentEmpty': 'Henüz katılımcı yok',
+  'points': 'puan',
+  'cosmeticsDisc': 'Disk rengi',
+  'cosmeticsBoard': 'Tahta teması',
+  'boardThemeClassic': 'Klasik',
+  'boardThemeNeon': 'Neon',
+  'boardThemeWood': 'Ahşap',
+  'shareResult': 'PAYLAŞ',
+  'reportPlayer': 'Raporla',
+  'reportSent': 'Rapor gönderildi',
+  'opponentProfile': 'Rakip',
+  'profileTitle': 'PROFİL',
+  'profileEmpty': 'Profil yok',
+  'matchHistory': 'SON MAÇLAR',
+  'refresh': 'YENİLE',
+  'noHistory': 'Henüz maç geçmişi yok.\nRanked oyna veya sunucuya bağlan.',
+  'rankedLabel': 'Ranked',
+  'casualLabel': 'Casual',
+  'achievements': 'BAŞARIMLAR',
+  'seasonLabel': '{name}',
+  'seasonWins': 'Sezon galibiyeti',
+  'rankTitle': '🏅 SIRALAMALAR',
+  'rankAll': 'Tümü',
+  'rankError': 'Sıralama yüklenemedi',
+  'rematch': 'TEKRAR OYNA',
+  'pauseRemaining': 'Kalan: {sec} sn',
 };
 
 const _en = {
@@ -465,6 +565,51 @@ const _en = {
   'queueSearching': 'Searching for opponent...',
   'queueNoServer': 'No server — switching to bot mode',
   'queueCancel': 'CANCEL',
+  'menuTraining': '🏋️ TRAINING',
+  'menuTournament': '🏆 WEEKLY CUP',
+  'menuCosmetics': '🎨 COSMETICS',
+  'menuInvite': '📤 INVITE FRIEND',
+  'dailyQuests': 'Daily Quests',
+  'questPlay3': 'Play 3 matches',
+  'questWin1': 'Win 1 match',
+  'questCareer1': '1 career win',
+  'questClaim': 'CLAIM REWARD (+50 KP)',
+  'questClaimed': 'Reward claimed',
+  'questInProgress': 'Quests in progress',
+  'trainingDesc': 'Practice with drills. ELO is not affected.',
+  'trainingShooting': '🎯 Shooting Drill',
+  'trainingDefense': '🛡 Defense Drill',
+  'trainingFull': '⚔ Full Training Match',
+  'trainingMode': 'TRAINING',
+  'tournamentDesc': 'Join the weekly cup and earn points from ranked wins.',
+  'tournamentJoin': 'JOIN TOURNAMENT',
+  'tournamentLeaderboard': 'WEEKLY STANDINGS',
+  'tournamentEmpty': 'No participants yet',
+  'points': 'pts',
+  'cosmeticsDisc': 'Disc color',
+  'cosmeticsBoard': 'Board theme',
+  'boardThemeClassic': 'Classic',
+  'boardThemeNeon': 'Neon',
+  'boardThemeWood': 'Wood',
+  'shareResult': 'SHARE',
+  'reportPlayer': 'Report',
+  'reportSent': 'Report submitted',
+  'opponentProfile': 'Opponent',
+  'profileTitle': 'PROFILE',
+  'profileEmpty': 'No profile',
+  'matchHistory': 'RECENT MATCHES',
+  'refresh': 'REFRESH',
+  'noHistory': 'No match history yet.\nPlay ranked or connect to server.',
+  'rankedLabel': 'Ranked',
+  'casualLabel': 'Casual',
+  'achievements': 'ACHIEVEMENTS',
+  'seasonLabel': '{name}',
+  'seasonWins': 'Season wins',
+  'rankTitle': '🏅 LEADERBOARD',
+  'rankAll': 'All',
+  'rankError': 'Could not load leaderboard',
+  'rematch': 'REMATCH',
+  'pauseRemaining': 'Remaining: {sec}s',
 };
 
 const _de = {
@@ -598,6 +743,51 @@ const _de = {
   'queueSearching': 'Gegner wird gesucht...',
   'queueNoServer': 'Kein Server — Bot-Modus',
   'queueCancel': 'ABBRECHEN',
+  'menuTraining': '🏋️ TRAINING',
+  'menuTournament': '🏆 WOCHENPOKAL',
+  'menuCosmetics': '🎨 KOSMETIK',
+  'menuInvite': '📤 FREUND EINLADEN',
+  'dailyQuests': 'Tägliche Quests',
+  'questPlay3': '3 Spiele spielen',
+  'questWin1': '1 Spiel gewinnen',
+  'questCareer1': '1 Karrieresieg',
+  'questClaim': 'BELOHNUNG (+50 KP)',
+  'questClaimed': 'Belohnt',
+  'questInProgress': 'Quests laufen',
+  'trainingDesc': 'Übe ohne ELO-Verlust.',
+  'trainingShooting': '🎯 Schussübung',
+  'trainingDefense': '🛡 Verteidigung',
+  'trainingFull': '⚔ Trainingsspiel',
+  'trainingMode': 'TRAINING',
+  'tournamentDesc': 'Wöchentlicher Pokal — Punkte durch Ranked-Siege.',
+  'tournamentJoin': 'TEILNEHMEN',
+  'tournamentLeaderboard': 'WOCHENRANGLISTE',
+  'tournamentEmpty': 'Noch keine Teilnehmer',
+  'points': 'Pkt',
+  'cosmeticsDisc': 'Scheibenfarbe',
+  'cosmeticsBoard': 'Brett-Thema',
+  'boardThemeClassic': 'Klassisch',
+  'boardThemeNeon': 'Neon',
+  'boardThemeWood': 'Holz',
+  'shareResult': 'TEILEN',
+  'reportPlayer': 'Melden',
+  'reportSent': 'Meldung gesendet',
+  'opponentProfile': 'Gegner',
+  'profileTitle': 'PROFIL',
+  'profileEmpty': 'Kein Profil',
+  'matchHistory': 'LETZTE SPIELE',
+  'refresh': 'AKTUALISIEREN',
+  'noHistory': 'Noch keine Spiele.',
+  'rankedLabel': 'Ranked',
+  'casualLabel': 'Casual',
+  'achievements': 'ERFOLGE',
+  'seasonLabel': '{name}',
+  'seasonWins': 'Saisonsiege',
+  'rankTitle': '🏅 RANGLISTE',
+  'rankAll': 'Alle',
+  'rankError': 'Rangliste nicht geladen',
+  'rematch': 'REVANCHE',
+  'pauseRemaining': 'Verbleibend: {sec}s',
 };
 
 const _es = {
@@ -731,6 +921,51 @@ const _es = {
   'queueSearching': 'Buscando rival...',
   'queueNoServer': 'Sin servidor — modo bot',
   'queueCancel': 'CANCELAR',
+  'menuTraining': '🏋️ ENTRENAMIENTO',
+  'menuTournament': '🏆 COPA SEMANAL',
+  'menuCosmetics': '🎨 COSMÉTICOS',
+  'menuInvite': '📤 INVITAR AMIGO',
+  'dailyQuests': 'Misiones diarias',
+  'questPlay3': 'Jugar 3 partidas',
+  'questWin1': 'Ganar 1 partida',
+  'questCareer1': '1 victoria carrera',
+  'questClaim': 'RECLAMAR (+50 KP)',
+  'questClaimed': 'Reclamado',
+  'questInProgress': 'Misiones en curso',
+  'trainingDesc': 'Practica sin afectar ELO.',
+  'trainingShooting': '🎯 Tiro',
+  'trainingDefense': '🛡 Defensa',
+  'trainingFull': '⚔ Partido entrenamiento',
+  'trainingMode': 'ENTRENAMIENTO',
+  'tournamentDesc': 'Copa semanal — puntos por victorias ranked.',
+  'tournamentJoin': 'UNIRSE',
+  'tournamentLeaderboard': 'CLASIFICACIÓN',
+  'tournamentEmpty': 'Sin participantes',
+  'points': 'pts',
+  'cosmeticsDisc': 'Color disco',
+  'cosmeticsBoard': 'Tema tablero',
+  'boardThemeClassic': 'Clásico',
+  'boardThemeNeon': 'Neon',
+  'boardThemeWood': 'Madera',
+  'shareResult': 'COMPARTIR',
+  'reportPlayer': 'Reportar',
+  'reportSent': 'Reporte enviado',
+  'opponentProfile': 'Rival',
+  'profileTitle': 'PERFIL',
+  'profileEmpty': 'Sin perfil',
+  'matchHistory': 'PARTIDAS RECIENTES',
+  'refresh': 'ACTUALIZAR',
+  'noHistory': 'Sin historial aún.',
+  'rankedLabel': 'Ranked',
+  'casualLabel': 'Casual',
+  'achievements': 'LOGROS',
+  'seasonLabel': '{name}',
+  'seasonWins': 'Victorias temporada',
+  'rankTitle': '🏅 CLASIFICACIÓN',
+  'rankAll': 'Todos',
+  'rankError': 'Error al cargar',
+  'rematch': 'REVANCHA',
+  'pauseRemaining': 'Quedan: {sec}s',
 };
 
 const _ar = {
@@ -864,6 +1099,51 @@ const _ar = {
   'queueSearching': 'البحث عن خصم...',
   'queueNoServer': 'لا يوجد خادم — وضع البوت',
   'queueCancel': 'إلغاء',
+  'menuTraining': '🏋️ تدريب',
+  'menuTournament': '🏆 كأس أسبوعي',
+  'menuCosmetics': '🎨 مظهر',
+  'menuInvite': '📤 دعوة صديق',
+  'dailyQuests': 'مهام يومية',
+  'questPlay3': 'العب 3 مباريات',
+  'questWin1': 'اربح مباراة',
+  'questCareer1': 'فوز مهنة واحد',
+  'questClaim': 'استلام (+50 KP)',
+  'questClaimed': 'تم الاستلام',
+  'questInProgress': 'المهام جارية',
+  'trainingDesc': 'تدرب بدون تأثير ELO.',
+  'trainingShooting': '🎯 تدريب رمي',
+  'trainingDefense': '🛡 دفاع',
+  'trainingFull': '⚔ مباراة تدريب',
+  'trainingMode': 'تدريب',
+  'tournamentDesc': 'كأس أسبوعي — نقاط من فوز ranked.',
+  'tournamentJoin': 'انضم',
+  'tournamentLeaderboard': 'الترتيب',
+  'tournamentEmpty': 'لا مشاركين',
+  'points': 'نقطة',
+  'cosmeticsDisc': 'لون القرص',
+  'cosmeticsBoard': 'سمة اللوحة',
+  'boardThemeClassic': 'كلاسيك',
+  'boardThemeNeon': 'نيون',
+  'boardThemeWood': 'خشب',
+  'shareResult': 'مشاركة',
+  'reportPlayer': 'إبلاغ',
+  'reportSent': 'تم الإبلاغ',
+  'opponentProfile': 'الخصم',
+  'profileTitle': 'الملف',
+  'profileEmpty': 'لا ملف',
+  'matchHistory': 'آخر المباريات',
+  'refresh': 'تحديث',
+  'noHistory': 'لا سجل بعد.',
+  'rankedLabel': 'Ranked',
+  'casualLabel': 'Casual',
+  'achievements': 'إنجازات',
+  'seasonLabel': '{name}',
+  'seasonWins': 'انتصارات الموسم',
+  'rankTitle': '🏅 الترتيب',
+  'rankAll': 'الكل',
+  'rankError': 'فشل التحميل',
+  'rematch': 'إعادة',
+  'pauseRemaining': 'متبقي: {sec}ث',
 };
 
 const _fr = {
@@ -997,4 +1277,49 @@ const _fr = {
   'queueSearching': 'Recherche d\'adversaire...',
   'queueNoServer': 'Pas de serveur — mode bot',
   'queueCancel': 'ANNULER',
+  'menuTraining': '🏋️ ENTRAÎNEMENT',
+  'menuTournament': '🏆 COUPE HEBDO',
+  'menuCosmetics': '🎨 COSMÉTIQUES',
+  'menuInvite': '📤 INVITER',
+  'dailyQuests': 'Quêtes quotidiennes',
+  'questPlay3': 'Jouer 3 matchs',
+  'questWin1': 'Gagner 1 match',
+  'questCareer1': '1 victoire carrière',
+  'questClaim': 'RÉCLAMER (+50 KP)',
+  'questClaimed': 'Réclamé',
+  'questInProgress': 'Quêtes en cours',
+  'trainingDesc': 'Entraînez-vous sans ELO.',
+  'trainingShooting': '🎯 Tir',
+  'trainingDefense': '🛡 Défense',
+  'trainingFull': '⚔ Match entraînement',
+  'trainingMode': 'ENTRAÎNEMENT',
+  'tournamentDesc': 'Coupe hebdo — points via ranked.',
+  'tournamentJoin': 'REJOINDRE',
+  'tournamentLeaderboard': 'CLASSEMENT',
+  'tournamentEmpty': 'Aucun participant',
+  'points': 'pts',
+  'cosmeticsDisc': 'Couleur disque',
+  'cosmeticsBoard': 'Thème plateau',
+  'boardThemeClassic': 'Classique',
+  'boardThemeNeon': 'Néon',
+  'boardThemeWood': 'Bois',
+  'shareResult': 'PARTAGER',
+  'reportPlayer': 'Signaler',
+  'reportSent': 'Signalement envoyé',
+  'opponentProfile': 'Adversaire',
+  'profileTitle': 'PROFIL',
+  'profileEmpty': 'Pas de profil',
+  'matchHistory': 'MATCHS RÉCENTS',
+  'refresh': 'RAFRAÎCHIR',
+  'noHistory': 'Pas encore d\'historique.',
+  'rankedLabel': 'Ranked',
+  'casualLabel': 'Casual',
+  'achievements': 'SUCCÈS',
+  'seasonLabel': '{name}',
+  'seasonWins': 'Victoires saison',
+  'rankTitle': '🏅 CLASSEMENT',
+  'rankAll': 'Tous',
+  'rankError': 'Erreur chargement',
+  'rematch': 'REVANCHE',
+  'pauseRemaining': 'Reste: {sec}s',
 };

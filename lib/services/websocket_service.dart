@@ -5,6 +5,7 @@ import 'dart:math';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 typedef WsHandler = void Function(Map<String, dynamic> msg);
+typedef WsPingHandler = void Function(int rttMs);
 
 class WebSocketService {
   WebSocketChannel? _channel;
@@ -13,6 +14,7 @@ class WebSocketService {
   Timer? _reconnectTimer;
 
   WsHandler? onMessage;
+  WsPingHandler? onPing;
   void Function()? onError;
   void Function()? onClose;
   void Function()? onReconnected;
@@ -24,6 +26,9 @@ class WebSocketService {
   bool _intentionalDisconnect = false;
   bool _reconnecting = false;
   int _reconnectAttempts = 0;
+  int? _lastPingSentMs;
+
+  int? lastPingMs;
 
   bool get isConnected => _channel != null;
   bool get isReconnecting => _reconnecting;
@@ -51,7 +56,17 @@ class WebSocketService {
       _sub = _channel!.stream.listen(
         (data) {
           try {
-            onMessage?.call(jsonDecode(data as String) as Map<String, dynamic>);
+            final msg = jsonDecode(data as String) as Map<String, dynamic>;
+            if (msg['type'] == 'pong') {
+              final sent = _lastPingSentMs;
+              if (sent != null) {
+                final rtt = DateTime.now().millisecondsSinceEpoch - sent;
+                lastPingMs = rtt;
+                onPing?.call(rtt);
+              }
+              return;
+            }
+            onMessage?.call(msg);
           } catch (_) {}
         },
         onError: (_) => _handleDrop(),
@@ -72,8 +87,9 @@ class WebSocketService {
 
   void _startPing() {
     _pingTimer?.cancel();
-    _pingTimer = Timer.periodic(const Duration(seconds: 15), (_) {
-      send({'type': 'ping'});
+    _pingTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      _lastPingSentMs = DateTime.now().millisecondsSinceEpoch;
+      send({'type': 'ping', 't': _lastPingSentMs});
     });
   }
 

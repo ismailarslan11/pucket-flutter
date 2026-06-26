@@ -11,7 +11,6 @@ class SettingsService extends ChangeNotifier {
   double musicVolume = 0.7;
   double sfxVolume = 0.8;
   bool tutorialSeen = false;
-  bool adsOn = true;
   AppLanguage language = AppLanguage.tr;
 
   static const _key = 'pucket_settings';
@@ -37,7 +36,6 @@ class SettingsService extends ChangeNotifier {
         vibrationOn = parts[2] == '1';
         musicVolume = double.tryParse(parts[3]) ?? 0.7;
         sfxVolume = double.tryParse(parts[4]) ?? 0.8;
-        if (parts.length >= 6) adsOn = parts[5] == '1';
       }
     } catch (_) {}
     notifyListeners();
@@ -54,7 +52,7 @@ class SettingsService extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(
       _key,
-      '${musicOn ? 1 : 0}|${sfxOn ? 1 : 0}|${vibrationOn ? 1 : 0}|$musicVolume|$sfxVolume|${adsOn ? 1 : 0}',
+      '${musicOn ? 1 : 0}|${sfxOn ? 1 : 0}|${vibrationOn ? 1 : 0}|$musicVolume|$sfxVolume',
     );
   }
 
@@ -92,12 +90,6 @@ class SettingsService extends ChangeNotifier {
 
   void setSfxVolume(double v) {
     sfxVolume = v;
-    notifyListeners();
-    save();
-  }
-
-  void setAds(bool v) {
-    adsOn = v;
     notifyListeners();
     save();
   }

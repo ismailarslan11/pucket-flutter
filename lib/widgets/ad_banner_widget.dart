@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 
 import '../config/ad_config.dart';
 import '../services/ad_service.dart';
-import '../services/settings_service.dart';
 
 class AdBannerWidget extends StatefulWidget {
   const AdBannerWidget({super.key});
@@ -25,8 +24,7 @@ class _AdBannerWidgetState extends State<AdBannerWidget> {
 
   void _loadBanner() {
     final ads = context.read<AdService>();
-    final settings = context.read<SettingsService>();
-    if (!AdConfig.supported || !settings.adsOn || !ads.initialized) return;
+    if (!AdConfig.supported || !ads.initialized) return;
 
     final unitId = AdConfig.bannerUnitId;
     if (unitId.isEmpty || _banner != null) return;
@@ -57,8 +55,7 @@ class _AdBannerWidgetState extends State<AdBannerWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final settings = context.watch<SettingsService>();
-    if (!AdConfig.supported || !settings.adsOn || !_loaded || _banner == null) {
+    if (!AdConfig.supported || !_loaded || _banner == null) {
       return const SizedBox.shrink();
     }
 

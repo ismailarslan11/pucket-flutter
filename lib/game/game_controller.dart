@@ -74,10 +74,12 @@ class GameController extends ChangeNotifier {
   bool isBotFallback = false;
   bool isRanked = false;
   bool careerMode = false;
+  bool trainingMode = false;
   CareerOpponent? careerOpponent;
   AiLevel aiLevel = AiLevel.medium;
 
   String opponentName = '';
+  String opponentUid = '';
   int opponentElo = 1000;
   String opponentLeague = 'Bronz';
   String sessionToken = '';
@@ -108,7 +110,9 @@ class GameController extends ChangeNotifier {
 
   bool pauseByOpponent = false;
   int pauseSecondsLeft = 0;
+  int? pingMs;
 
+  void Function(int ms)? onPingUpdate;
   void Function(String message)? onToast;
   void Function()? onOpponentLeft;
   void Function()? onOpponentDisconnected;
@@ -212,6 +216,7 @@ class GameController extends ChangeNotifier {
     ws.disconnect();
     aiMode = true;
     careerMode = false;
+    trainingMode = false;
     careerOpponent = null;
     isBotFallback = botFallback;
     isRanked = false;
@@ -229,6 +234,7 @@ class GameController extends ChangeNotifier {
     ws.disconnect();
     aiMode = true;
     careerMode = true;
+    trainingMode = false;
     careerOpponent = opponent;
     isBotFallback = false;
     isRanked = false;
@@ -242,10 +248,29 @@ class GameController extends ChangeNotifier {
     startCountdown();
   }
 
+  void startTrainingGame(AiLevel level, {String label = 'Antrenör'}) {
+    ws.disconnect();
+    aiMode = true;
+    careerMode = false;
+    trainingMode = true;
+    careerOpponent = null;
+    isBotFallback = false;
+    isRanked = false;
+    aiLevel = level;
+    mySeat = 0;
+    roomCode = 'TRAINING';
+    opponentName = label;
+    opponentElo = 0;
+    opponentLeague = '';
+    resetMatch();
+    startCountdown();
+  }
+
   void startOnlineGame(int seat, String room) {
     aiMode = false;
     isBotFallback = false;
     careerMode = false;
+    trainingMode = false;
     careerOpponent = null;
     mySeat = seat;
     roomCode = room;
@@ -260,6 +285,11 @@ class GameController extends ChangeNotifier {
     String? idToken,
   }) async {
     ws.onMessage = _handleWs;
+    ws.onPing = (ms) {
+      pingMs = ms;
+      onPingUpdate?.call(ms);
+      notifyListeners();
+    };
     ws.onError = () => onToast?.call('Bağlantı hatası');
     ws.onReconnected = () {
       reconnecting = false;
@@ -304,6 +334,7 @@ class GameController extends ChangeNotifier {
 
   void _applyOpponentInfo(Map<String, dynamic> msg) {
     opponentName = msg['oppName'] as String? ?? opponentName;
+    opponentUid = msg['oppUid'] as String? ?? opponentUid;
     opponentElo = (msg['oppElo'] as num?)?.toInt() ?? opponentElo;
     opponentLeague = msg['oppLeague'] as String? ?? opponentLeague;
     if (msg['sessionToken'] is String) {

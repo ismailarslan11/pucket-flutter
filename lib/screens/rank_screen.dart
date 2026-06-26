@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 
+import '../l10n/l10n_extension.dart';
 import '../models/rank_tier.dart';
 import '../models/user_profile.dart';
 import '../services/api_config.dart';
@@ -44,7 +45,7 @@ class _RankScreenState extends State<RankScreen> {
         _loadError = 'Sunucu yanıt vermedi (${res.statusCode})';
       }
     } catch (_) {
-      _loadError = 'Sıralama yüklenemedi — sunucu çalışıyor mu?';
+      _loadError = 'Sıralama yüklenemedi';
     }
     if (mounted) setState(() => _loading = false);
   }
@@ -57,6 +58,7 @@ class _RankScreenState extends State<RankScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthService>();
+    final l10n = context.l10n;
     final myUid = auth.getUid();
     final list = _filtered;
 
@@ -73,11 +75,11 @@ class _RankScreenState extends State<RankScreen> {
                     icon: const Icon(Icons.arrow_back, color: Color(0xFF666666)),
                     onPressed: () => Navigator.pop(context),
                   ),
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      '🏅 SIRALAMALAR',
+                      l10n.rankTitle,
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: AppColors.gold, letterSpacing: 2),
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: AppColors.gold, letterSpacing: 2),
                     ),
                   ),
                   const SizedBox(width: 48),
@@ -89,13 +91,13 @@ class _RankScreenState extends State<RankScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 14),
               child: Row(
                 children: [
-                  _filterBtn('Tümü', null),
-                  _filterBtn('🥉 Bronz', 'Bronz', const Color(0xFFCD7F32)),
-                  _filterBtn('🥈 Gümüş', 'Gümüş', const Color(0xFFAAAAAA)),
-                  _filterBtn('🥇 Altın', 'Altın', AppColors.gold),
-                  _filterBtn('💎 Elmas', 'Elmas', const Color(0xFF60D0FF)),
-                  _filterBtn('🏆 Usta', 'Usta', const Color(0xFF9B59B6)),
-                  _filterBtn('👑 Efsane', 'Efsane', AppColors.red),
+                  _filterBtn(l10n.rankAll, null),
+                  _filterBtn('🥉 ${l10n.tierBronze}', 'Bronz', const Color(0xFFCD7F32)),
+                  _filterBtn('🥈 ${l10n.tierSilver}', 'Gümüş', const Color(0xFFAAAAAA)),
+                  _filterBtn('🥇 ${l10n.tierGold}', 'Altın', AppColors.gold),
+                  _filterBtn('💎 ${l10n.tierDiamond}', 'Elmas', const Color(0xFF60D0FF)),
+                  _filterBtn('🏆 ${l10n.tierMaster}', 'Usta', const Color(0xFF9B59B6)),
+                  _filterBtn('👑 ${l10n.tierLegend}', 'Efsane', AppColors.red),
                 ],
               ),
             ),

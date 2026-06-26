@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import '../l10n/app_localizations.dart';
 import '../l10n/app_language.dart';
 import '../l10n/l10n_extension.dart';
-import '../services/ad_service.dart';
 import '../services/audio_service.dart';
 import '../services/settings_service.dart';
 import 'legal_screen.dart';
@@ -74,18 +73,6 @@ class SettingsScreen extends StatelessWidget {
                       value: settings.vibrationOn,
                       activeThumbColor: AppColors.green,
                       onChanged: settings.setVibration,
-                    ),
-                  ),
-                  _row(
-                    l10n.settingsAds,
-                    l10n.settingsAdsSub,
-                    Switch(
-                      value: settings.adsOn,
-                      activeThumbColor: AppColors.green,
-                      onChanged: (v) {
-                        settings.setAds(v);
-                        context.read<AdService>().onAdsSettingChanged();
-                      },
                     ),
                   ),
                   const SizedBox(height: 8),

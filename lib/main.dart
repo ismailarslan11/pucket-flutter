@@ -16,6 +16,9 @@ import 'services/auth_service.dart';
 import 'services/career_service.dart';
 import 'services/firebase_init.dart';
 import 'services/settings_service.dart';
+import 'services/deep_link_service.dart';
+import 'services/player_meta_service.dart';
+import 'services/push_service.dart';
 import 'theme/app_theme.dart';
 
 void main() async {
@@ -37,8 +40,10 @@ void main() async {
   final career = CareerService();
   await career.load();
 
+  final playerMeta = PlayerMetaService();
+
   final audio = AudioService(settings);
-  final ads = AdService(settings);
+  final ads = AdService();
   await ads.init();
 
   runApp(
@@ -47,6 +52,7 @@ void main() async {
         ChangeNotifierProvider.value(value: settings),
         ChangeNotifierProvider.value(value: auth),
         ChangeNotifierProvider.value(value: career),
+        ChangeNotifierProvider.value(value: playerMeta),
         ChangeNotifierProvider.value(value: audio),
         ChangeNotifierProvider.value(value: ads),
         ChangeNotifierProvider(
@@ -142,8 +148,15 @@ class _AuthenticatedHomeState extends State<_AuthenticatedHome> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final settings = context.read<SettingsService>();
+      final auth = context.read<AuthService>();
+      final career = context.read<CareerService>();
+      final meta = context.read<PlayerMetaService>();
       final audio = context.read<AudioService>();
       await audio.playMenuMusic();
+      await meta.load(auth.getUid());
+      await career.syncFromCloud(auth.getUid());
+      await PushService.initAndRegister(auth.getUid());
+      if (mounted) DeepLinkService.consumePending(context);
       if (!settings.tutorialSeen && mounted) {
         await Navigator.of(context).push(
           MaterialPageRoute(builder: (_) => const TutorialScreen()),

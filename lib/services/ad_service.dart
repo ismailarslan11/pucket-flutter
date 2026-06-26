@@ -2,12 +2,9 @@ import 'package:flutter/foundation.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 import '../config/ad_config.dart';
-import 'settings_service.dart';
 
 class AdService extends ChangeNotifier {
-  AdService(this.settings);
-
-  final SettingsService settings;
+  AdService();
 
   bool initialized = false;
   InterstitialAd? _interstitial;
@@ -26,7 +23,7 @@ class AdService extends ChangeNotifier {
   }
 
   void preloadInterstitial() {
-    if (!AdConfig.supported || !settings.adsOn) return;
+    if (!AdConfig.supported || !initialized) return;
     if (_loadingInterstitial || _interstitial != null) return;
     final unitId = AdConfig.interstitialUnitId;
     if (unitId.isEmpty) return;
@@ -62,7 +59,7 @@ class AdService extends ChangeNotifier {
 
   /// Maç bitince veya her 2 round sonrası tam ekran reklam.
   Future<void> maybeShowInterstitial({required bool matchFinished}) async {
-    if (!AdConfig.supported || !settings.adsOn || !initialized) return;
+    if (!AdConfig.supported || !initialized) return;
 
     _roundsSinceInterstitial++;
     final shouldShow = matchFinished || _roundsSinceInterstitial >= 2;
@@ -81,7 +78,7 @@ class AdService extends ChangeNotifier {
   }
 
   Future<void> showInterstitialOnMenuReturn() async {
-    if (!AdConfig.supported || !settings.adsOn || !initialized) return;
+    if (!AdConfig.supported || !initialized) return;
     final ad = _interstitial;
     if (ad == null) {
       preloadInterstitial();
@@ -90,16 +87,6 @@ class AdService extends ChangeNotifier {
     _interstitial = null;
     await ad.show();
     preloadInterstitial();
-  }
-
-  void onAdsSettingChanged() {
-    if (!settings.adsOn) {
-      _interstitial?.dispose();
-      _interstitial = null;
-    } else {
-      preloadInterstitial();
-    }
-    notifyListeners();
   }
 
   @override

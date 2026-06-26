@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../l10n/l10n_extension.dart';
 import '../game/ai_bot.dart';
 import '../game/game_controller.dart';
 import '../models/career_opponent.dart';
 import '../services/ad_service.dart';
+import '../screens/cosmetics_screen.dart';
+import '../screens/tournament_screen.dart';
+import '../screens/training_screen.dart';
 import 'career_screen.dart';
 import 'difficulty_screen.dart';
 import 'game_screen.dart';
@@ -108,5 +112,32 @@ class AppRouter {
 
   static void goTutorial(BuildContext context) {
     Navigator.push(context, MaterialPageRoute(builder: (_) => const TutorialScreen()));
+  }
+
+  static void goTraining(BuildContext context) {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => const TrainingScreen()));
+  }
+
+  static void goTournament(BuildContext context) {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => const TournamentScreen()));
+  }
+
+  static void goCosmetics(BuildContext context) {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => const CosmeticsScreen()));
+  }
+
+  static void startTraining(BuildContext context, TrainingType type, {AiLevel level = AiLevel.easy}) {
+    final game = context.read<GameController>();
+    final l10n = context.l10nRead;
+    game.leave();
+    switch (type) {
+      case TrainingType.shooting:
+        game.startTrainingGame(AiLevel.easy, label: l10n.trainingShooting);
+      case TrainingType.defense:
+        game.startTrainingGame(AiLevel.medium, label: l10n.trainingDefense);
+      case TrainingType.full:
+        game.startTrainingGame(level, label: l10n.trainingFull);
+    }
+    goGame(context);
   }
 }
