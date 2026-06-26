@@ -101,6 +101,9 @@ class GameController extends ChangeNotifier {
   DragState? drag;
   int _frameCount = 0;
   int _lastMovingDiscs = 0;
+  int _visualGeneration = 0;
+
+  int get visualGeneration => _visualGeneration;
 
   Timer? _secTimer;
   Timer? _cdTimer;
@@ -141,14 +144,20 @@ class GameController extends ChangeNotifier {
       if (aiMode && aiBot.shouldThink(nowMs, aiLevel)) {
         if (aiBot.think(discs, aiLevel)) _haptic(25);
       } else if (!aiMode && mySeat == 0) {
-        if (_frameCount % 2 == 0) _sendState();
+        // ~20/s yeterli — 30/s JSON + rebuild kasma yapıyordu
+        if (_frameCount % 3 == 0) _sendState();
       }
 
       PhysicsEngine.settleGateDiscs(discs);
       final winner = PhysicsEngine.checkWinner(discs);
-      if (winner != null) _endRound(winner, broadcast: true);
+      if (winner != null) {
+        _endRound(winner, broadcast: true);
+        return;
+      }
+
+      _visualGeneration++;
+      notifyListeners();
     }
-    notifyListeners();
   }
 
   void resetRound() {
@@ -166,6 +175,7 @@ class GameController extends ChangeNotifier {
     lastWinner = null;
     myRematchPending = false;
     opponentRematchRequested = false;
+    _visualGeneration++;
     notifyListeners();
   }
 
@@ -471,23 +481,26 @@ class GameController extends ChangeNotifier {
         break;
       case 'state':
         if (aiMode || mySeat == 0) break;
+        var changed = false;
         if (msg['discs'] is List && phase == GamePhase.playing) {
-          final states = msg['discs'] as List;
-          for (var i = 0; i < states.length && i < discs.length; i++) {
-            final s = states[i] as List;
-            discs[i].vx = (s[0] as num).toDouble();
-            discs[i].vy = (s[1] as num).toDouble();
-            discs[i].vvx = (s[2] as num).toDouble();
-            discs[i].vvy = (s[3] as num).toDouble();
-          }
+          changed = _applyDiscStates(msg['discs'] as List);
         }
         if (msg['roundWins'] is List) {
           final rw = msg['roundWins'] as List;
-          roundWins[0] = (rw[0] as num).toInt();
-          roundWins[1] = (rw[1] as num).toInt();
+          final r0 = (rw[0] as num).toInt();
+          final r1 = (rw[1] as num).toInt();
+          if (roundWins[0] != r0 || roundWins[1] != r1) {
+            roundWins[0] = r0;
+            roundWins[1] = r1;
+            changed = true;
+          }
         }
         if (msg['currentRound'] != null) {
-          currentRound = (msg['currentRound'] as num).toInt();
+          final cr = (msg['currentRound'] as num).toInt();
+          if (currentRound != cr) {
+            currentRound = cr;
+            changed = true;
+          }
         }
         if (msg['phase'] == 'gameover' && msg['lastWinner'] != null) {
           _applyRoundEndFromNetwork({
@@ -495,7 +508,8 @@ class GameController extends ChangeNotifier {
             'roundWins': roundWins.toList(),
             'currentRound': currentRound,
           });
-        } else {
+        } else if (changed) {
+          _visualGeneration++;
           notifyListeners();
         }
         break;
@@ -629,10 +643,33 @@ class GameController extends ChangeNotifier {
     notifyListeners();
   }
 
+  bool _applyDiscStates(List states) {
+    var changed = false;
+    for (var i = 0; i < states.length && i < discs.length; i++) {
+      final s = states[i] as List;
+      final nx = (s[0] as num).toDouble();
+      final ny = (s[1] as num).toDouble();
+      final nvx = (s[2] as num).toDouble();
+      final nvy = (s[3] as num).toDouble();
+      final d = discs[i];
+      if ((d.vx - nx).abs() > 0.05 ||
+          (d.vy - ny).abs() > 0.05 ||
+          (d.vvx - nvx).abs() > 0.02 ||
+          (d.vvy - nvy).abs() > 0.02) {
+        d.vx = nx;
+        d.vy = ny;
+        d.vvx = nvx;
+        d.vvy = nvy;
+        changed = true;
+      }
+    }
+    return changed;
+  }
+
   void _sendState() {
     if (aiMode || mySeat != 0) return;
     final anyMoving = discs.any((d) => d.vvx.abs() > 0.01 || d.vvy.abs() > 0.01);
-    if (!anyMoving && phase != GamePhase.playing) return;
+    if (!anyMoving) return;
     ws.send({
       'type': 'state',
       'discs': discs
@@ -776,6 +813,7 @@ class GameController extends ChangeNotifier {
       currentVx: vx,
       currentVy: vy,
     );
+    _visualGeneration++;
     notifyListeners();
   }
 
@@ -783,6 +821,7 @@ class GameController extends ChangeNotifier {
     if (drag == null) return;
     drag!.currentVx = vx;
     drag!.currentVy = vy;
+    _visualGeneration++;
     notifyListeners();
   }
 

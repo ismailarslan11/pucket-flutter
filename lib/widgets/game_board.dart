@@ -15,6 +15,7 @@ class GameBoard extends StatefulWidget {
 
 class _GameBoardState extends State<GameBoard> with SingleTickerProviderStateMixin {
   late Ticker _ticker;
+  late GameController _game;
   double _lastMs = 0;
 
   @override
@@ -23,12 +24,18 @@ class _GameBoardState extends State<GameBoard> with SingleTickerProviderStateMix
     _ticker = createTicker(_onTick)..start();
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _game = context.read<GameController>();
+  }
+
   void _onTick(Duration elapsed) {
     if (!mounted) return;
     final ms = elapsed.inMicroseconds / 1000.0;
     if (ms - _lastMs >= 16) {
       _lastMs = ms;
-      context.read<GameController>().tick(ms);
+      _game.tick(ms);
     }
   }
 
@@ -40,7 +47,7 @@ class _GameBoardState extends State<GameBoard> with SingleTickerProviderStateMix
 
   @override
   Widget build(BuildContext context) {
-    final game = context.watch<GameController>();
+    final game = context.read<GameController>();
     return LayoutBuilder(
       builder: (context, constraints) {
         final sx = constraints.maxWidth / GameConstants.vw;
@@ -67,15 +74,22 @@ class _GameBoardState extends State<GameBoard> with SingleTickerProviderStateMix
           },
           onPanEnd: (_) => game.onPointerUp(),
           onPanCancel: () => game.onPointerUp(),
-          child: CustomPaint(
-            size: Size(constraints.maxWidth, constraints.maxHeight),
-            painter: GamePainter(
-              discs: game.discs,
-              mySeat: game.mySeat,
-              drag: game.drag,
-              sx: sx,
-              sy: sy,
-            ),
+          child: ListenableBuilder(
+            listenable: game,
+            builder: (context, _) {
+              final g = context.read<GameController>();
+              return CustomPaint(
+                size: Size(constraints.maxWidth, constraints.maxHeight),
+                painter: GamePainter(
+                  discs: g.discs,
+                  mySeat: g.mySeat,
+                  drag: g.drag,
+                  visualGeneration: g.visualGeneration,
+                  sx: sx,
+                  sy: sy,
+                ),
+              );
+            },
           ),
         );
       },

@@ -6,10 +6,10 @@ const kProductionServer = 'https://pucket-flutter-2.onrender.com';
 const kLocalServerHttp = 'http://localhost:8080';
 const kLocalServerWs = 'ws://localhost:8080';
 
-/// macOS/Windows/Linux debug: yerel sunucu. Telefon release: Render.
+/// macOS/Windows/Linux native debug: yerel sunucu. Web, iOS, Android, release: Render.
 bool get useLocalDevServer {
-  if (kIsWeb) return true;
   if (!kDebugMode) return false;
+  if (kIsWeb) return false;
   switch (defaultTargetPlatform) {
     case TargetPlatform.macOS:
     case TargetPlatform.windows:

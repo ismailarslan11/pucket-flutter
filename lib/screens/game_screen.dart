@@ -270,53 +270,79 @@ class _GameScreenState extends State<GameScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final game = context.watch<GameController>();
+    final game = context.read<GameController>();
     final l10n = context.l10n;
-    final timer =
-        '${(game.seconds ~/ 60).toString().padLeft(2, '0')}:${(game.seconds % 60).toString().padLeft(2, '0')}';
 
     return Scaffold(
       backgroundColor: AppColors.bg,
       body: SafeArea(
         child: Column(
           children: [
-            _topBar(game, l10n),
-            if (game.reconnecting)
-              Container(
-                width: double.infinity,
-                color: const Color(0xFF3A2A00),
-                padding: const EdgeInsets.symmetric(vertical: 6),
-                child: Text(
-                  l10n.reconnecting,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: AppColors.gold, fontSize: 11, fontWeight: FontWeight.w700),
-                ),
-              ),
-            if (game.opponentDisconnected)
-              Container(
-                width: double.infinity,
-                color: const Color(0xFF2A1010),
-                padding: const EdgeInsets.symmetric(vertical: 6),
-                child: Text(
-                  l10n.opponentDisconnected(game.opponentGraceLeft),
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: AppColors.red, fontSize: 11, fontWeight: FontWeight.w700),
-                ),
-              ),
-            _roundRow(game, timer, l10n),
+            ListenableBuilder(
+              listenable: game,
+              builder: (context, _) {
+                final g = context.read<GameController>();
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _topBar(g, l10n),
+                    if (g.reconnecting)
+                      Container(
+                        width: double.infinity,
+                        color: const Color(0xFF3A2A00),
+                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        child: Text(
+                          l10n.reconnecting,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: AppColors.gold, fontSize: 11, fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                    if (g.opponentDisconnected)
+                      Container(
+                        width: double.infinity,
+                        color: const Color(0xFF2A1010),
+                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        child: Text(
+                          l10n.opponentDisconnected(g.opponentGraceLeft),
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(color: AppColors.red, fontSize: 11, fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                    _roundRow(
+                      g,
+                      '${(g.seconds ~/ 60).toString().padLeft(2, '0')}:${(g.seconds % 60).toString().padLeft(2, '0')}',
+                      l10n,
+                    ),
+                  ],
+                );
+              },
+            ),
             Expanded(
               child: Stack(
                 children: [
-                  const GameBoard(),
-                  if (_showOverlay && !_showElo && !_showCareer) _buildOverlay(game, l10n),
-                  if (_showElo && _eloResult != null) _buildEloOverlay(game, _eloResult!),
-                  if (_showCareer && _careerResult != null) _buildCareerOverlay(game, _careerResult!),
-                  if (_showPause) _buildPause(game),
-                  if (_showSettings) _buildInGameSettings(game),
+                  const RepaintBoundary(child: GameBoard()),
+                  ListenableBuilder(
+                    listenable: game,
+                    builder: (context, _) {
+                      final g = context.read<GameController>();
+                      return Stack(
+                        children: [
+                          if (_showOverlay && !_showElo && !_showCareer) _buildOverlay(g, l10n),
+                          if (_showElo && _eloResult != null) _buildEloOverlay(g, _eloResult!),
+                          if (_showCareer && _careerResult != null) _buildCareerOverlay(g, _careerResult!),
+                          if (_showPause) _buildPause(g),
+                          if (_showSettings) _buildInGameSettings(g),
+                        ],
+                      );
+                    },
+                  ),
                 ],
               ),
             ),
-            _bottomBar(game, l10n),
+            ListenableBuilder(
+              listenable: game,
+              builder: (context, _) => _bottomBar(context.read<GameController>(), l10n),
+            ),
           ],
         ),
       ),

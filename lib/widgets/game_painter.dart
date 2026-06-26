@@ -1,4 +1,6 @@
 import 'dart:math' as math;
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 
 import '../game/game_constants.dart';
@@ -11,6 +13,7 @@ class GamePainter extends CustomPainter {
     required this.discs,
     required this.mySeat,
     required this.drag,
+    required this.visualGeneration,
     required this.sx,
     required this.sy,
   });
@@ -18,10 +21,31 @@ class GamePainter extends CustomPainter {
   final List<Disc> discs;
   final int mySeat;
   final DragState? drag;
+  final int visualGeneration;
   final double sx;
   final double sy;
 
+  static ui.Picture? _fieldPicture;
+  static Size? _fieldSize;
+  static int? _fieldSeat;
+
   Offset _s2c(double vx, double vy) => Offset(vx * sx, vy * sy);
+
+  ui.Picture _fieldPictureFor(Size size) {
+    if (_fieldPicture != null &&
+        _fieldSize == size &&
+        _fieldSeat == mySeat) {
+      return _fieldPicture!;
+    }
+
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder);
+    _drawFieldStatic(canvas, size);
+    _fieldPicture = recorder.endRecording();
+    _fieldSize = size;
+    _fieldSeat = mySeat;
+    return _fieldPicture!;
+  }
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -31,7 +55,7 @@ class GamePainter extends CustomPainter {
       canvas.rotate(math.pi);
     }
 
-    _drawField(canvas, size);
+    canvas.drawPicture(_fieldPictureFor(size));
     for (final d in discs) {
       _drawDisc(canvas, d);
     }
@@ -41,7 +65,7 @@ class GamePainter extends CustomPainter {
     canvas.restore();
   }
 
-  void _drawField(Canvas canvas, Size size) {
+  void _drawFieldStatic(Canvas canvas, Size size) {
     final gap = _s2c(GameConstants.gapX, GameConstants.vHalf - 5);
     final gw = GameConstants.gapW * sx;
     final gh = 10 * sy;
@@ -216,5 +240,11 @@ class GamePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant GamePainter old) => true;
+  bool shouldRepaint(covariant GamePainter old) {
+    return old.visualGeneration != visualGeneration ||
+        old.mySeat != mySeat ||
+        old.sx != sx ||
+        old.sy != sy ||
+        old.drag != drag;
+  }
 }
