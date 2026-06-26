@@ -31,15 +31,11 @@ class PlayerMetaService extends ChangeNotifier {
   }
 
   Future<void> onMatchPlayed(String uid, {required bool won, required bool ranked}) async {
-    if (ranked) {
-      await MetaApi.bumpQuest(uid, 'play');
-      if (won) await MetaApi.bumpQuest(uid, 'win');
-    }
+    // Görev ilerlemesi sunucuda matchEnd ile güncellenir
     await load(uid);
   }
 
   Future<void> onCareerWin(String uid) async {
-    await MetaApi.bumpQuest(uid, 'career');
     await load(uid);
   }
 

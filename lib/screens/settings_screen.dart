@@ -5,6 +5,7 @@ import '../l10n/app_localizations.dart';
 import '../l10n/app_language.dart';
 import '../l10n/l10n_extension.dart';
 import '../services/audio_service.dart';
+import '../services/auth_service.dart';
 import '../services/settings_service.dart';
 import 'legal_screen.dart';
 import '../theme/app_theme.dart';
@@ -76,6 +77,13 @@ class SettingsScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 8),
+                  TextButton(
+                    onPressed: () async {
+                      await context.read<AuthService>().signOut();
+                      if (context.mounted) Navigator.pop(context);
+                    },
+                    child: Text(l10n.signOut, style: const TextStyle(color: Color(0xFFAA4444))),
+                  ),
                   TextButton(
                     onPressed: () => LegalScreen.showPrivacy(context),
                     child: Text(l10n.privacyPolicy, style: const TextStyle(color: Color(0xFF666666))),

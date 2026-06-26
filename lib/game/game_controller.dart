@@ -115,6 +115,7 @@ class GameController extends ChangeNotifier {
   void Function(int ms)? onPingUpdate;
   void Function(String message)? onToast;
   void Function()? onOpponentLeft;
+  void Function()? onAfkForfeit;
   void Function()? onOpponentDisconnected;
   void Function()? onOpponentReconnected;
   void Function()? onReconnecting;
@@ -127,7 +128,7 @@ class GameController extends ChangeNotifier {
   void tick(double nowMs) {
     if (phase != GamePhase.playing) return;
 
-    if (mySeat == 0 || aiMode || mySeat == 1) {
+    if (aiMode || mySeat == 0) {
       PhysicsEngine.stepPhysics(discs);
 
       final moving = discs.where((d) => d.vvx.abs() > 0.05 || d.vvy.abs() > 0.05).length;
@@ -143,10 +144,9 @@ class GameController extends ChangeNotifier {
         if (_frameCount % 2 == 0) _sendState();
       }
 
-      if (mySeat == 0 || aiMode) {
-        final winner = PhysicsEngine.checkWinner(discs);
-        if (winner != null) _endRound(winner, broadcast: true);
-      }
+      PhysicsEngine.settleGateDiscs(discs);
+      final winner = PhysicsEngine.checkWinner(discs);
+      if (winner != null) _endRound(winner, broadcast: true);
     }
     notifyListeners();
   }
@@ -208,7 +208,7 @@ class GameController extends ChangeNotifier {
       if (phase != GamePhase.playing) return;
       onToast?.call('AFK — maç sonlandırıldı');
       leave();
-      onOpponentLeft?.call();
+      onAfkForfeit?.call();
     });
   }
 
@@ -222,10 +222,18 @@ class GameController extends ChangeNotifier {
     isRanked = false;
     aiLevel = level;
     mySeat = 0;
-    roomCode = 'BOT';
-    opponentName = 'Bot';
-    opponentElo = 1000;
-    opponentLeague = 'Bronz';
+    if (botFallback) {
+      final profile = BotFallbackProfile.generate(playerElo: auth?.user?.elo ?? 1000);
+      roomCode = profile.roomCode;
+      opponentName = profile.name;
+      opponentElo = profile.elo;
+      opponentLeague = profile.league;
+    } else {
+      roomCode = 'BOT';
+      opponentName = 'Bot';
+      opponentElo = 1000;
+      opponentLeague = 'Bronz';
+    }
     resetMatch();
     startCountdown();
   }
@@ -659,6 +667,15 @@ class GameController extends ChangeNotifier {
     }
   }
 
+  void continueToNextRound() {
+    if (matchFinished) return;
+    resetRound();
+    startCountdown();
+    if (!aiMode && !trainingMode) {
+      ws.send({'type': 'nextRound'});
+    }
+  }
+
   void onPointerDown(double vx, double vy) {
     if (phase != GamePhase.playing) return;
     _startAfkTimer();
@@ -823,6 +840,7 @@ class GameController extends ChangeNotifier {
     _cdTimer?.cancel();
     _graceTimer?.cancel();
     _afkTimer?.cancel();
+    _pauseTimer?.cancel();
     ws.disconnect();
     super.dispose();
   }

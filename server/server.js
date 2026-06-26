@@ -251,9 +251,17 @@ function getTournamentState() {
 }
 
 function readJsonBody(req) {
+  const MAX = 65536;
   return new Promise((resolve, reject) => {
     let body = '';
+    let size = 0;
     req.on('data', (chunk) => {
+      size += chunk.length;
+      if (size > MAX) {
+        reject(new Error('body too large'));
+        req.destroy();
+        return;
+      }
       body += chunk;
     });
     req.on('end', () => {
@@ -479,8 +487,9 @@ const server = http.createServer((req, res) => {
   if (url.pathname === '/' || url.pathname === '/health') {
     const playerCount = Object.keys(db.get('players').value() || {}).length;
     const dbMode = process.env.DATABASE_URL ? 'postgres' : 'file';
+    const pkg = require('./package.json');
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ ok: true, db: dbMode, players: playerCount }));
+    res.end(JSON.stringify({ ok: true, db: dbMode, players: playerCount, version: pkg.version }));
     return;
   }
 
@@ -609,9 +618,7 @@ const server = http.createServer((req, res) => {
           if (data.fcmToken) {
             db.set(`playerMeta.${uid}.fcmToken`, data.fcmToken).write();
           }
-          if (data.questBump) {
-            bumpQuest(uid, data.questBump);
-          }
+          // questBump yalnızca sunucu tarafından (matchEnd, career) — istemciden kabul edilmez
           res.writeHead(200, cors);
           res.end(JSON.stringify({ ok: true, meta: getPlayerMeta(uid) }));
         })
@@ -1019,7 +1026,12 @@ wss.on('connection', (ws) => {
 setInterval(() => {
   const now = Date.now();
   for (const [id, r] of rooms) {
-    if (r.isEmpty || now - r.created > 3600000) rooms.delete(id);
+    if (r.isEmpty) {
+      rooms.delete(id);
+    } else if (now - r.created > 7200000) {
+      // 2 saatten eski boş olmayan odalar — muhtemelen terk edilmiş
+      if (r.connectedCount === 0) rooms.delete(id);
+    }
   }
   for (let i = matchmakingQueue.length - 1; i >= 0; i--) {
     if (now - matchmakingQueue[i].joinedAt > 30000) matchmakingQueue.splice(i, 1);

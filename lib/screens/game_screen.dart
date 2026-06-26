@@ -34,7 +34,8 @@ class _GameScreenState extends State<GameScreen> {
   bool _showElo = false;
   String _overlayTitle = '';
   String _overlaySub = '';
-  bool _showRematch = false;
+  String? _overlayPrimaryLabel;
+  VoidCallback? _overlayPrimaryAction;
   int _lastCountdown = -1;
   GamePhase? _lastPhase;
   EloResult? _eloResult;
@@ -61,7 +62,21 @@ class _GameScreenState extends State<GameScreen> {
       game.onOpponentLeft = () {
         if (mounted) {
           final l10n = context.l10nRead;
-          _showEndOverlay(l10n.opponentLeft, l10n.opponentLeftSub, false, l10n.backToMenu);
+          _showEndOverlay(
+            title: l10n.opponentLeft,
+            sub: l10n.opponentLeftSub,
+          );
+        }
+      };
+      game.onAfkForfeit = () {
+        if (mounted) {
+          final l10n = context.l10nRead;
+          _showEndOverlay(
+            title: l10n.afkTitle,
+            sub: l10n.afkSub,
+            primaryLabel: l10n.backToMenu,
+            onPrimary: () => AppRouter.goMenu(context),
+          );
         }
       };
       game.onRematchRequest = () {
@@ -123,7 +138,8 @@ class _GameScreenState extends State<GameScreen> {
         _showElo = false;
         _overlayTitle = '${game.countdown}';
         _overlaySub = l10n.youAreTeam(team);
-        _showRematch = false;
+        _overlayPrimaryLabel = null;
+        _overlayPrimaryAction = null;
       });
     } else if (game.phase == GamePhase.playing && _lastPhase == GamePhase.countdown) {
       _lastCountdown = 0;
@@ -150,8 +166,8 @@ class _GameScreenState extends State<GameScreen> {
             _showOverlay = false;
           });
         });
-      } else if (game.isRanked && game.matchFinished && game.pendingEloResult != null) {
-        // ELO overlay onEloResult ile
+      } else if (game.isRanked && game.matchFinished && !game.isBotFallback) {
+        // Ranked: ELO overlay onEloResult ile gösterilir, çift overlay önlenir
       } else {
         _showRoundOverlay(game);
       }
@@ -176,17 +192,23 @@ class _GameScreenState extends State<GameScreen> {
     );
     if (game.matchFinished) {
       _showEndOverlay(
-        won ? l10n.matchWon : l10n.matchLost,
-        won ? l10n.congrats(score) : l10n.sorry(score),
-        !game.isRanked || game.pendingEloResult == null,
-        l10n.newMatch,
+        title: won ? l10n.matchWon : l10n.matchLost,
+        sub: won ? l10n.congrats(score) : l10n.sorry(score),
+        primaryLabel: l10n.newMatch,
+        onPrimary: () {
+          if (game.aiMode || game.trainingMode) {
+            game.rematchLocal();
+          } else {
+            game.requestRematch();
+          }
+        },
       );
     } else {
       _showEndOverlay(
-        l10n.roundEnded(game.currentRound - 1),
-        '${won ? l10n.roundWon : l10n.roundLost}\n$score',
-        true,
-        l10n.nextRound,
+        title: l10n.roundEnded(game.currentRound - 1),
+        sub: '${won ? l10n.roundWon : l10n.roundLost}\n$score',
+        primaryLabel: l10n.nextRound,
+        onPrimary: game.continueToNextRound,
       );
     }
   }
@@ -248,10 +270,10 @@ class _GameScreenState extends State<GameScreen> {
 
   Widget _topBar(GameController game, l10n) {
     final lbl0 = l10n.youRed;
-    final lbl1 = game.careerMode
+    final lbl1 = game.careerMode || game.isBotFallback
         ? game.opponentName.toUpperCase()
         : game.aiMode
-            ? (game.isBotFallback ? 'BOT 🤖' : l10n.botBlue)
+            ? l10n.botBlue
             : (game.opponentName.isNotEmpty ? game.opponentName.toUpperCase() : l10n.blue);
 
     return Container(
@@ -264,7 +286,7 @@ class _GameScreenState extends State<GameScreen> {
       child: Row(
         children: [
           Expanded(child: _scoreBox(lbl0, game.roundWins[0], AppColors.red)),
-          if (game.careerMode || (!game.aiMode && game.opponentName.isNotEmpty))
+          if (game.careerMode || game.isBotFallback || (!game.aiMode && game.opponentName.isNotEmpty))
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 6),
               child: Column(
@@ -275,7 +297,7 @@ class _GameScreenState extends State<GameScreen> {
                         ? l10n.trainingMode
                         : game.careerMode
                             ? l10n.careerMode
-                            : (game.isRanked ? l10n.ranked : l10n.online),
+                            : (game.isRanked && !game.isBotFallback ? l10n.ranked : l10n.online),
                     style: TextStyle(
                       fontSize: 7,
                       color: game.careerMode ? AppColors.gold : const Color(0xFF555555),
@@ -366,14 +388,16 @@ class _GameScreenState extends State<GameScreen> {
             Text(
               game.careerMode
                   ? l10n.careerMode
-                  : game.aiMode
-                      ? (game.isBotFallback ? l10n.botMode : l10n.bot)
-                      : game.roomCode,
+                  : game.isBotFallback
+                      ? game.roomCode
+                      : game.aiMode
+                          ? l10n.bot
+                          : game.roomCode,
               style: TextStyle(
-                color: game.careerMode || game.isBotFallback ? AppColors.gold : const Color(0xFF444444),
+                color: game.careerMode ? AppColors.gold : const Color(0xFF444444),
                 fontSize: 9,
                 letterSpacing: 1,
-                fontWeight: game.careerMode || game.isBotFallback ? FontWeight.w800 : FontWeight.normal,
+                fontWeight: game.careerMode ? FontWeight.w800 : FontWeight.normal,
               ),
             ),
           ],
@@ -457,22 +481,21 @@ class _GameScreenState extends State<GameScreen> {
                 textAlign: TextAlign.center,
                 style: const TextStyle(color: Color(0xFF777777), fontSize: 13, height: 1.6),
               ),
-              if (_showRematch) ...[
+              if (_overlayPrimaryLabel != null && _overlayPrimaryAction != null) ...[
                 const SizedBox(height: 20),
                 PucketButton(
-                  label: l10n.rematch,
+                  label: _overlayPrimaryLabel!,
                   width: 260,
                   onPressed: () {
                     setState(() => _showOverlay = false);
-                    if (game.aiMode) {
-                      game.rematchLocal();
-                    } else {
-                      game.requestRematch();
-                      if (game.myRematchPending) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text(l10n.rematchSent)),
-                        );
-                      }
+                    _overlayPrimaryAction!();
+                    if (!game.aiMode &&
+                        !game.trainingMode &&
+                        game.matchFinished &&
+                        game.myRematchPending) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(l10n.rematchSent)),
+                      );
                     }
                   },
                 ),
@@ -727,10 +750,16 @@ class _GameScreenState extends State<GameScreen> {
                   final won = result.won;
                   final score = '${game.roundWins[0]} - ${game.roundWins[1]}';
                   _showEndOverlay(
-                    won ? l10n.matchWon : l10n.matchLost,
-                    won ? l10n.congrats(score) : l10n.sorry(score),
-                    true,
-                    l10n.newMatch,
+                    title: won ? l10n.matchWon : l10n.matchLost,
+                    sub: won ? l10n.congrats(score) : l10n.sorry(score),
+                    primaryLabel: l10n.newMatch,
+                    onPrimary: () {
+                      if (game.aiMode || game.trainingMode) {
+                        game.rematchLocal();
+                      } else {
+                        game.requestRematch();
+                      }
+                    },
                   );
                 },
               ),
@@ -879,12 +908,18 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
-  void _showEndOverlay(String title, String sub, bool rematch, String buttonLabel) {
+  void _showEndOverlay({
+    required String title,
+    required String sub,
+    String? primaryLabel,
+    VoidCallback? onPrimary,
+  }) {
     setState(() {
       _showOverlay = true;
       _overlayTitle = title;
       _overlaySub = sub;
-      _showRematch = rematch;
+      _overlayPrimaryLabel = primaryLabel;
+      _overlayPrimaryAction = onPrimary;
     });
   }
 }

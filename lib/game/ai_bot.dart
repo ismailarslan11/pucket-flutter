@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import '../models/disc.dart';
+import '../models/rank_tier.dart';
 import 'game_constants.dart';
 
 enum AiLevel { easy, medium, hard }
@@ -138,5 +139,37 @@ class AiBot {
     tgt.vvx = (dx / dist) * power * GameConstants.slingPower;
     tgt.vvy = (dy / dist) * power * GameConstants.slingPower;
     return true;
+  }
+}
+
+/// Hızlı eşleşmede rakip bulunamazsa gerçek oyuncu gibi görünen profil.
+class BotFallbackProfile {
+  final String name;
+  final int elo;
+  final String league;
+  final String roomCode;
+
+  const BotFallbackProfile({
+    required this.name,
+    required this.elo,
+    required this.league,
+    required this.roomCode,
+  });
+
+  static const _names = [
+    'Arda', 'Zeynep', 'Marcus', 'Elena', 'Can', 'Mira', 'Leo', 'Aylin',
+    'Kaan', 'Sofia', 'Emre', 'Luna', 'Deniz', 'Nova', 'Berk', 'Yuki',
+    'Selin', 'Omar', 'Defne', 'Alex', 'Ece', 'Ryan', 'Melis', 'Luca',
+  ];
+
+  factory BotFallbackProfile.generate({int playerElo = 1000}) {
+    final rng = math.Random();
+    final name = _names[rng.nextInt(_names.length)];
+    final delta = rng.nextInt(130) + 20;
+    final elo = (playerElo + (rng.nextBool() ? delta : -delta)).clamp(850, 1750);
+    final league = RankTier.forElo(elo).name;
+    const hex = '0123456789ABCDEF';
+    final roomCode = List.generate(6, (_) => hex[rng.nextInt(16)]).join();
+    return BotFallbackProfile(name: name, elo: elo, league: league, roomCode: roomCode);
   }
 }

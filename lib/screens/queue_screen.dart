@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../game/ai_bot.dart';
 import '../game/game_controller.dart';
+import '../l10n/l10n_extension.dart';
 import '../models/rank_tier.dart';
 import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
@@ -19,9 +20,10 @@ class QueueScreen extends StatefulWidget {
 }
 
 class _QueueScreenState extends State<QueueScreen> {
-  String _status = 'Rakip aranıyor...';
+  String _status = '';
   bool _spinning = true;
   bool _showPreview = false;
+  bool _queueBlocked = false;
   String? _oppName;
   int? _myElo;
   int? _oppElo;
@@ -29,20 +31,23 @@ class _QueueScreenState extends State<QueueScreen> {
   Timer? _botTimer;
   GameController? _game;
 
-  static const _msgs = [
-    'ELO seviyenizde rakip aranıyor...',
-    'Liginizde oyuncu bekleniyor...',
-    'Eşleştirme kuruluyor...',
-  ];
-
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) => _init());
   }
 
+  void _cancelTimers() {
+    _msgTimer?.cancel();
+    _botTimer?.cancel();
+    _msgTimer = null;
+    _botTimer = null;
+  }
+
   Future<void> _init() async {
     final auth = context.read<AuthService>();
+    final l10n = context.l10n;
+    _status = l10n.queueSearching;
     _game = context.read<GameController>();
     final game = _game!;
 
@@ -51,34 +56,46 @@ class _QueueScreenState extends State<QueueScreen> {
     };
 
     game.onToast = (m) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
+      if (m.contains('Google') || m.contains('Ranked') || m.contains('giriş')) {
+        _cancelTimers();
+        setState(() {
+          _queueBlocked = true;
+          _spinning = false;
+          _status = m;
+        });
+      }
     };
 
     final ok = await game.openConnection(uid: auth.getUid(), name: auth.getName());
     if (!mounted) return;
     if (!ok) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Sunucu yok — bot moduna geçiliyor')),
-        );
-        AppRouter.startBotFallback(context, level: AiLevel.hard);
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.queueNoServer)),
+      );
+      AppRouter.startBotFallback(context, level: AiLevel.hard);
       return;
     }
 
     game.enterQueue(auth.getUid(), auth.getName());
 
+    final msgs = [
+      l10n.queueSearching,
+      l10n.queueSearchingElo,
+      l10n.queueSearchingMatch,
+    ];
     var idx = 0;
     _msgTimer = Timer.periodic(const Duration(milliseconds: 2200), (_) {
       if (!mounted) return;
       setState(() {
-        idx = (idx + 1) % _msgs.length;
-        _status = _msgs[idx];
+        idx = (idx + 1) % msgs.length;
+        _status = msgs[idx];
       });
     });
 
     _botTimer = Timer(const Duration(seconds: 20), () {
-      if (!mounted) return;
+      if (!mounted || _queueBlocked) return;
       _botFallback();
     });
 
@@ -89,10 +106,9 @@ class _QueueScreenState extends State<QueueScreen> {
     final game = _game;
     if (game == null || !mounted) return;
     if (game.isRanked && game.roomCode.isNotEmpty && !_showPreview) {
-      _msgTimer?.cancel();
-      _botTimer?.cancel();
+      _cancelTimers();
       setState(() {
-        _status = 'Rakip bulundu!';
+        _status = context.l10n.queueFound;
         _spinning = false;
         _showPreview = true;
         _myElo = context.read<AuthService>().user?.elo;
@@ -103,14 +119,15 @@ class _QueueScreenState extends State<QueueScreen> {
   }
 
   void _botFallback() {
-    _msgTimer?.cancel();
+    if (_queueBlocked) return;
+    _cancelTimers();
     setState(() {
-      _status = 'Rakip bulundu! Başlıyor...';
+      _status = context.l10n.queueBotStarting;
       _spinning = false;
     });
     Future.delayed(const Duration(milliseconds: 1200), () {
       if (mounted) {
-        _game!.leave();
+        _game!.leaveQueue();
         AppRouter.startBotFallback(context, level: AiLevel.hard);
       }
     });
@@ -118,15 +135,16 @@ class _QueueScreenState extends State<QueueScreen> {
 
   @override
   void dispose() {
-    _msgTimer?.cancel();
-    _botTimer?.cancel();
+    _cancelTimers();
     _game?.removeListener(_onGameUpdate);
+    _game?.leaveQueue();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthService>();
+    final l10n = context.l10n;
     final user = auth.user;
     final tier = user != null ? RankTier.forElo(user.elo) : RankTier.tiers.first;
     final cardWidth = (MediaQuery.sizeOf(context).width - 48).clamp(280.0, 420.0);
@@ -147,9 +165,9 @@ class _QueueScreenState extends State<QueueScreen> {
               child: Column(
                 children: [
                   const Spacer(flex: 2),
-                  const Text(
-                    '🏆 RANKED MAÇ',
-                    style: TextStyle(
+                  Text(
+                    l10n.queueRankedTitle,
+                    style: const TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.w900,
                       color: Color(0xFF60AAFF),
@@ -179,9 +197,9 @@ class _QueueScreenState extends State<QueueScreen> {
                                 child: CircularProgressIndicator(strokeWidth: 3, color: AppColors.green),
                               ),
                             ),
-                          const Text(
-                            'ELO PUANINIZ',
-                            style: TextStyle(fontSize: 9, color: Color(0xFF555555), letterSpacing: 3),
+                          Text(
+                            l10n.queueYourElo,
+                            style: const TextStyle(fontSize: 9, color: Color(0xFF555555), letterSpacing: 3),
                           ),
                           Text(
                             '${user?.elo ?? 1000}',
@@ -201,13 +219,13 @@ class _QueueScreenState extends State<QueueScreen> {
                           ),
                           const SizedBox(height: 12),
                           Text(
-                            _status,
+                            _status.isEmpty ? l10n.queueSearching : _status,
                             textAlign: TextAlign.center,
                             style: const TextStyle(color: Color(0xFF666666), fontSize: 12),
                           ),
                           if (_showPreview) ...[
                             const SizedBox(height: 14),
-                            _vsPreview(_myElo ?? 1000, _oppElo ?? 1000, _oppName ?? 'Rakip'),
+                            _vsPreview(_myElo ?? 1000, _oppElo ?? 1000, _oppName ?? l10n.opponent),
                           ],
                         ],
                       ),
@@ -215,7 +233,7 @@ class _QueueScreenState extends State<QueueScreen> {
                   ),
                   const Spacer(flex: 3),
                   PucketButton(
-                    label: 'KUYRUKTAN ÇIK',
+                    label: l10n.queueLeave,
                     secondary: true,
                     width: cardWidth,
                     onPressed: () {
@@ -234,6 +252,7 @@ class _QueueScreenState extends State<QueueScreen> {
   }
 
   Widget _vsPreview(int myElo, int oppElo, String oppName) {
+    final l10n = context.l10n;
     final myTier = RankTier.forElo(myElo);
     final oppTier = RankTier.forElo(oppElo);
     return Container(
@@ -249,7 +268,7 @@ class _QueueScreenState extends State<QueueScreen> {
           Expanded(
             child: Column(
               children: [
-                const Text('SEN', style: TextStyle(fontSize: 9, color: Color(0xFF555555))),
+                Text(l10n.youLabel, style: const TextStyle(fontSize: 9, color: Color(0xFF555555))),
                 Text('$myElo', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: AppColors.red)),
                 Text(myTier.name, style: const TextStyle(fontSize: 10, color: Color(0xFF666666))),
               ],
@@ -259,7 +278,7 @@ class _QueueScreenState extends State<QueueScreen> {
           Expanded(
             child: Column(
               children: [
-                const Text('RAKİP', style: TextStyle(fontSize: 9, color: Color(0xFF555555))),
+                Text(l10n.opponent, style: const TextStyle(fontSize: 9, color: Color(0xFF555555))),
                 Text(oppName, style: const TextStyle(fontSize: 10, color: Color(0xFF888888)), textAlign: TextAlign.center),
                 Text('$oppElo', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: AppColors.blue)),
                 Text(oppTier.name, style: const TextStyle(fontSize: 10, color: Color(0xFF666666))),

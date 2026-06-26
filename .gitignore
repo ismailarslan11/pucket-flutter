@@ -1,3 +1,6 @@
+# Local server data (production uses PostgreSQL)
+server/db.json
+
 # Miscellaneous
 *.class
 *.log

@@ -117,34 +117,60 @@ class PhysicsEngine {
 
   static const int discsPerPlayer = 5;
 
+  static bool inGateZone(Disc d) {
+    final inGapX = d.vx > GameConstants.gapX && d.vx < GameConstants.gapX + GameConstants.gapW;
+    final nearMid = (d.vy - GameConstants.vHalf).abs() < GameConstants.discRadius + 10;
+    return inGapX && nearMid;
+  }
+
+  static bool isStopped(Disc d) =>
+      d.vvx.abs() < 0.12 && d.vvy.abs() < 0.12;
+
+  /// Pul üst yarıyı işgal ediyor mu?
+  static bool occupiesTop(Disc d) {
+    final dr = GameConstants.discRadius;
+    if (inGateZone(d) && isStopped(d)) {
+      return d.vy < GameConstants.vHalf;
+    }
+    return d.vy - dr < GameConstants.vHalf;
+  }
+
+  /// Pul alt yarıyı işgal ediyor mu?
+  static bool occupiesBottom(Disc d) {
+    final dr = GameConstants.discRadius;
+    if (inGateZone(d) && isStopped(d)) {
+      return d.vy >= GameConstants.vHalf;
+    }
+    return d.vy + dr > GameConstants.vHalf;
+  }
+
+  static bool allStopped(List<Disc> discs) => discs.every(isStopped);
+
+  static void settleGateDiscs(List<Disc> discs) {
+    for (final d in discs) {
+      if (!inGateZone(d) || !isStopped(d)) continue;
+      // Kapıda takılı pulları hafifçe geçir — yarım boş kalabilsin
+      if (d.vy < GameConstants.vHalf) {
+        d.vy = GameConstants.vHalf - GameConstants.discRadius - 2;
+      } else {
+        d.vy = GameConstants.vHalf + GameConstants.discRadius + 2;
+      }
+      d.vvx = 0;
+      d.vvy = 0;
+    }
+  }
+
   static int? checkWinner(List<Disc> discs) {
     if (discs.length < discsPerPlayer * 2) return null;
+    if (!allStopped(discs)) return null;
 
-    // Kırmızı kazanır: 5 kırmızı üstte + altta (kendi yarısı) hiç pul kalmaz
-    final redOnBottom =
-        discs.where((d) => d.owner == 0 && d.vy >= GameConstants.vHalf).length;
-    final redOnTop =
-        discs.where((d) => d.owner == 0 && d.vy < GameConstants.vHalf).length;
-    final bluOnBottom =
-        discs.where((d) => d.owner == 1 && d.vy >= GameConstants.vHalf).length;
+    final topEmpty = !discs.any(occupiesTop);
+    final bottomEmpty = !discs.any(occupiesBottom);
 
-    if (redOnBottom == 0 &&
-        redOnTop == discsPerPlayer &&
-        bluOnBottom == 0) {
-      return 0;
-    }
-
-    // Mavi kazanır: 5 mavi altta + üstte (kendi yarısı) hiç pul kalmaz
-    final bluOnTop =
-        discs.where((d) => d.owner == 1 && d.vy < GameConstants.vHalf).length;
-    final bluOnBottomSide =
-        discs.where((d) => d.owner == 1 && d.vy >= GameConstants.vHalf).length;
-
-    if (bluOnTop == 0 &&
-        bluOnBottomSide == discsPerPlayer &&
-        redOnTop == 0) {
-      return 1;
-    }
+    // Alt yarı tamamen boş → kırmızı kazandı
+    if (bottomEmpty) return 0;
+    // Üst yarı tamamen boş → mavi kazandı
+    if (topEmpty) return 1;
 
     return null;
   }

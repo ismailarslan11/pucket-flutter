@@ -24,6 +24,7 @@ class AdService extends ChangeNotifier {
     try {
       await MobileAds.instance.initialize();
       initialized = true;
+      notifyListeners();
       preloadInterstitial();
     } catch (e) {
       debugPrint('AdMob init failed: $e');

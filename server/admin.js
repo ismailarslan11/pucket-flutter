@@ -149,8 +149,10 @@ function collectAdminData(ctx) {
   const playersMap = ctx.db.get('players').value() || {};
   const playerMeta = ctx.db.get('playerMeta').value() || {};
   const usernames = ctx.db.get('usernames').value() || {};
-  const matchHistory = [...(ctx.db.get('matchHistory').value() || [])].reverse().slice(0, 30);
-  const reports = [...(ctx.db.get('reports').value() || [])].reverse().slice(0, 50);
+  const allMatchHistory = ctx.db.get('matchHistory').value() || [];
+  const allReports = ctx.db.get('reports').value() || [];
+  const matchHistory = [...allMatchHistory].reverse().slice(0, 30);
+  const reports = [...allReports].reverse().slice(0, 50);
   const season = ctx.getSeasonInfo();
 
   const allUids = new Set([...Object.keys(playersMap), ...Object.keys(playerMeta)]);
@@ -180,8 +182,8 @@ function collectAdminData(ctx) {
       players: sortedPlayers.length,
       registered: Object.keys(playersMap).length,
       usernames: Object.keys(usernames).length,
-      rankedMatches: matchHistory.length,
-      reports: reports.length,
+      rankedMatches: allMatchHistory.length,
+      reports: allReports.length,
       activeRooms,
       queueSize,
       dbMode: process.env.DATABASE_URL ? 'PostgreSQL' : 'db.json',
@@ -405,10 +407,7 @@ function handleAdmin(req, res, url, ctx) {
   }
 
   if (url.pathname === '/admin/api/stats') {
-    res.writeHead(200, {
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*',
-    });
+    res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(collectAdminData(ctx).stats));
     return true;
   }

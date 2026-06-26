@@ -14,20 +14,44 @@ class AdBannerWidget extends StatefulWidget {
 
 class _AdBannerWidgetState extends State<AdBannerWidget> {
   BannerAd? _banner;
+  AdService? _ads;
   bool _loaded = false;
+  bool _tried = false;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    _ads ??= context.read<AdService>();
     _loadBanner();
   }
 
   void _loadBanner() {
-    final ads = context.read<AdService>();
-    if (!AdConfig.supported || !ads.initialized) return;
+    if (_tried) return;
+    final ads = _ads;
+    if (ads == null || !AdConfig.supported) return;
 
+    if (!ads.initialized) {
+      ads.addListener(_onAdsChanged);
+      return;
+    }
+
+    _tryLoad(ads);
+  }
+
+  void _onAdsChanged() {
+    if (!mounted) return;
+    final ads = context.read<AdService>();
+    if (ads.initialized) {
+      ads.removeListener(_onAdsChanged);
+      _tryLoad(ads);
+    }
+  }
+
+  void _tryLoad(AdService ads) {
+    if (_tried) return;
     final unitId = AdConfig.bannerUnitId;
-    if (unitId.isEmpty || _banner != null) return;
+    if (unitId.isEmpty) return;
+    _tried = true;
 
     final banner = BannerAd(
       adUnitId: unitId,
@@ -40,6 +64,7 @@ class _AdBannerWidgetState extends State<AdBannerWidget> {
         onAdFailedToLoad: (ad, _) {
           ad.dispose();
           _banner = null;
+          _tried = false;
         },
       ),
     );
@@ -49,6 +74,7 @@ class _AdBannerWidgetState extends State<AdBannerWidget> {
 
   @override
   void dispose() {
+    _ads?.removeListener(_onAdsChanged);
     _banner?.dispose();
     super.dispose();
   }

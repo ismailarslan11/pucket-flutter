@@ -187,6 +187,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
     _msgTimer?.cancel();
     _botFallback?.cancel();
     _game?.removeListener(_onGameUpdate);
+    _game?.leave();
     super.dispose();
   }
 

@@ -138,7 +138,7 @@ class MenuScreen extends StatelessWidget {
                         label: l10n.menuRanked,
                         gradient: const LinearGradient(colors: [Color(0xFF2060C0), AppColors.green]),
                         shadowColor: const Color(0xFF1040A0),
-                        onPressed: () => AppRouter.goQueue(context),
+                        onPressed: () => _goRanked(context, auth),
                       ),
                       const SizedBox(height: 14),
                       PucketButton(
@@ -242,6 +242,41 @@ class MenuScreen extends StatelessWidget {
     } else {
       AppRouter.goProfile(context);
     }
+  }
+
+  void _goRanked(BuildContext context, AuthService auth) {
+    final l10n = context.l10n;
+    if (auth.user?.isAnonymous ?? true) {
+      showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: AppColors.card,
+          title: Text(
+            l10n.menuRanked,
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
+          ),
+          content: Text(
+            l10n.authRankedHint,
+            style: const TextStyle(color: Color(0xFF888888), height: 1.4),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(l10n.queueCancel),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                auth.signInWithGoogle();
+              },
+              child: Text(l10n.authGoogle),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+    AppRouter.goQueue(context);
   }
 }
 
