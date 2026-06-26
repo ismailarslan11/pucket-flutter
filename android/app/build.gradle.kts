@@ -49,6 +49,10 @@ android {
             signingConfig = if (keystorePropertiesFile.exists()) {
                 signingConfigs.getByName("release")
             } else {
+                println(
+                    "UYARI: android/key.properties yok — release debug keystore ile imzalanıyor. " +
+                        "Play Store için: bash tool/setup_release_signing.sh"
+                )
                 signingConfigs.getByName("debug")
             }
             isMinifyEnabled = false
