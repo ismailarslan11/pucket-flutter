@@ -3,6 +3,7 @@ const http = require('http');
 const crypto = require('crypto');
 
 const { createStore } = require('./store');
+const { handleAdmin } = require('./admin');
 const db = createStore();
 
 const PORT = process.env.PORT || 8080;
@@ -680,6 +681,19 @@ const server = http.createServer((req, res) => {
         res.writeHead(400, cors);
         res.end(JSON.stringify({ ok: false }));
       });
+    return;
+  }
+
+  if (
+    handleAdmin(req, res, url, {
+      db,
+      getPlayer,
+      getLeaderboard,
+      getSeasonInfo,
+      rooms,
+      matchmakingQueue,
+    })
+  ) {
     return;
   }
 
