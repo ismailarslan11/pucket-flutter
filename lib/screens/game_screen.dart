@@ -192,6 +192,15 @@ class _GameScreenState extends State<GameScreen> {
       setState(() => _showPause = false);
     }
 
+    // Yedek: roundEnd/state kaçırılsa bile gameover overlay göster
+    if (game.phase == GamePhase.gameover &&
+        !_showOverlay &&
+        !_showElo &&
+        !_showCareer &&
+        !(game.isRanked && game.matchFinished && !game.isBotFallback)) {
+      _showRoundOverlay(game);
+    }
+
     _lastPhase = game.phase;
   }
 

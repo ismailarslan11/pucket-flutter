@@ -398,7 +398,9 @@ class Room {
 
   send(seat, msg) {
     const ws = this.players[seat];
-    if (ws && ws.readyState === 1) ws.send(JSON.stringify(msg));
+    if (ws && ws.readyState === 1) {
+      ws.send(JSON.stringify({ ...msg, yourSeat: seat }));
+    }
   }
 
   broadcast(msg, exceptWs) {
@@ -916,6 +918,7 @@ wss.on('connection', (ws) => {
             type: 'joined',
             room: room.id,
             seat,
+            yourSeat: seat,
             waiting: !room.isFull,
             sessionToken: room.sessionTokens[seat],
             oppName: room.isFull ? room.names[room.opponentSeat(seat)] : undefined,
@@ -935,16 +938,16 @@ wss.on('connection', (ws) => {
 
       case 'state': {
         const room = ws.roomId ? rooms.get(ws.roomId) : null;
-        if (room && ws.seat === 0) {
-          room.gameSnapshot = {
-            discs: msg.discs,
-            roundWins: msg.roundWins,
-            currentRound: msg.currentRound,
-            phase: msg.phase,
-            seconds: msg.seconds,
-          };
-        }
-        if (ws.roomId) rooms.get(ws.roomId)?.broadcast(msg, ws);
+        if (!room || ws.seat !== 0) break;
+        room.gameSnapshot = {
+          discs: msg.discs,
+          roundWins: msg.roundWins,
+          currentRound: msg.currentRound,
+          phase: msg.phase,
+          seconds: msg.seconds,
+          lastWinner: msg.lastWinner,
+        };
+        room.send(1, msg);
         break;
       }
 
@@ -958,11 +961,8 @@ wss.on('connection', (ws) => {
           phase: 'gameover',
           lastWinner: msg.winner,
         };
-        // Her iki oyuncuya da gönder (host dahil — senkron garantisi)
-        for (const playerWs of room.players) {
-          if (playerWs && playerWs.readyState === 1) {
-            playerWs.send(JSON.stringify(msg));
-          }
+        for (let i = 0; i < 2; i++) {
+          room.send(i, msg);
         }
         break;
       }
@@ -1060,9 +1060,16 @@ wss.on('connection', (ws) => {
       case 'nextRound':
       case 'newMatch':
       case 'rematch':
-      case 'gameover':
-        if (ws.roomId) rooms.get(ws.roomId)?.broadcast(msg, ws);
+      case 'gameover': {
+        const room = ws.roomId ? rooms.get(ws.roomId) : null;
+        if (!room) break;
+        if (msg.type === 'shot') {
+          if (ws.seat === 1) room.send(0, msg);
+          break;
+        }
+        room.broadcast(msg, ws);
         break;
+      }
 
       case 'ping':
         ws.send(JSON.stringify({ type: 'pong', t: msg.t || Date.now(), serverT: Date.now() }));

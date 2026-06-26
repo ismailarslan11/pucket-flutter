@@ -378,7 +378,21 @@ class GameController extends ChangeNotifier {
     }
   }
 
+  void _syncSeatFromServer(Map<String, dynamic> msg) {
+    if (aiMode) return;
+    final fromYourSeat = (msg['yourSeat'] as num?)?.toInt();
+    if (fromYourSeat != null && fromYourSeat >= 0 && fromYourSeat <= 1) {
+      mySeat = fromYourSeat;
+      return;
+    }
+    final fromSeat = (msg['seat'] as num?)?.toInt();
+    if (fromSeat != null && fromSeat >= 0 && fromSeat <= 1) {
+      mySeat = fromSeat;
+    }
+  }
+
   void _handleWs(Map<String, dynamic> msg) {
+    _syncSeatFromServer(msg);
     switch (msg['type']) {
       case 'profile':
         final player = msg['player'];
@@ -456,7 +470,8 @@ class GameController extends ChangeNotifier {
         notifyListeners();
         break;
       case 'state':
-        if (mySeat == 1 && phase == GamePhase.playing && msg['discs'] != null) {
+        if (aiMode || mySeat == 0) break;
+        if (msg['discs'] is List && phase == GamePhase.playing) {
           final states = msg['discs'] as List;
           for (var i = 0; i < states.length && i < discs.length; i++) {
             final s = states[i] as List;
@@ -465,6 +480,22 @@ class GameController extends ChangeNotifier {
             discs[i].vvx = (s[2] as num).toDouble();
             discs[i].vvy = (s[3] as num).toDouble();
           }
+        }
+        if (msg['roundWins'] is List) {
+          final rw = msg['roundWins'] as List;
+          roundWins[0] = (rw[0] as num).toInt();
+          roundWins[1] = (rw[1] as num).toInt();
+        }
+        if (msg['currentRound'] != null) {
+          currentRound = (msg['currentRound'] as num).toInt();
+        }
+        if (msg['phase'] == 'gameover' && msg['lastWinner'] != null) {
+          _applyRoundEndFromNetwork({
+            'winner': msg['lastWinner'],
+            'roundWins': roundWins.toList(),
+            'currentRound': currentRound,
+          });
+        } else {
           notifyListeners();
         }
         break;
@@ -599,6 +630,7 @@ class GameController extends ChangeNotifier {
   }
 
   void _sendState() {
+    if (aiMode || mySeat != 0) return;
     final anyMoving = discs.any((d) => d.vvx.abs() > 0.01 || d.vvy.abs() > 0.01);
     if (!anyMoving && phase != GamePhase.playing) return;
     ws.send({
@@ -614,6 +646,27 @@ class GameController extends ChangeNotifier {
       'roundWins': roundWins.toList(),
       'currentRound': currentRound,
       'phase': phase.name,
+      'seconds': seconds,
+      if (lastWinner != null) 'lastWinner': lastWinner,
+    });
+  }
+
+  void _sendGameOverSync(int winner) {
+    if (aiMode || mySeat != 0) return;
+    ws.send({
+      'type': 'state',
+      'discs': discs
+          .map((d) => [
+                (d.vx * 10).round() / 10,
+                (d.vy * 10).round() / 10,
+                (d.vvx * 100).round() / 100,
+                (d.vvy * 100).round() / 100,
+              ])
+          .toList(),
+      'roundWins': roundWins.toList(),
+      'currentRound': currentRound,
+      'phase': 'gameover',
+      'lastWinner': winner,
       'seconds': seconds,
     });
   }
@@ -643,6 +696,7 @@ class GameController extends ChangeNotifier {
         'roundWins': roundWins.toList(),
         'currentRound': currentRound,
       });
+      _sendGameOverSync(winner);
       if (matchFinished) {
         ws.send({
           'type': 'matchEnd',
@@ -741,12 +795,10 @@ class GameController extends ChangeNotifier {
     if (lim > 6) {
       final vvx = (dx / dist) * lim * GameConstants.slingPower;
       final vvy = (dy / dist) * lim * GameConstants.slingPower;
-      if (mySeat == 0 || aiMode) {
+      if (aiMode || mySeat == 0) {
         discs[drag!.discIndex].vvx = vvx;
         discs[drag!.discIndex].vvy = vvy;
       } else {
-        discs[drag!.discIndex].vvx = vvx;
-        discs[drag!.discIndex].vvy = vvy;
         ws.send({
           'type': 'shot',
           'disc': drag!.discIndex,
