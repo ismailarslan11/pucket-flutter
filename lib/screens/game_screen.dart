@@ -7,6 +7,7 @@ import '../l10n/l10n_extension.dart';
 import '../models/career_result.dart';
 import '../models/rank_tier.dart';
 import '../services/ad_service.dart';
+import '../services/audio_service.dart';
 import '../services/auth_service.dart';
 import '../services/career_service.dart';
 import '../services/meta_api.dart';
@@ -126,6 +127,7 @@ class _GameScreenState extends State<GameScreen> {
       });
     } else if (game.phase == GamePhase.playing && _lastPhase == GamePhase.countdown) {
       _lastCountdown = 0;
+      context.read<AudioService>().playGameMusic();
       setState(() => _showOverlay = false);
     }
 

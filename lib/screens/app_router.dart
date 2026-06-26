@@ -6,6 +6,7 @@ import '../game/ai_bot.dart';
 import '../game/game_controller.dart';
 import '../models/career_opponent.dart';
 import '../services/ad_service.dart';
+import '../services/audio_service.dart';
 import '../screens/cosmetics_screen.dart';
 import '../screens/tournament_screen.dart';
 import '../screens/training_screen.dart';
@@ -26,6 +27,8 @@ class AppRouter {
     await context.read<AdService>().showInterstitialOnMenuReturn();
     if (!context.mounted) return;
     context.read<GameController>().leave();
+    await context.read<AudioService>().playMenuMusic();
+    if (!context.mounted) return;
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const MenuScreen()),
       (_) => false,
