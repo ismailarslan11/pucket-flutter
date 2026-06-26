@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -10,6 +12,7 @@ import '../services/ad_service.dart';
 import '../services/audio_service.dart';
 import '../services/auth_service.dart';
 import '../services/career_service.dart';
+import '../services/match_api.dart';
 import '../services/meta_api.dart';
 import '../services/player_meta_service.dart';
 import '../services/settings_service.dart';
@@ -42,6 +45,7 @@ class _GameScreenState extends State<GameScreen> {
   CareerMatchResult? _careerResult;
   bool _showCareer = false;
   GameController? _game;
+  Timer? _eloFallbackTimer;
 
   @override
   void didChangeDependencies() {
@@ -120,6 +124,7 @@ class _GameScreenState extends State<GameScreen> {
 
   @override
   void dispose() {
+    _eloFallbackTimer?.cancel();
     _game?.removeListener(_onGameChanged);
     super.dispose();
   }
@@ -167,7 +172,15 @@ class _GameScreenState extends State<GameScreen> {
           });
         });
       } else if (game.isRanked && game.matchFinished && !game.isBotFallback) {
-        // Ranked: ELO overlay onEloResult ile gösterilir, çift overlay önlenir
+        if (game.pendingEloResult != null) {
+          final r = game.pendingEloResult!;
+          setState(() {
+            _eloResult = r;
+            _showElo = true;
+          });
+        } else {
+          _scheduleEloFallback(game);
+        }
       } else {
         _showRoundOverlay(game);
       }
@@ -180,6 +193,39 @@ class _GameScreenState extends State<GameScreen> {
     }
 
     _lastPhase = game.phase;
+  }
+
+  void _scheduleEloFallback(GameController game) {
+    _eloFallbackTimer?.cancel();
+    _eloFallbackTimer = Timer(const Duration(seconds: 3), () async {
+      if (!mounted) return;
+      if (_eloResult != null || game.pendingEloResult != null) return;
+
+      final auth = context.read<AuthService>();
+      final uid = auth.getUid();
+      final oldElo = auth.user?.elo ?? 1000;
+      final player = await MatchApi.fetchPlayer(uid);
+      if (!mounted || _eloResult != null || game.pendingEloResult != null) return;
+
+      if (player != null) {
+        final newElo = (player['elo'] as num?)?.toInt() ?? oldElo;
+        final league = player['league'] as String? ?? auth.user?.league ?? 'Bronz';
+        auth.applyServerProfile(player);
+        final won = game.lastWinner == game.mySeat;
+        setState(() {
+          _eloResult = EloResult(
+            won: won,
+            eloChange: newElo - oldElo,
+            newElo: newElo,
+            newLeague: league,
+          );
+          _showElo = true;
+        });
+        return;
+      }
+
+      _showRoundOverlay(game);
+    });
   }
 
   void _showRoundOverlay(GameController game) {

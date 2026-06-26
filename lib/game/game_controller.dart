@@ -401,7 +401,7 @@ class GameController extends ChangeNotifier {
         onGameStart?.call();
         break;
       case 'matched':
-        isRanked = true;
+        isRanked = msg['ranked'] as bool? ?? true;
         mySeat = msg['seat'] as int;
         roomCode = msg['room'] as String;
         _applyOpponentInfo(msg);
@@ -417,6 +417,7 @@ class GameController extends ChangeNotifier {
         _graceTimer?.cancel();
         mySeat = msg['seat'] as int;
         roomCode = msg['room'] as String;
+        if (msg['ranked'] == true) isRanked = true;
         _applyOpponentInfo(msg);
         _restoreSnapshot(msg['snapshot'] as Map<String, dynamic>?);
         onReconnected?.call();
@@ -485,6 +486,13 @@ class GameController extends ChangeNotifier {
           } else {
             audio?.playLose();
           }
+          if (matchFinished && isRanked) {
+            ws.send({
+              'type': 'matchEnd',
+              'winner': winner,
+              'ranked': true,
+            });
+          }
         }
         notifyListeners();
         break;
@@ -495,23 +503,21 @@ class GameController extends ChangeNotifier {
         }
         break;
       case 'eloResult':
-        if (isRanked) {
-          final result = EloResult(
-            won: msg['won'] as bool? ?? false,
-            eloChange: (msg['eloChange'] as num?)?.toInt() ?? 0,
-            newElo: (msg['newElo'] as num?)?.toInt() ?? 1000,
-            newLeague: msg['newLeague'] as String? ?? 'Bronz',
-          );
-          pendingEloResult = result;
-          auth?.applyEloResult(
-            newElo: result.newElo,
-            newLeague: result.newLeague,
-            won: result.won,
-          );
-          auth?.syncEloToFirestore(result.won, result.newElo, result.newLeague);
-          onEloResult?.call(result);
-          onProfileRefresh?.call();
-        }
+        final result = EloResult(
+          won: msg['won'] as bool? ?? false,
+          eloChange: (msg['eloChange'] as num?)?.toInt() ?? 0,
+          newElo: (msg['newElo'] as num?)?.toInt() ?? 1000,
+          newLeague: msg['newLeague'] as String? ?? 'Bronz',
+        );
+        pendingEloResult = result;
+        auth?.applyEloResult(
+          newElo: result.newElo,
+          newLeague: result.newLeague,
+          won: result.won,
+        );
+        auth?.syncEloToFirestore(result.won, result.newElo, result.newLeague);
+        onEloResult?.call(result);
+        onProfileRefresh?.call();
         break;
       case 'rematch_request':
         if ((msg['seat'] as num?)?.toInt() != mySeat) {

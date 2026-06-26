@@ -307,6 +307,7 @@ class Room {
     this.sessionTokens = ['', ''];
     this.created = Date.now();
     this.ranked = false;
+    this.eloSettled = false;
     this.gameSnapshot = null;
     this.rematchVotes = [false, false];
     this.disconnectTimers = [null, null];
@@ -904,19 +905,21 @@ wss.on('connection', (ws) => {
       }
 
       case 'matchEnd': {
-        if (ws.seat !== 0) break;
         const room = rooms.get(ws.roomId);
         if (!room || !room.ranked) {
           room?.broadcast(msg, ws);
           break;
         }
+        if (room.eloSettled) break;
         const winnerSeat = msg.winner;
         if (winnerSeat !== 0 && winnerSeat !== 1) break;
         const winnerUid = room.uids[winnerSeat];
         const loserUid = room.uids[1 - winnerSeat];
+        if (!winnerUid || !loserUid) break;
         const winner = getPlayer(winnerUid);
         const loser = getPlayer(loserUid);
         if (!winner || !loser) break;
+        room.eloSettled = true;
 
         const winnerGain = calcElo(winner.elo, loser.elo, true);
         const loserLoss = calcElo(loser.elo, winner.elo, false);

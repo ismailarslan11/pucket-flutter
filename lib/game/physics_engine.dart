@@ -129,8 +129,9 @@ class PhysicsEngine {
   /// Pul üst yarıyı işgal ediyor mu?
   static bool occupiesTop(Disc d) {
     final dr = GameConstants.discRadius;
-    if (inGateZone(d) && isStopped(d)) {
-      return d.vy < GameConstants.vHalf;
+    if (inGateZone(d)) {
+      // Kapıdan geçerken durmayı bekleme — merkez çizgisine göre yarı ata
+      return d.vy <= GameConstants.vHalf;
     }
     return d.vy - dr < GameConstants.vHalf;
   }
@@ -138,8 +139,8 @@ class PhysicsEngine {
   /// Pul alt yarıyı işgal ediyor mu?
   static bool occupiesBottom(Disc d) {
     final dr = GameConstants.discRadius;
-    if (inGateZone(d) && isStopped(d)) {
-      return d.vy >= GameConstants.vHalf;
+    if (inGateZone(d)) {
+      return d.vy > GameConstants.vHalf;
     }
     return d.vy + dr > GameConstants.vHalf;
   }
@@ -162,7 +163,6 @@ class PhysicsEngine {
 
   static int? checkWinner(List<Disc> discs) {
     if (discs.length < discsPerPlayer * 2) return null;
-    if (!allStopped(discs)) return null;
 
     final topEmpty = !discs.any(occupiesTop);
     final bottomEmpty = !discs.any(occupiesBottom);
