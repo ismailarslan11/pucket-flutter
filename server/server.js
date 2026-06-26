@@ -477,8 +477,31 @@ const server = http.createServer((req, res) => {
   }
 
   if (url.pathname === '/' || url.pathname === '/health') {
-    res.writeHead(200, { 'Content-Type': 'text/plain' });
-    res.end('Pucket server OK');
+    const playerCount = Object.keys(db.get('players').value() || {}).length;
+    const dbMode = process.env.DATABASE_URL ? 'postgres' : 'file';
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: true, db: dbMode, players: playerCount }));
+    return;
+  }
+
+  if (url.pathname === '/register' && req.method === 'POST') {
+    readJsonBody(req)
+      .then((data) => {
+        const uid = data.uid;
+        const name = data.name || 'Oyuncu';
+        if (!uid) {
+          res.writeHead(400, cors);
+          res.end(JSON.stringify({ ok: false, error: 'UID gerekli' }));
+          return;
+        }
+        const player = upsertPlayer(uid, name);
+        res.writeHead(200, cors);
+        res.end(JSON.stringify({ ok: true, player }));
+      })
+      .catch(() => {
+        res.writeHead(400, cors);
+        res.end(JSON.stringify({ ok: false, error: 'Geçersiz istek' }));
+      });
     return;
   }
 
@@ -551,6 +574,8 @@ const server = http.createServer((req, res) => {
   if (url.pathname.startsWith('/meta/')) {
     const uid = decodeURIComponent(url.pathname.split('/meta/')[1]);
     if (req.method === 'GET') {
+      const name = url.searchParams.get('name') || '';
+      upsertPlayer(uid, name || undefined);
       touchLoginStreak(uid);
       res.writeHead(200, cors);
       res.end(JSON.stringify(getPlayerMeta(uid)));

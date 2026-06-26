@@ -14,7 +14,7 @@
       "uid": "u_5ca33b4d",
       "name": "Oyuncu",
       "elo": 1000,
-      "wins": 22,
+      "wins": 0,
       "losses": 0,
       "matches": 0,
       "league": "Bronz",
@@ -73,7 +73,7 @@
     "u_f205dad9": {
       "uid": "u_f205dad9",
       "name": "Oyuncu",
-      "elo": 984200,
+      "elo": 984,
       "wins": 0,
       "losses": 1,
       "matches": 1,
@@ -93,7 +93,7 @@
     "u_dc1a4d22": {
       "uid": "u_dc1a4d22",
       "name": "xultrarslan",
-      "elo": 2000,
+      "elo": 1000,
       "wins": 0,
       "losses": 0,
       "matches": 0,
@@ -119,6 +119,26 @@
       "matches": 0,
       "league": "Bronz",
       "createdAt": 1782404632837
+    },
+    "u_a86147dd": {
+      "uid": "u_a86147dd",
+      "name": "xultrarsla",
+      "elo": 1000,
+      "wins": 0,
+      "losses": 0,
+      "matches": 0,
+      "league": "Bronz",
+      "createdAt": 1782482559587
+    },
+    "test_uid_123": {
+      "uid": "test_uid_123",
+      "name": "TestUser",
+      "elo": 1000,
+      "wins": 0,
+      "losses": 0,
+      "matches": 0,
+      "league": "Bronz",
+      "createdAt": 1782482769473
     }
   },
   "matchHistory": [
@@ -142,9 +162,29 @@
     "ismail": "117345632762866208709",
     "xultrarslan": "u_dc1a4d22",
     "ismai": "u_10d039a3",
-    "iso": "u_ea434801"
+    "iso": "u_ea434801",
+    "xultrarsla": "u_a86147dd"
   },
-  "playerMeta": {},
+  "playerMeta": {
+    "test_uid_123": {
+      "quests": {
+        "date": "2026-06-26",
+        "play": 0,
+        "win": 0,
+        "career": 0,
+        "claimed": false
+      },
+      "streak": 1,
+      "lastLoginDate": "2026-06-26",
+      "achievements": [],
+      "cosmetics": {
+        "discColor": "green",
+        "boardTheme": "classic"
+      },
+      "fcmToken": "",
+      "seasonWins": 0
+    }
+  },
   "career": {},
   "reports": [],
   "tournament": {
@@ -155,6 +195,6 @@
   "season": {
     "id": 1,
     "name": "Sezon 1",
-    "startDate": 1782477456330
+    "startDate": 1782482767477
   }
 }

@@ -153,7 +153,7 @@ class _AuthenticatedHomeState extends State<_AuthenticatedHome> {
       final meta = context.read<PlayerMetaService>();
       final audio = context.read<AudioService>();
       await audio.playMenuMusic();
-      await meta.load(auth.getUid());
+      await meta.load(auth.getUid(), name: auth.getName());
       await career.syncFromCloud(auth.getUid());
       await PushService.initAndRegister(auth.getUid());
       if (mounted) DeepLinkService.consumePending(context);

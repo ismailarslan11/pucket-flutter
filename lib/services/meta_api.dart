@@ -64,9 +64,27 @@ class TournamentEntry {
 }
 
 class MetaApi {
-  static Future<PlayerMeta?> fetchMeta(String uid) async {
+  static Future<bool> registerPlayer(String uid, String name) async {
     try {
-      final res = await http.get(Uri.parse('${apiBaseUrl}/meta/$uid')).timeout(const Duration(seconds: 8));
+      final res = await http
+          .post(
+            Uri.parse('${apiBaseUrl}/register'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'uid': uid, 'name': name}),
+          )
+          .timeout(const Duration(seconds: 8));
+      return res.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  static Future<PlayerMeta?> fetchMeta(String uid, {String name = ''}) async {
+    try {
+      final q = name.isNotEmpty ? '?name=${Uri.encodeComponent(name)}' : '';
+      final res = await http
+          .get(Uri.parse('${apiBaseUrl}/meta/$uid$q'))
+          .timeout(const Duration(seconds: 8));
       if (res.statusCode != 200) return null;
       return PlayerMeta.fromJson(jsonDecode(res.body) as Map<String, dynamic>);
     } catch (_) {

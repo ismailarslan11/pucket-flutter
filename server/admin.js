@@ -146,13 +146,30 @@ function runAdminAction(ctx, action, params) {
 }
 
 function collectAdminData(ctx) {
-  const players = Object.values(ctx.db.get('players').value() || {});
+  const playersMap = ctx.db.get('players').value() || {};
+  const playerMeta = ctx.db.get('playerMeta').value() || {};
   const usernames = ctx.db.get('usernames').value() || {};
   const matchHistory = [...(ctx.db.get('matchHistory').value() || [])].reverse().slice(0, 30);
   const reports = [...(ctx.db.get('reports').value() || [])].reverse().slice(0, 50);
   const season = ctx.getSeasonInfo();
-  const sortedPlayers = players
-    .slice()
+
+  const allUids = new Set([...Object.keys(playersMap), ...Object.keys(playerMeta)]);
+  const sortedPlayers = [...allUids]
+    .map((uid) => {
+      const p = playersMap[uid];
+      if (p) return p;
+      return {
+        uid,
+        name: 'Oyuncu',
+        elo: 1000,
+        wins: 0,
+        losses: 0,
+        matches: 0,
+        league: 'Bronz',
+        createdAt: null,
+        _metaOnly: true,
+      };
+    })
     .sort((a, b) => b.elo - a.elo || b.matches - a.matches);
 
   const activeRooms = ctx.rooms ? [...ctx.rooms.values()].filter((r) => !r.isEmpty).length : 0;
@@ -160,7 +177,8 @@ function collectAdminData(ctx) {
 
   return {
     stats: {
-      players: players.length,
+      players: sortedPlayers.length,
+      registered: Object.keys(playersMap).length,
       usernames: Object.keys(usernames).length,
       rankedMatches: matchHistory.length,
       reports: reports.length,
@@ -198,7 +216,7 @@ function renderAdminHtml(data, flash) {
   const playerRows = sortedPlayers
     .map(
       (p) => `<tr>
-        <td>${escapeHtml(p.name)}</td>
+        <td>${escapeHtml(p.name)}${p._metaOnly ? ' <span class="muted">(meta)</span>' : ''}</td>
         <td><code>${escapeHtml(p.uid)}</code></td>
         <td>${p.elo}</td>
         <td>${escapeHtml(p.league)}</td>
@@ -312,7 +330,8 @@ function renderAdminHtml(data, flash) {
   <main>
     ${flashHtml}
     <div class="cards">
-      <div class="card"><b>${stats.players}</b><span>Oyuncu</span></div>
+      <div class="card"><b>${stats.players}</b><span>Kayıtlı (toplam)</span></div>
+      <div class="card"><b>${stats.registered}</b><span>Tam profil</span></div>
       <div class="card"><b>${stats.usernames}</b><span>Kullanıcı adı</span></div>
       <div class="card"><b>${stats.rankedMatches}</b><span>Ranked maç kaydı</span></div>
       <div class="card"><b>${stats.reports}</b><span>Rapor</span></div>

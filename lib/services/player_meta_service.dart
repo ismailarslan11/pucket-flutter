@@ -19,10 +19,11 @@ class PlayerMetaService extends ChangeNotifier {
     'tournament_join': '🏅 Turnuva',
   };
 
-  Future<void> load(String uid) async {
+  Future<void> load(String uid, {String name = ''}) async {
     loading = true;
     notifyListeners();
-    meta = await MetaApi.fetchMeta(uid);
+    await MetaApi.registerPlayer(uid, name.isNotEmpty ? name : 'Oyuncu');
+    meta = await MetaApi.fetchMeta(uid, name: name);
     season = await MetaApi.fetchSeason();
     tournament = await MetaApi.fetchTournament();
     loading = false;
