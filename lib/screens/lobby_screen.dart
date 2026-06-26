@@ -187,7 +187,10 @@ class _LobbyScreenState extends State<LobbyScreen> {
     _msgTimer?.cancel();
     _botFallback?.cancel();
     _game?.removeListener(_onGameUpdate);
-    _game?.leave();
+    // Oyun başladıysa (countdown/playing) bağlantıyı koparma — sadece lobide beklerken
+    if (_game != null && _game!.phase == GamePhase.idle) {
+      _game!.leave();
+    }
     super.dispose();
   }
 

@@ -276,6 +276,7 @@ function readJsonBody(req) {
 }
 
 const matchmakingQueue = [];
+const casualMatchmakingQueue = [];
 
 function findMatch(newEntry) {
   const ELO_RANGE = 200;
@@ -455,12 +456,12 @@ function sendMatchInfo(room, seat0Uid, seat1Uid) {
 }
 
 function sendStart(room) {
-  const p0 = getPlayer(room.uids[0]);
-  const p1 = getPlayer(room.uids[1]);
   for (let seat = 0; seat < 2; seat++) {
     const oppSeat = room.opponentSeat(seat);
     room.send(seat, {
       type: 'start',
+      room: room.id,
+      seat,
       sessionToken: room.sessionTokens[seat],
       oppName: room.names[oppSeat],
       oppElo: getPlayer(room.uids[oppSeat])?.elo ?? 1000,
@@ -468,6 +469,38 @@ function sendStart(room) {
       oppUid: room.uids[oppSeat],
     });
   }
+}
+
+function pairCasualMatch(entry) {
+  const opp = casualMatchmakingQueue.shift();
+  if (!opp) return false;
+
+  const code = makeCode();
+  const room = new Room(code);
+  rooms.set(code, room);
+
+  const p0 = getPlayer(opp.uid);
+  const p1 = getPlayer(entry.uid);
+  room.join(opp.ws, opp.uid, p0?.name || opp.name || 'Oyuncu');
+  room.join(entry.ws, entry.uid, p1?.name || entry.name || 'Oyuncu');
+
+  for (let seat = 0; seat < 2; seat++) {
+    const oppSeat = room.opponentSeat(seat);
+    room.send(seat, {
+      type: 'joined',
+      room: code,
+      seat,
+      waiting: false,
+      sessionToken: room.sessionTokens[seat],
+      oppName: room.names[oppSeat],
+      oppElo: getPlayer(room.uids[oppSeat])?.elo ?? 1000,
+      oppLeague: getLeague(getPlayer(room.uids[oppSeat])?.elo ?? 1000).name,
+      oppUid: room.uids[oppSeat],
+    });
+  }
+  sendStart(room);
+  console.log(`Quick: ${room.names[0]} vs ${room.names[1]} (${code})`);
+  return true;
 }
 
 const server = http.createServer((req, res) => {
@@ -845,16 +878,37 @@ wss.on('connection', (ws) => {
       }
 
       case 'join': {
-        const code = (msg.room || '').trim().toUpperCase();
+        let code = (msg.room || '').trim().toUpperCase();
+        const uid = ws.uid || msg.uid || `guest_${makeCode()}`;
+        ws.uid = uid;
+        upsertPlayer(uid, msg.name);
+
+        // Hızlı eşleştir: boş kod → casual kuyruk
+        if (!code) {
+          const existingIdx = casualMatchmakingQueue.findIndex((e) => e.ws === ws);
+          if (existingIdx !== -1) casualMatchmakingQueue.splice(existingIdx, 1);
+
+          const entry = { ws, uid, name: msg.name || 'Oyuncu', joinedAt: Date.now() };
+          if (casualMatchmakingQueue.length > 0) {
+            pairCasualMatch(entry);
+          } else {
+            casualMatchmakingQueue.push(entry);
+            ws.send(
+              JSON.stringify({
+                type: 'waiting',
+                queuePos: casualMatchmakingQueue.length,
+              }),
+            );
+          }
+          break;
+        }
+
         const room = getOrCreateRoom(code);
-        if (room.isFull && !room.uids.includes(ws.uid || msg.uid)) {
+        if (room.isFull && !room.uids.includes(uid)) {
           ws.send(JSON.stringify({ type: 'error', msg: 'Oda dolu' }));
           return;
         }
 
-        const uid = ws.uid || msg.uid || `guest_${makeCode()}`;
-        ws.uid = uid;
-        upsertPlayer(uid, msg.name);
         const seat = room.join(ws, uid, msg.name);
 
         ws.send(
@@ -864,6 +918,12 @@ wss.on('connection', (ws) => {
             seat,
             waiting: !room.isFull,
             sessionToken: room.sessionTokens[seat],
+            oppName: room.isFull ? room.names[room.opponentSeat(seat)] : undefined,
+            oppElo: room.isFull ? getPlayer(room.uids[room.opponentSeat(seat)])?.elo ?? 1000 : undefined,
+            oppLeague: room.isFull
+              ? getLeague(getPlayer(room.uids[room.opponentSeat(seat)])?.elo ?? 1000).name
+              : undefined,
+            oppUid: room.isFull ? room.uids[room.opponentSeat(seat)] : undefined,
           }),
         );
 
@@ -1010,6 +1070,9 @@ wss.on('connection', (ws) => {
   ws.on('close', () => {
     const qi = matchmakingQueue.findIndex((e) => e.ws === ws);
     if (qi !== -1) matchmakingQueue.splice(qi, 1);
+
+    const ci = casualMatchmakingQueue.findIndex((e) => e.ws === ws);
+    if (ci !== -1) casualMatchmakingQueue.splice(ci, 1);
 
     if (!ws.roomId) return;
     const room = rooms.get(ws.roomId);

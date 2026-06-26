@@ -129,6 +129,16 @@
       "matches": 0,
       "league": "Bronz",
       "createdAt": 1782482559587
+    },
+    "u_c507c971": {
+      "uid": "u_c507c971",
+      "name": "copaamericano",
+      "elo": 1000,
+      "wins": 0,
+      "losses": 0,
+      "matches": 0,
+      "league": "Bronz",
+      "createdAt": 1782488103869
     }
   },
   "matchHistory": [
@@ -153,6 +163,7 @@
     "xultrarslan": "u_dc1a4d22",
     "ismai": "u_10d039a3",
     "iso": "u_ea434801",
-    "xultrarsla": "u_a86147dd"
+    "xultrarsla": "u_a86147dd",
+    "copaamericano": "u_c507c971"
   }
 }

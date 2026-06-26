@@ -392,10 +392,24 @@ class GameController extends ChangeNotifier {
         roomCode = msg['room'] as String;
         lobbyWaiting = msg['waiting'] as bool? ?? true;
         _applyOpponentInfo(msg);
+        if (msg['sessionToken'] is String) {
+          sessionToken = msg['sessionToken'] as String;
+          ws.setSession(uid: auth?.getUid(), sessionToken: sessionToken, roomCode: roomCode);
+        }
+        notifyListeners();
+        break;
+      case 'waiting':
+        lobbyWaiting = true;
         notifyListeners();
         break;
       case 'start':
         isRanked = false;
+        if (msg['seat'] != null) {
+          mySeat = (msg['seat'] as num).toInt();
+        }
+        if (msg['room'] is String) {
+          roomCode = msg['room'] as String;
+        }
         _applyOpponentInfo(msg);
         startOnlineGame(mySeat, roomCode);
         onGameStart?.call();

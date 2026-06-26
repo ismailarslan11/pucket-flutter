@@ -137,7 +137,9 @@ class _QueueScreenState extends State<QueueScreen> {
   void dispose() {
     _cancelTimers();
     _game?.removeListener(_onGameUpdate);
-    _game?.leaveQueue();
+    if (_game != null && _game!.phase == GamePhase.idle) {
+      _game!.leaveQueue();
+    }
     super.dispose();
   }
 
