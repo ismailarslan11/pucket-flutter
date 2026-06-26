@@ -949,18 +949,21 @@ wss.on('connection', (ws) => {
       }
 
       case 'roundEnd': {
-        if (ws.seat !== 0) break;
         const room = ws.roomId ? rooms.get(ws.roomId) : null;
-        if (room) {
-          room.gameSnapshot = {
-            ...(room.gameSnapshot || {}),
-            roundWins: msg.roundWins,
-            currentRound: msg.currentRound,
-            phase: 'gameover',
-            lastWinner: msg.winner,
-          };
+        if (!room) break;
+        room.gameSnapshot = {
+          ...(room.gameSnapshot || {}),
+          roundWins: msg.roundWins,
+          currentRound: msg.currentRound,
+          phase: 'gameover',
+          lastWinner: msg.winner,
+        };
+        // Her iki oyuncuya da gönder (host dahil — senkron garantisi)
+        for (const playerWs of room.players) {
+          if (playerWs && playerWs.readyState === 1) {
+            playerWs.send(JSON.stringify(msg));
+          }
         }
-        if (ws.roomId) rooms.get(ws.roomId)?.broadcast(msg, ws);
         break;
       }
 

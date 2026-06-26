@@ -456,7 +456,7 @@ class GameController extends ChangeNotifier {
         notifyListeners();
         break;
       case 'state':
-        if (mySeat == 1 && msg['discs'] != null) {
+        if (mySeat == 1 && phase == GamePhase.playing && msg['discs'] != null) {
           final states = msg['discs'] as List;
           for (var i = 0; i < states.length && i < discs.length; i++) {
             final s = states[i] as List;
@@ -480,35 +480,7 @@ class GameController extends ChangeNotifier {
         }
         break;
       case 'roundEnd':
-        if (msg['roundWins'] is List) {
-          final rw = msg['roundWins'] as List;
-          roundWins[0] = (rw[0] as num).toInt();
-          roundWins[1] = (rw[1] as num).toInt();
-        }
-        if (msg['currentRound'] != null) {
-          currentRound = (msg['currentRound'] as num).toInt();
-        }
-        if (mySeat != 0) {
-          final winner = msg['winner'] as int;
-          phase = GamePhase.gameover;
-          lastWinner = winner;
-          _secTimer?.cancel();
-          matchFinished = roundWins[winner] >= roundsToWin;
-          _haptic(winner == mySeat ? 50 : 30);
-          if (winner == mySeat) {
-            audio?.playWin();
-          } else {
-            audio?.playLose();
-          }
-          if (matchFinished && isRanked) {
-            ws.send({
-              'type': 'matchEnd',
-              'winner': winner,
-              'ranked': true,
-            });
-          }
-        }
-        notifyListeners();
+        _applyRoundEndFromNetwork(msg);
         break;
       case 'matchEnd':
         if (mySeat != 0) {
@@ -586,6 +558,46 @@ class GameController extends ChangeNotifier {
     }
   }
 
+  void _applyRoundEndFromNetwork(Map<String, dynamic> msg) {
+    if (msg['roundWins'] is List) {
+      final rw = msg['roundWins'] as List;
+      roundWins[0] = (rw[0] as num).toInt();
+      roundWins[1] = (rw[1] as num).toInt();
+    }
+    if (msg['currentRound'] != null) {
+      currentRound = (msg['currentRound'] as num).toInt();
+    }
+
+    final winner = (msg['winner'] as num?)?.toInt();
+    if (winner == null || winner < 0 || winner > 1) return;
+
+    if (phase == GamePhase.gameover && lastWinner == winner) {
+      notifyListeners();
+      return;
+    }
+
+    phase = GamePhase.gameover;
+    lastWinner = winner;
+    _secTimer?.cancel();
+    _afkTimer?.cancel();
+    matchFinished = roundWins[winner] >= roundsToWin;
+    _haptic(winner == mySeat ? 50 : 30);
+    if (winner == mySeat) {
+      audio?.playWin();
+    } else {
+      audio?.playLose();
+    }
+
+    if (matchFinished && isRanked && mySeat != 0) {
+      ws.send({
+        'type': 'matchEnd',
+        'winner': winner,
+        'ranked': true,
+      });
+    }
+    notifyListeners();
+  }
+
   void _sendState() {
     final anyMoving = discs.any((d) => d.vvx.abs() > 0.01 || d.vvy.abs() > 0.01);
     if (!anyMoving && phase != GamePhase.playing) return;
@@ -608,6 +620,7 @@ class GameController extends ChangeNotifier {
 
   void _endRound(int winner, {required bool broadcast}) {
     if (phase == GamePhase.gameover) return;
+    if (!aiMode && mySeat != 0) return;
 
     phase = GamePhase.gameover;
     _secTimer?.cancel();
