@@ -87,7 +87,10 @@ class _GameScreenState extends State<GameScreen> {
       };
       game.onEloResult = (r) {
         if (mounted) {
-          context.read<AdService>().maybeShowInterstitial(matchFinished: true);
+          context.read<AdService>().maybeShowInterstitial(
+            matchFinished: true,
+            skip: game.trainingMode,
+          );
           final uid = context.read<AuthService>().getUid();
           context.read<PlayerMetaService>().onMatchPlayed(uid, won: r.won, ranked: true);
           setState(() {
@@ -134,7 +137,10 @@ class _GameScreenState extends State<GameScreen> {
         career.recordResult(opponent: game.careerOpponent!, won: won, uid: uid).then((result) async {
           if (!mounted) return;
           if (won) await context.read<PlayerMetaService>().onCareerWin(uid);
-          context.read<AdService>().maybeShowInterstitial(matchFinished: true);
+          context.read<AdService>().maybeShowInterstitial(
+            matchFinished: true,
+            skip: game.trainingMode,
+          );
           setState(() {
             _careerResult = result;
             _showCareer = true;
@@ -162,7 +168,10 @@ class _GameScreenState extends State<GameScreen> {
     final l10n = context.l10n;
     final won = game.lastWinner == game.mySeat;
     final score = '${game.roundWins[0]} - ${game.roundWins[1]}';
-    context.read<AdService>().maybeShowInterstitial(matchFinished: game.matchFinished);
+    context.read<AdService>().maybeShowInterstitial(
+      matchFinished: game.matchFinished,
+      skip: game.trainingMode,
+    );
     if (game.matchFinished) {
       _showEndOverlay(
         won ? l10n.matchWon : l10n.matchLost,

@@ -9,7 +9,15 @@ class AdService extends ChangeNotifier {
   bool initialized = false;
   InterstitialAd? _interstitial;
   bool _loadingInterstitial = false;
-  int _roundsSinceInterstitial = 0;
+
+  /// İki tam ekran reklam arası minimum süre.
+  static const _minInterval = Duration(minutes: 3);
+
+  /// Kaç tamamlanan maçta bir reklam gösterilsin.
+  static const _matchesPerAd = 2;
+
+  DateTime? _lastShownAt;
+  int _matchesSinceAd = 0;
 
   Future<void> init() async {
     if (!AdConfig.supported || initialized) return;
@@ -57,13 +65,22 @@ class AdService extends ChangeNotifier {
     );
   }
 
-  /// Maç bitince veya her 2 round sonrası tam ekran reklam.
-  Future<void> maybeShowInterstitial({required bool matchFinished}) async {
+  bool _canShowNow() {
+    if (_lastShownAt == null) return true;
+    return DateTime.now().difference(_lastShownAt!) >= _minInterval;
+  }
+
+  /// Yalnızca maç bittiğinde; antrenman modunda ve sık aralıklarla değil.
+  Future<void> maybeShowInterstitial({
+    required bool matchFinished,
+    bool skip = false,
+  }) async {
+    if (skip || !matchFinished) return;
     if (!AdConfig.supported || !initialized) return;
 
-    _roundsSinceInterstitial++;
-    final shouldShow = matchFinished || _roundsSinceInterstitial >= 2;
-    if (!shouldShow) return;
+    _matchesSinceAd++;
+    if (_matchesSinceAd < _matchesPerAd) return;
+    if (!_canShowNow()) return;
 
     final ad = _interstitial;
     if (ad == null) {
@@ -71,23 +88,15 @@ class AdService extends ChangeNotifier {
       return;
     }
 
-    _roundsSinceInterstitial = 0;
+    _matchesSinceAd = 0;
+    _lastShownAt = DateTime.now();
     _interstitial = null;
     await ad.show();
     preloadInterstitial();
   }
 
-  Future<void> showInterstitialOnMenuReturn() async {
-    if (!AdConfig.supported || !initialized) return;
-    final ad = _interstitial;
-    if (ad == null) {
-      preloadInterstitial();
-      return;
-    }
-    _interstitial = null;
-    await ad.show();
-    preloadInterstitial();
-  }
+  /// Menüye dönüşte reklam gösterme — çok sık rahatsız ediyordu.
+  Future<void> showInterstitialOnMenuReturn() async {}
 
   @override
   void dispose() {
