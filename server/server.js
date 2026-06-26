@@ -1,22 +1,9 @@
 const { WebSocketServer } = require('ws');
 const http = require('http');
-const path = require('path');
 const crypto = require('crypto');
 
-const low = require('lowdb');
-const FileSync = require('lowdb/adapters/FileSync');
-const adapter = new FileSync(path.join(__dirname, 'db.json'));
-const db = low(adapter);
-db.defaults({
-  players: {},
-  matchHistory: [],
-  usernames: {},
-  playerMeta: {},
-  career: {},
-  reports: [],
-  tournament: { weekId: '', entries: [], bracket: [] },
-  season: { id: 1, name: 'Sezon 1', startDate: Date.now() },
-}).write();
+const { createStore } = require('./store');
+const db = createStore();
 
 const PORT = process.env.PORT || 8080;
 const RECONNECT_GRACE_MS = parseInt(process.env.RECONNECT_GRACE_MS || '60000', 10);
@@ -164,7 +151,6 @@ function migrateUsernamesFromPlayers() {
     }
   }
 }
-migrateUsernamesFromPlayers();
 
 function makeCode() {
   return crypto.randomBytes(3).toString('hex').toUpperCase();
@@ -1001,4 +987,35 @@ setInterval(() => {
   }
 }, 30000);
 
-server.listen(PORT, () => console.log(`Pucket server → http://localhost:${PORT}`));
+async function startServer() {
+  await db.init();
+  db.defaults({
+    players: {},
+    matchHistory: [],
+    usernames: {},
+    playerMeta: {},
+    career: {},
+    reports: [],
+    tournament: { weekId: '', entries: [], scores: {} },
+    season: { id: 1, name: 'Sezon 1', startDate: Date.now() },
+  }).write();
+  migrateUsernamesFromPlayers();
+
+  server.listen(PORT, () => {
+    console.log(`Pucket server → http://localhost:${PORT}`);
+  });
+}
+
+const shutdown = async (signal) => {
+  console.log(`${signal} — kapanıyor…`);
+  await db.flush();
+  await db.close();
+  process.exit(0);
+};
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
+
+startServer().catch((err) => {
+  console.error('Sunucu başlatılamadı:', err);
+  process.exit(1);
+});

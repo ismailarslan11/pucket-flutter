@@ -143,5 +143,18 @@
     "xultrarslan": "u_dc1a4d22",
     "ismai": "u_10d039a3",
     "iso": "u_ea434801"
+  },
+  "playerMeta": {},
+  "career": {},
+  "reports": [],
+  "tournament": {
+    "weekId": "",
+    "entries": [],
+    "scores": {}
+  },
+  "season": {
+    "id": 1,
+    "name": "Sezon 1",
+    "startDate": 1782477456330
   }
 }
