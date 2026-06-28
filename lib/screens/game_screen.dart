@@ -64,6 +64,11 @@ class _GameScreenState extends State<GameScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final game = context.read<GameController>();
+      if (game.isBotFallback) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.l10nRead.lobbyBotFallback)),
+        );
+      }
       game.onOpponentLeft = () {
         if (mounted) {
           final l10n = context.l10nRead;
@@ -364,7 +369,7 @@ class _GameScreenState extends State<GameScreen> {
       child: Row(
         children: [
           Expanded(child: _scoreBox(lbl0, game.roundWins[0], AppColors.red)),
-          if (game.careerMode || game.isBotFallback || (!game.aiMode && game.opponentName.isNotEmpty))
+          if (game.careerMode || game.isBotFallback || game.trainingMode || (!game.aiMode && game.opponentName.isNotEmpty))
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 6),
               child: Column(
@@ -373,9 +378,11 @@ class _GameScreenState extends State<GameScreen> {
                   Text(
                     game.trainingMode
                         ? l10n.trainingMode
-                        : game.careerMode
-                            ? l10n.careerMode
-                            : (game.isRanked && !game.isBotFallback ? l10n.ranked : l10n.online),
+                        : game.isBotFallback
+                            ? l10n.botFallbackLabel
+                            : game.careerMode
+                                ? l10n.careerMode
+                                : (game.isRanked && !game.isBotFallback ? l10n.ranked : l10n.online),
                     style: TextStyle(
                       fontSize: 7,
                       color: game.careerMode ? AppColors.gold : const Color(0xFF555555),
@@ -384,7 +391,13 @@ class _GameScreenState extends State<GameScreen> {
                     ),
                   ),
                   Text(
-                    game.careerMode ? game.opponentLeague : '${game.opponentElo}',
+                    game.trainingMode
+                        ? (game.trainingGoalLabel.isNotEmpty ? game.trainingGoalLabel : l10n.trainingMode)
+                        : game.isBotFallback
+                            ? l10n.botFallbackEloHint
+                            : game.careerMode
+                                ? game.opponentLeague
+                                : '${game.opponentElo}',
                     style: TextStyle(
                       fontSize: 10,
                       color: game.careerMode ? const Color(0xFF888888) : AppColors.gold,

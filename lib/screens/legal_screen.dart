@@ -1,66 +1,95 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
+import '../config/legal_config.dart';
+import '../l10n/app_localizations.dart';
+import '../l10n/l10n_extension.dart';
 import '../theme/app_theme.dart';
 
 class LegalScreen extends StatelessWidget {
-  const LegalScreen({super.key, required this.title, required this.body});
+  const LegalScreen({super.key, required this.title, required this.body, this.url});
 
   final String title;
   final String body;
+  final String? url;
 
   static void showPrivacy(BuildContext context) {
+    final l10n = context.l10n;
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => const LegalScreen(
-          title: 'Gizlilik Politikası',
-          body: _privacy,
+        builder: (_) => LegalScreen(
+          title: l10n.privacyPolicy,
+          body: _privacyBody(l10n),
+          url: LegalConfig.privacyPolicyUrl,
         ),
       ),
     );
   }
 
   static void showTerms(BuildContext context) {
+    final l10n = context.l10n;
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => const LegalScreen(
-          title: 'Kullanım Şartları',
-          body: _terms,
+        builder: (_) => LegalScreen(
+          title: l10n.termsOfUse,
+          body: _termsBody(l10n),
+          url: LegalConfig.termsUrl,
         ),
       ),
     );
   }
 
-  static const _privacy = '''
-PUCKET Gizlilik Politikası (özet)
+  static String _privacyBody(AppLocalizations l10n) => '''
+PUCKET — ${l10n.privacyPolicy}
 
-• Hesap: Google/Apple girişinde ad, e-posta ve profil fotoğrafı Firebase üzerinden işlenebilir.
-• Oyun verisi: ELO, maç sonuçları ve kullanıcı adı sunucuda saklanır.
-• Misafir mod: Yerel cihazda geçici kimlik tutulur; ranked için Google girişi gerekir.
-• Reklam: Google AdMob banner ve tam ekran reklamlar; cihaz tanımlayıcıları kullanılabilir.
-• Üçüncü taraflar: Firebase (Google), AdMob (Google), oyun sunucusu.
-• Veri silme: Ayarlar > Hesap > çıkış yaparak oturumu kapatabilirsiniz. Kalıcı silme için destek ile iletişime geçin.
-• İletişim: uygulama geliştiricisi ile Play/App Store üzerinden.
+• ${l10n.authGoogleHint}
+• ELO, maç sonuçları ve kullanıcı adı sunucuda saklanır.
+• Misafir mod: yerel kimlik; ranked için Google girişi gerekir.
+• Reklam: Google AdMob; cihaz tanımlayıcıları kullanılabilir.
+• Üçüncü taraflar: Firebase (Google), AdMob, oyun sunucusu.
+• İletişim: ${LegalConfig.supportEmail}
 ''';
 
-  static const _terms = '''
-PUCKET Kullanım Şartları (özet)
+  static String _termsBody(AppLocalizations l10n) => '''
+PUCKET — ${l10n.termsOfUse}
 
 • Oyun 13+ yaş içindir.
-• Hile, ELO manipülasyonu ve taciz yasaktır; hesap kapatılabilir.
+• Hile, ELO manipülasyonu ve taciz yasaktır.
 • Ranked maçlar sunucu kayıtlarına dayanır.
-• Uygulama "olduğu gibi" sunulur; kesinti ve bakım olabilir.
-• Kurallara uymayan davranışlarda erişim kısıtlanabilir.
+• Uygulama "olduğu gibi" sunulur; kesinti olabilir.
 ''';
+
+  Future<void> _openUrl(BuildContext context) async {
+    final target = url;
+    if (target == null || target.isEmpty) return;
+    final uri = Uri.parse(target);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Scaffold(
       appBar: AppBar(title: Text(title.toUpperCase()), backgroundColor: AppColors.bg),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
-        child: Text(body.trim(), style: const TextStyle(height: 1.6, color: Color(0xFFCCCCCC))),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(body.trim(), style: const TextStyle(height: 1.6, color: Color(0xFFCCCCCC))),
+            if (url != null) ...[
+              const SizedBox(height: 20),
+              OutlinedButton(
+                onPressed: () => _openUrl(context),
+                child: Text(l10n.openInBrowser),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }

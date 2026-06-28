@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../l10n/l10n_extension.dart';
 import '../services/auth_service.dart';
 import '../services/player_meta_service.dart';
+import '../theme/cosmetics_theme.dart';
 import '../theme/app_theme.dart';
 import '../widgets/pucket_button.dart';
 
@@ -19,13 +20,7 @@ class _CosmeticsScreenState extends State<CosmeticsScreen> {
   String _board = 'classic';
   bool _saving = false;
 
-  static const discColors = {
-    'green': Color(0xFF4CAF50),
-    'gold': Color(0xFFF0C040),
-    'blue': Color(0xFF2196F3),
-    'red': Color(0xFFE53935),
-    'purple': Color(0xFF9C27B0),
-  };
+  static const discColors = CosmeticsTheme.discColors;
 
   static const boardThemes = ['classic', 'neon', 'wood'];
 

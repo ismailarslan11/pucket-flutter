@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 
 import '../game/game_constants.dart';
 import '../game/game_controller.dart';
+import '../services/auth_service.dart';
+import '../services/player_meta_service.dart';
 import 'game_painter.dart';
 
 class GameBoard extends StatefulWidget {
@@ -75,9 +77,15 @@ class _GameBoardState extends State<GameBoard> with SingleTickerProviderStateMix
           onPanEnd: (_) => game.onPointerUp(),
           onPanCancel: () => game.onPointerUp(),
           child: ListenableBuilder(
-            listenable: game,
+            listenable: Listenable.merge([
+              game,
+              context.read<PlayerMetaService>(),
+            ]),
             builder: (context, _) {
               final g = context.read<GameController>();
+              final auth = context.read<AuthService>();
+              final meta = context.read<PlayerMetaService>();
+              final uid = auth.getUid();
               return CustomPaint(
                 size: Size(constraints.maxWidth, constraints.maxHeight),
                 painter: GamePainter(
@@ -87,6 +95,8 @@ class _GameBoardState extends State<GameBoard> with SingleTickerProviderStateMix
                   visualGeneration: g.visualGeneration,
                   sx: sx,
                   sy: sy,
+                  myDiscColor: meta.discColor(uid),
+                  boardTheme: meta.boardTheme(uid),
                 ),
               );
             },

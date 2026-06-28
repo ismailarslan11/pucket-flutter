@@ -9,6 +9,7 @@ import '../services/ad_service.dart';
 import '../services/audio_service.dart';
 import '../screens/cosmetics_screen.dart';
 import '../screens/tournament_screen.dart';
+import '../game/training_layout.dart';
 import '../screens/training_screen.dart';
 import 'career_screen.dart';
 import 'difficulty_screen.dart';
@@ -135,11 +136,26 @@ class AppRouter {
     game.leave();
     switch (type) {
       case TrainingType.shooting:
-        game.startTrainingGame(AiLevel.easy, label: l10n.trainingShooting);
+        game.startTrainingGame(
+          AiLevel.easy,
+          label: l10n.trainingShooting,
+          layout: TrainingLayout.shooting,
+          goalLabel: l10n.trainingGoalShooting,
+        );
       case TrainingType.defense:
-        game.startTrainingGame(AiLevel.medium, label: l10n.trainingDefense);
+        game.startTrainingGame(
+          AiLevel.medium,
+          label: l10n.trainingDefense,
+          layout: TrainingLayout.defense,
+          goalLabel: l10n.trainingGoalDefense,
+        );
       case TrainingType.full:
-        game.startTrainingGame(level, label: l10n.trainingFull);
+        game.startTrainingGame(
+          level,
+          label: l10n.trainingFull,
+          layout: TrainingLayout.full,
+          goalLabel: l10n.trainingGoalFull,
+        );
     }
     goGame(context);
   }

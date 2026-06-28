@@ -2,23 +2,66 @@ import 'dart:math' as math;
 
 import '../models/disc.dart';
 import 'game_constants.dart';
+import 'training_layout.dart';
 
 class PhysicsEngine {
   static double clamp(double v, double a, double b) =>
       math.max(a, math.min(b, v));
 
-  static List<Disc> initDiscs() {
+  static List<Disc> initDiscs() => _buildFromPositions(_standardRed, _standardBlue);
+
+  static List<Disc> initTrainingDiscs(TrainingLayout layout) {
+    switch (layout) {
+      case TrainingLayout.shooting:
+        return _buildFromPositions(
+          const [
+            [0.35, 0.58],
+            [0.50, 0.62],
+            [0.65, 0.58],
+          ],
+          const [
+            [0.50, 0.22],
+          ],
+        );
+      case TrainingLayout.defense:
+        return _buildFromPositions(
+          const [
+            [0.30, 0.72],
+            [0.70, 0.72],
+          ],
+          const [
+            [0.25, 0.56],
+            [0.50, 0.54],
+            [0.75, 0.56],
+            [0.50, 0.48],
+          ],
+        );
+      case TrainingLayout.full:
+        return initDiscs();
+    }
+  }
+
+  static const _standardRed = [
+    [0.2, 0.62],
+    [0.8, 0.62],
+    [0.5, 0.70],
+    [0.28, 0.82],
+    [0.72, 0.82],
+  ];
+
+  static const _standardBlue = [
+    [0.2, 0.38],
+    [0.8, 0.38],
+    [0.5, 0.30],
+    [0.28, 0.18],
+    [0.72, 0.18],
+  ];
+
+  static List<Disc> _buildFromPositions(List<List<double>> red, List<List<double>> blue) {
     final m = GameConstants.discRadius + 8;
     final discs = <Disc>[];
 
-    const redPositions = [
-      [0.2, 0.62],
-      [0.8, 0.62],
-      [0.5, 0.70],
-      [0.28, 0.82],
-      [0.72, 0.82],
-    ];
-    for (final p in redPositions) {
+    for (final p in red) {
       discs.add(Disc(
         vx: clamp(GameConstants.vw * p[0], m, GameConstants.vw - m),
         vy: clamp(GameConstants.vh * p[1], GameConstants.vHalf + m, GameConstants.vh - m),
@@ -26,14 +69,7 @@ class PhysicsEngine {
       ));
     }
 
-    const bluePositions = [
-      [0.2, 0.38],
-      [0.8, 0.38],
-      [0.5, 0.30],
-      [0.28, 0.18],
-      [0.72, 0.18],
-    ];
-    for (final p in bluePositions) {
+    for (final p in blue) {
       discs.add(Disc(
         vx: clamp(GameConstants.vw * p[0], m, GameConstants.vw - m),
         vy: clamp(GameConstants.vh * p[1], m, GameConstants.vHalf - m),

@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../game/game_controller.dart';
+import '../l10n/l10n_extension.dart';
 import '../services/auth_service.dart';
 import '../services/share_service.dart';
 import '../services/websocket_service.dart';
@@ -29,22 +30,17 @@ class LobbyScreen extends StatefulWidget {
 }
 
 class _LobbyScreenState extends State<LobbyScreen> {
-  String _title = 'BEKLENIYOR';
+  String _title = '';
   String _roomCode = '——';
-  String _message = 'Bağlanıyor...';
+  String _message = '';
   bool _showShare = false;
   bool _spinning = true;
   Timer? _msgTimer;
   Timer? _botFallback;
   GameController? _game;
+  List<String> _matchMsgs = [];
 
   bool get _showRoomCode => !widget.quickMatch && _roomCode != '——';
-
-  static const _matchMsgs = [
-    'Yakında ELO eşleşmesi aranıyor...',
-    'Oyuncu bekleniyor...',
-    'Bağlanılıyor...',
-  ];
 
   @override
   void initState() {
@@ -53,6 +49,11 @@ class _LobbyScreenState extends State<LobbyScreen> {
   }
 
   Future<void> _init() async {
+    final l10n = context.l10n;
+    _matchMsgs = [l10n.lobbyMatchMsg1, l10n.lobbyMatchMsg2, l10n.lobbyMatchMsg3];
+    _title = l10n.lobbyWaiting;
+    _message = l10n.lobbyConnecting;
+
     _game = context.read<GameController>();
     final game = _game!;
     final auth = context.read<AuthService>();
@@ -73,6 +74,9 @@ class _LobbyScreenState extends State<LobbyScreen> {
     if (!mounted) return;
     if (!ok) {
       if (widget.quickMatch && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.queueNoServer)),
+        );
         AppRouter.startBotFallback(context);
         return;
       }
@@ -82,8 +86,8 @@ class _LobbyScreenState extends State<LobbyScreen> {
 
     if (widget.quickMatch) {
       setState(() {
-        _title = 'EŞLEŞTİRİLİYOR';
-        _message = 'Rakip aranıyor...';
+        _title = l10n.lobbyMatching;
+        _message = l10n.lobbyQuickSearching;
         _roomCode = '——';
         _showShare = false;
         _spinning = true;
@@ -100,7 +104,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
       _botFallback = Timer(const Duration(seconds: 8), () {
         if (mounted && game.phase == GamePhase.idle) {
           setState(() {
-            _message = 'Rakip bulundu! Başlıyor...';
+            _message = l10n.lobbyBotFallback;
             _spinning = false;
           });
           Future.delayed(const Duration(milliseconds: 1200), () {
@@ -111,18 +115,18 @@ class _LobbyScreenState extends State<LobbyScreen> {
     } else if (widget.createRoom) {
       final code = makeRoomCode();
       setState(() {
-        _title = 'ODA OLUŞTURULDU';
+        _title = l10n.lobbyRoomCreated;
         _roomCode = code;
-        _message = 'Arkadaşın katılmasını bekle\nKodu paylaşmak için dokun';
+        _message = l10n.lobbyWaitFriendShare;
         _showShare = true;
         _spinning = true;
       });
       game.joinRoom(code);
     } else if (widget.joinCode != null) {
       setState(() {
-        _title = 'KATILINIYOR';
+        _title = l10n.lobbyJoining;
         _roomCode = widget.joinCode!;
-        _message = 'Odaya bağlanılıyor...';
+        _message = l10n.lobbyJoiningRoom;
         _showShare = false;
         _spinning = true;
       });
@@ -134,13 +138,14 @@ class _LobbyScreenState extends State<LobbyScreen> {
     final game = _game;
     if (game == null || !mounted) return;
     if (game.roomCode.isEmpty) return;
+    final l10n = context.l10n;
 
     if (widget.quickMatch) {
       if (!game.lobbyWaiting) {
         _botFallback?.cancel();
         _msgTimer?.cancel();
         setState(() {
-          _message = 'Rakip bulundu! Başlıyor...';
+          _message = l10n.lobbyOpponentFound;
           _spinning = false;
         });
       }
@@ -152,13 +157,11 @@ class _LobbyScreenState extends State<LobbyScreen> {
     setState(() {
       _roomCode = game.roomCode;
       if (game.lobbyWaiting) {
-        _message = widget.createRoom
-            ? 'Arkadaşın katılmasını bekle\nKodu paylaşmak için dokun'
-            : 'Arkadaşın katılmasını bekle';
+        _message = widget.createRoom ? l10n.lobbyWaitFriendShare : l10n.lobbyWaitFriend;
         _showShare = widget.createRoom;
         _spinning = true;
       } else {
-        _message = 'Rakip bulundu! Başlıyor...';
+        _message = l10n.lobbyOpponentFound;
         _spinning = false;
         _showShare = false;
       }
@@ -166,11 +169,9 @@ class _LobbyScreenState extends State<LobbyScreen> {
   }
 
   void _showConnectionError() {
+    final l10n = context.l10n;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Sunucuya bağlanılamadı. Önce node server.js çalıştırın.'),
-        duration: Duration(seconds: 4),
-      ),
+      SnackBar(content: Text(l10n.lobbyConnectionError), duration: const Duration(seconds: 4)),
     );
     Navigator.pop(context);
   }
@@ -187,7 +188,6 @@ class _LobbyScreenState extends State<LobbyScreen> {
     _msgTimer?.cancel();
     _botFallback?.cancel();
     _game?.removeListener(_onGameUpdate);
-    // Oyun başladıysa (countdown/playing) bağlantıyı koparma — sadece lobide beklerken
     if (_game != null && _game!.phase == GamePhase.idle) {
       _game!.leave();
     }
@@ -196,6 +196,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final cardWidth = MediaQuery.sizeOf(context).width - 48;
 
     return Scaffold(
@@ -227,7 +228,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          _title,
+                          _title.isEmpty ? l10n.lobbyWaiting : _title,
                           textAlign: TextAlign.center,
                           style: const TextStyle(
                             fontSize: 22,
@@ -261,9 +262,9 @@ class _LobbyScreenState extends State<LobbyScreen> {
                                   ),
                                 ),
                               if (_showRoomCode) ...[
-                                const Text(
-                                  'ODA KODU',
-                                  style: TextStyle(
+                                Text(
+                                  l10n.lobbyRoomCode,
+                                  style: const TextStyle(
                                     fontSize: 10,
                                     color: Color(0xFF555555),
                                     letterSpacing: 3,
@@ -285,7 +286,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
                                 const SizedBox(height: 14),
                               ],
                               Text(
-                                _message,
+                                _message.isEmpty ? l10n.lobbyConnecting : _message,
                                 textAlign: TextAlign.center,
                                 style: const TextStyle(
                                   color: Color(0xFF888888),
@@ -298,9 +299,9 @@ class _LobbyScreenState extends State<LobbyScreen> {
                         ),
                         const SizedBox(height: 20),
                         if (_showShare)
-                          PucketButton(label: '📤 KODU PAYLAŞ', onPressed: _shareCode),
+                          PucketButton(label: l10n.lobbyShareCode, onPressed: _shareCode),
                         if (_showShare) const SizedBox(height: 12),
-                        PucketButton(label: 'GERİ', secondary: true, onPressed: _goBack),
+                        PucketButton(label: l10n.lobbyBack, secondary: true, onPressed: _goBack),
                       ],
                     ),
                   ),
@@ -317,7 +318,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
     if (_roomCode == '——') return;
     Clipboard.setData(ClipboardData(text: _roomCode));
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Kod kopyalandı: $_roomCode')),
+      SnackBar(content: Text(context.l10n.lobbyCodeCopied(_roomCode))),
     );
   }
 

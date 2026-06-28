@@ -13,6 +13,7 @@ import '../services/websocket_service.dart';
 import 'ai_bot.dart';
 import 'game_constants.dart';
 import 'physics_engine.dart';
+import 'training_layout.dart';
 
 enum GamePhase { idle, countdown, playing, paused, gameover }
 
@@ -77,6 +78,8 @@ class GameController extends ChangeNotifier {
   bool isRanked = false;
   bool careerMode = false;
   bool trainingMode = false;
+  TrainingLayout trainingLayout = TrainingLayout.full;
+  String trainingGoalLabel = '';
   CareerOpponent? careerOpponent;
   AiLevel aiLevel = AiLevel.medium;
 
@@ -196,7 +199,9 @@ class GameController extends ChangeNotifier {
     _frameCount = 0;
     _lastMovingDiscs = 0;
     aiBot.reset();
-    discs = PhysicsEngine.initDiscs();
+    discs = trainingMode
+        ? PhysicsEngine.initTrainingDiscs(trainingLayout)
+        : PhysicsEngine.initDiscs();
     phase = GamePhase.idle;
     lastWinner = null;
     myRematchPending = false;
@@ -292,7 +297,12 @@ class GameController extends ChangeNotifier {
     startCountdown();
   }
 
-  void startTrainingGame(AiLevel level, {String label = 'Antrenör'}) {
+  void startTrainingGame(
+    AiLevel level, {
+    String label = 'Antrenör',
+    TrainingLayout layout = TrainingLayout.full,
+    String goalLabel = '',
+  }) {
     ws.disconnect();
     aiMode = true;
     careerMode = false;
@@ -301,6 +311,8 @@ class GameController extends ChangeNotifier {
     isBotFallback = false;
     isRanked = false;
     aiLevel = level;
+    trainingLayout = layout;
+    trainingGoalLabel = goalLabel;
     _setSeat(0);
     roomCode = 'TRAINING';
     opponentName = label;
@@ -957,6 +969,9 @@ class GameController extends ChangeNotifier {
     isBotFallback = false;
     isRanked = false;
     careerMode = false;
+    trainingMode = false;
+    trainingLayout = TrainingLayout.full;
+    trainingGoalLabel = '';
     careerOpponent = null;
     reconnecting = false;
     opponentDisconnected = false;

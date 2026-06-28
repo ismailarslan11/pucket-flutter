@@ -13,6 +13,11 @@ class DeepLinkService {
     } else if (uri.pathSegments.length >= 2 && uri.pathSegments[0] == 'join') {
       code = uri.pathSegments[1];
     }
+    if (code == null || code.isEmpty) {
+      if (uri.scheme == 'pucket' && uri.host == 'join' && uri.queryParameters['code'] != null) {
+        code = uri.queryParameters['code'];
+      }
+    }
     if (code == null || code.isEmpty) return;
     code = code.toUpperCase();
     pendingJoinCode = code;

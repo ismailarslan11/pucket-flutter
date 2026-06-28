@@ -7,6 +7,7 @@ import '../game/game_constants.dart';
 import '../game/game_controller.dart';
 import '../models/disc.dart';
 import '../theme/app_theme.dart';
+import '../theme/cosmetics_theme.dart';
 
 class GamePainter extends CustomPainter {
   GamePainter({
@@ -16,6 +17,8 @@ class GamePainter extends CustomPainter {
     required this.visualGeneration,
     required this.sx,
     required this.sy,
+    this.myDiscColor = 'green',
+    this.boardTheme = 'classic',
   });
 
   final List<Disc> discs;
@@ -24,17 +27,21 @@ class GamePainter extends CustomPainter {
   final int visualGeneration;
   final double sx;
   final double sy;
+  final String myDiscColor;
+  final String boardTheme;
 
   static ui.Picture? _fieldPicture;
   static Size? _fieldSize;
   static int? _fieldSeat;
+  static String? _fieldBoardTheme;
 
   Offset _s2c(double vx, double vy) => Offset(vx * sx, vy * sy);
 
   ui.Picture _fieldPictureFor(Size size) {
     if (_fieldPicture != null &&
         _fieldSize == size &&
-        _fieldSeat == mySeat) {
+        _fieldSeat == mySeat &&
+        _fieldBoardTheme == boardTheme) {
       return _fieldPicture!;
     }
 
@@ -44,6 +51,7 @@ class GamePainter extends CustomPainter {
     _fieldPicture = recorder.endRecording();
     _fieldSize = size;
     _fieldSeat = mySeat;
+    _fieldBoardTheme = boardTheme;
     return _fieldPicture!;
   }
 
@@ -66,14 +74,15 @@ class GamePainter extends CustomPainter {
   }
 
   void _drawFieldStatic(Canvas canvas, Size size) {
+    final palette = CosmeticsTheme.boardPalette(boardTheme);
     final gap = _s2c(GameConstants.gapX, GameConstants.vHalf - 5);
     final gw = GameConstants.gapW * sx;
     final gh = 10 * sy;
     final hw = size.width;
     final hh = size.height / 2;
 
-    canvas.drawRect(Rect.fromLTWH(0, 0, hw, hh), Paint()..color = const Color(0xFF4A8C0C));
-    canvas.drawRect(Rect.fromLTWH(0, hh, hw, hh), Paint()..color = const Color(0xFF57A00F));
+    canvas.drawRect(Rect.fromLTWH(0, 0, hw, hh), Paint()..color = palette.topGrass);
+    canvas.drawRect(Rect.fromLTWH(0, hh, hw, hh), Paint()..color = palette.bottomGrass);
     canvas.drawRect(
       Rect.fromLTWH(0, 0, hw, hh),
       Paint()..color = AppColors.blue.withValues(alpha: 0.07),
@@ -93,14 +102,14 @@ class GamePainter extends CustomPainter {
     canvas.drawRect(Rect.fromLTWH(hw * 0.28, 4, hw * 0.44, pb), linePaint);
     canvas.drawRect(Rect.fromLTWH(hw * 0.28, size.height - 4 - pb, hw * 0.44, pb), linePaint);
 
-    final wallPaint = Paint()..color = const Color(0xFF0D0D0D);
+    final wallPaint = Paint()..color = palette.wall;
     canvas.drawRect(Rect.fromLTWH(0, hh - 7, gap.dx - 2, 14), wallPaint);
     canvas.drawRect(Rect.fromLTWH(gap.dx + gw + 2, hh - 7, hw, 14), wallPaint);
 
-    final gapPaint = Paint()..color = AppColors.gold.withValues(alpha: 0.2);
+    final gapPaint = Paint()..color = palette.gateFill;
     canvas.drawRect(Rect.fromLTWH(gap.dx, gap.dy, gw, gh), gapPaint);
     final gapStroke = Paint()
-      ..color = AppColors.gold.withValues(alpha: 0.7)
+      ..color = palette.gateStroke
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.5;
     canvas.drawRect(Rect.fromLTWH(gap.dx, gap.dy, gw, gh), gapStroke);
@@ -161,7 +170,8 @@ class GamePainter extends CustomPainter {
       Paint()..color = Colors.black.withValues(alpha: 0.28),
     );
 
-    final color = d.owner == 0 ? AppColors.red : AppColors.blue;
+    final defaultColor = d.owner == 0 ? AppColors.red : AppColors.blue;
+    final color = d.owner == mySeat ? CosmeticsTheme.discColor(myDiscColor) : defaultColor;
     canvas.drawCircle(pos, r, Paint()..color = color);
     canvas.drawCircle(
       pos,
@@ -245,6 +255,8 @@ class GamePainter extends CustomPainter {
         old.mySeat != mySeat ||
         old.sx != sx ||
         old.sy != sy ||
-        old.drag != drag;
+        old.drag != drag ||
+        old.myDiscColor != myDiscColor ||
+        old.boardTheme != boardTheme;
   }
 }

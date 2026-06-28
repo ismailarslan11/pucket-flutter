@@ -17,6 +17,7 @@ import 'services/career_service.dart';
 import 'services/firebase_init.dart';
 import 'services/settings_service.dart';
 import 'services/deep_link_service.dart';
+import 'services/deep_link_listener.dart';
 import 'services/player_meta_service.dart';
 import 'services/push_service.dart';
 import 'theme/app_theme.dart';
@@ -88,7 +89,8 @@ class PucketApp extends StatelessWidget {
             home = const AuthScreen();
         }
 
-        return MaterialApp(
+        return DeepLinkListener(
+          child: MaterialApp(
           title: 'PUCKET',
           debugShowCheckedModeBanner: false,
           theme: AppTheme.dark,
@@ -127,6 +129,7 @@ class PucketApp extends StatelessWidget {
             );
           },
           home: home,
+        ),
         );
       },
     );
