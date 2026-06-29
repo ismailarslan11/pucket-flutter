@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -38,8 +39,12 @@ void main() async {
   await initFirebaseIfConfigured();
   if (firebaseEnabled) {
     FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-    // Push kurulumu UI'ı bloklamasın; simülatörde FCM/APNS yine de çalışmaz.
-    unawaited(PushService.setup());
+    // Android'de token/topic kurulumu tamamlansın; iOS simülatörde bloklamasın.
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      await PushService.setup();
+    } else if (defaultTargetPlatform == TargetPlatform.iOS) {
+      unawaited(PushService.setup());
+    }
   }
 
   final settings = SettingsService();

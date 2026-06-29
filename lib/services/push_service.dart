@@ -12,9 +12,9 @@ import 'meta_api.dart';
 class PushService {
   PushService._();
 
-  static const _channelId = 'pucket_high_importance';
-  static const _channelName = 'PUCKET';
-  static const _topic = 'pucket';
+  static const channelId = 'pucket_high_importance';
+  static const channelName = 'PUCKET';
+  static const topic = 'pucket';
 
   static final FlutterLocalNotificationsPlugin _local =
       FlutterLocalNotificationsPlugin();
@@ -22,6 +22,8 @@ class PushService {
   static String? _cachedToken;
   static String? _cachedUid;
   static bool _setupDone = false;
+  static bool _listenersRegistered = false;
+  static Future<void>? _setupFuture;
 
   static String statusMessage = 'Henüz başlatılmadı';
   static bool permissionGranted = false;
@@ -39,6 +41,11 @@ class PushService {
       return;
     }
 
+    _setupFuture ??= _setupImpl();
+    await _setupFuture;
+  }
+
+  static Future<void> _setupImpl() async {
     try {
       await _initLocalNotifications();
 
@@ -67,41 +74,53 @@ class PushService {
         if (androidOk == true) permissionGranted = true;
       }
 
+      _registerListenersOnce();
+
       _cachedToken = await _fetchTokenWithRetry();
       if (_cachedToken == null) {
         statusMessage =
-            'FCM token alınamadı. Google Play Services güncel mi? (BlueStacks\'ta sık sorun)';
+            'FCM token alınamadı. Ayarlar → Yenile veya Google Play Services kontrol edin.';
         debugPrint('Push: $statusMessage');
-        return;
+      } else {
+        statusMessage = 'Token alındı (${_cachedToken!.substring(0, 12)}…)';
+        debugPrint('FCM token: $_cachedToken');
+        await _subscribeTopic();
       }
-
-      statusMessage = 'Token alındı (${_cachedToken!.substring(0, 12)}…)';
-      debugPrint('FCM token: $_cachedToken');
-
-      try {
-        await messaging.subscribeToTopic(_topic);
-        debugPrint('FCM topic abone: $_topic');
-      } catch (e) {
-        debugPrint('FCM topic abonelik hatası: $e');
-      }
-
-      messaging.onTokenRefresh.listen((token) async {
-        _cachedToken = token;
-        statusMessage = 'Token yenilendi';
-        if (_cachedUid != null) {
-          await MetaApi.saveFcmToken(_cachedUid!, token);
-        }
-      });
-
-      FirebaseMessaging.onMessage.listen(_showForegroundNotification);
-      FirebaseMessaging.onMessageOpenedApp.listen((msg) {
-        debugPrint('Push açıldı: ${msg.notification?.title}');
-      });
 
       _setupDone = true;
     } catch (e) {
       statusMessage = 'Push hata: $e';
       debugPrint('Push setup failed: $e');
+    }
+  }
+
+  static void _registerListenersOnce() {
+    if (_listenersRegistered) return;
+    _listenersRegistered = true;
+
+    final messaging = FirebaseMessaging.instance;
+    messaging.onTokenRefresh.listen((token) async {
+      _cachedToken = token;
+      statusMessage = 'Token yenilendi';
+      debugPrint('FCM token yenilendi: $token');
+      await _subscribeTopic();
+      if (_cachedUid != null) {
+        await MetaApi.saveFcmToken(_cachedUid!, token);
+      }
+    });
+
+    FirebaseMessaging.onMessage.listen(_showForegroundNotification);
+    FirebaseMessaging.onMessageOpenedApp.listen((msg) {
+      debugPrint('Push açıldı: ${msg.notification?.title}');
+    });
+  }
+
+  static Future<void> _subscribeTopic() async {
+    try {
+      await FirebaseMessaging.instance.subscribeToTopic(topic);
+      debugPrint('FCM topic abone: $topic');
+    } catch (e) {
+      debugPrint('FCM topic abonelik hatası: $e');
     }
   }
 
@@ -112,6 +131,8 @@ class PushService {
 
     final token = _cachedToken ?? await _fetchTokenWithRetry();
     if (token != null && token.isNotEmpty) {
+      _cachedToken = token;
+      await _subscribeTopic();
       await MetaApi.saveFcmToken(uid, token);
       statusMessage = 'Sunucuya kaydedildi';
       debugPrint('FCM token sunucuya kaydedildi');
@@ -121,6 +142,10 @@ class PushService {
   static Future<String?> refreshToken() async {
     await setup();
     _cachedToken = await _fetchTokenWithRetry();
+    if (_cachedToken != null) {
+      await _subscribeTopic();
+      statusMessage = 'Token alındı (${_cachedToken!.substring(0, 12)}…)';
+    }
     if (_cachedUid != null && _cachedToken != null) {
       await MetaApi.saveFcmToken(_cachedUid!, _cachedToken!);
     }
@@ -140,8 +165,8 @@ class PushService {
   static Future<bool> showTestNotification() async {
     try {
       const androidDetails = AndroidNotificationDetails(
-        _channelId,
-        _channelName,
+        channelId,
+        channelName,
         importance: Importance.max,
         priority: Priority.high,
         icon: '@drawable/ic_stat_notify',
@@ -160,8 +185,12 @@ class PushService {
     }
   }
 
+  static Future<void> showRemoteNotification(RemoteMessage message) async {
+    await _showForegroundNotification(message);
+  }
+
   static Future<String?> _fetchTokenWithRetry() async {
-    const maxAttempts = 5;
+    final maxAttempts = Platform.isAndroid ? 10 : 5;
     for (var i = 0; i < maxAttempts; i++) {
       try {
         final token = await FirebaseMessaging.instance.getToken();
@@ -169,14 +198,13 @@ class PushService {
       } catch (e) {
         final msg = e.toString();
         debugPrint('getToken deneme ${i + 1}: $e');
-        // iOS simülatörde APNS yok; gereksiz beklemeyi kes.
         if (Platform.isIOS && msg.contains('apns-token-not-set')) {
           statusMessage = 'Simülatörde push token alınamaz (gerçek cihaz gerekir)';
           return null;
         }
       }
       if (i < maxAttempts - 1) {
-        await Future<void>.delayed(Duration(seconds: 1 + i));
+        await Future<void>.delayed(Duration(seconds: 1 + (i ~/ 2)));
       }
     }
     return null;
@@ -191,8 +219,8 @@ class PushService {
 
     if (Platform.isAndroid) {
       const channel = AndroidNotificationChannel(
-        _channelId,
-        _channelName,
+        channelId,
+        channelName,
         description: 'PUCKET oyun bildirimleri',
         importance: Importance.max,
         playSound: true,
@@ -211,8 +239,8 @@ class PushService {
     final body = n?.body ?? message.data['body'] as String? ?? '';
 
     const androidDetails = AndroidNotificationDetails(
-      _channelId,
-      _channelName,
+      channelId,
+      channelName,
       importance: Importance.max,
       priority: Priority.high,
       icon: '@drawable/ic_stat_notify',
