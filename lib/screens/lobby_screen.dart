@@ -70,7 +70,12 @@ class _LobbyScreenState extends State<LobbyScreen> {
 
     game.addListener(_onGameUpdate);
 
-    final ok = await game.openConnection(uid: auth.getUid(), name: auth.getName());
+    final ok = await game.openConnection(
+      uid: auth.getUid(),
+      name: auth.getName(),
+      idToken: await auth.getIdToken(),
+      isAnonymous: auth.user?.isAnonymous ?? true,
+    );
     if (!mounted) return;
     if (!ok) {
       if (widget.quickMatch && mounted) {
@@ -101,7 +106,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
           _message = _matchMsgs[idx];
         });
       });
-      _botFallback = Timer(const Duration(seconds: 8), () {
+      _botFallback = Timer(const Duration(seconds: 20), () {
         if (mounted && game.phase == GamePhase.idle) {
           setState(() {
             _message = l10n.lobbyBotFallback;

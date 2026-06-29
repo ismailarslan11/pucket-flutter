@@ -104,6 +104,8 @@ class GameController extends ChangeNotifier {
   int seconds = 0;
   int countdown = 3;
   DragState? drag;
+  Timer? _matchStartTimer;
+  int _onlineSession = 0;
   int _frameCount = 0;
   int _dragMoveCounter = 0;
   int _lastMovingDiscs = 0;
@@ -138,6 +140,11 @@ class GameController extends ChangeNotifier {
   void _setSeat(int seat) {
     mySeat = seat;
     if (!aiMode) isOnlineHost = seat == 0;
+  }
+
+  void _cancelPendingMatchStart() {
+    _matchStartTimer?.cancel();
+    _matchStartTimer = null;
   }
 
   void tick(double nowMs) {
@@ -339,6 +346,7 @@ class GameController extends ChangeNotifier {
     required String uid,
     required String name,
     String? idToken,
+    bool isAnonymous = true,
   }) async {
     ws.onMessage = _handleWs;
     ws.onPing = (ms) {
@@ -348,9 +356,7 @@ class GameController extends ChangeNotifier {
     };
     ws.onError = () => onToast?.call('Bağlantı hatası');
     ws.onReconnected = () {
-      reconnecting = false;
-      onReconnected?.call();
-      notifyListeners();
+      // Gerçek senkron sunucudan 'reconnected' mesajı ile yapılır
     };
     ws.onClose = () {
       if (ws.isReconnecting) {
@@ -371,6 +377,7 @@ class GameController extends ChangeNotifier {
       'uid': uid,
       'name': name,
       if (idToken != null) 'idToken': idToken,
+      'isAnonymous': isAnonymous,
     });
     return true;
   }
@@ -384,6 +391,8 @@ class GameController extends ChangeNotifier {
   }
 
   void leaveQueue() {
+    _cancelPendingMatchStart();
+    _onlineSession++;
     ws.send({'type': 'dequeue'});
     ws.disconnect();
   }
@@ -482,7 +491,11 @@ class GameController extends ChangeNotifier {
         roomCode = msg['room'] as String;
         _applyOpponentInfo(msg);
         notifyListeners();
-        Future.delayed(const Duration(milliseconds: 1800), () {
+        _cancelPendingMatchStart();
+        final session = ++_onlineSession;
+        _matchStartTimer = Timer(const Duration(milliseconds: 1800), () {
+          _matchStartTimer = null;
+          if (session != _onlineSession || aiMode) return;
           startOnlineGame(mySeat, roomCode);
           onGameStart?.call();
         });
@@ -596,6 +609,7 @@ class GameController extends ChangeNotifier {
         }
         break;
       case 'rematch_accepted':
+        isRanked = false;
         myRematchPending = false;
         opponentRematchRequested = false;
         resetMatch();
@@ -944,7 +958,9 @@ class GameController extends ChangeNotifier {
       pauseSecondsLeft--;
       if (pauseSecondsLeft <= 0) {
         t.cancel();
-        _resumeFromPause(broadcast: !aiMode);
+        if (!pauseByOpponent) {
+          _resumeFromPause(broadcast: !aiMode);
+        }
       }
       notifyListeners();
     });
@@ -957,6 +973,8 @@ class GameController extends ChangeNotifier {
   }
 
   void leave() {
+    _cancelPendingMatchStart();
+    _onlineSession++;
     ws.disconnect();
     _secTimer?.cancel();
     _cdTimer?.cancel();
@@ -1014,6 +1032,7 @@ class GameController extends ChangeNotifier {
     _graceTimer?.cancel();
     _afkTimer?.cancel();
     _pauseTimer?.cancel();
+    _matchStartTimer?.cancel();
     ws.disconnect();
     super.dispose();
   }

@@ -4,6 +4,12 @@ const crypto = require('crypto');
 
 const { createStore } = require('./store');
 const { handleAdmin } = require('./admin');
+const {
+  initFirebaseAuth,
+  resolveLoginIdentity,
+  canPlayRanked,
+  isGuestUid,
+} = require('./firebase_auth');
 const db = createStore();
 
 const PORT = process.env.PORT || 8080;
@@ -90,9 +96,64 @@ function getMatchHistory(uid, limit = 20) {
     });
 }
 
-function isGuestUid(uid) {
-  if (!uid) return true;
-  return uid.startsWith('guest_') || uid.startsWith('u_');
+function settleRankedMatch(room, winnerSeat) {
+  if (!room.ranked || room.eloSettled) return false;
+  if (winnerSeat !== 0 && winnerSeat !== 1) return false;
+  const winnerUid = room.uids[winnerSeat];
+  const loserUid = room.uids[1 - winnerSeat];
+  if (!winnerUid || !loserUid) return false;
+  const winner = getPlayer(winnerUid);
+  const loser = getPlayer(loserUid);
+  if (!winner || !loser) return false;
+
+  room.eloSettled = true;
+  const winnerGain = calcElo(winner.elo, loser.elo, true);
+  const loserLoss = calcElo(loser.elo, winner.elo, false);
+  const newWinner = updateElo(winnerUid, winnerGain, true);
+  const newLoser = updateElo(loserUid, loserLoss, false);
+
+  db.get('matchHistory')
+    .push({
+      winner: winnerUid,
+      loser: loserUid,
+      winnerEloChange: winnerGain,
+      loserEloChange: loserLoss,
+      ranked: true,
+      timestamp: Date.now(),
+      seasonId: getSeasonInfo().id,
+    })
+    .write();
+
+  bumpQuest(winnerUid, 'play');
+  bumpQuest(loserUid, 'play');
+  bumpQuest(winnerUid, 'win');
+  grantAchievement(winnerUid, 'first_win');
+  if (newWinner.wins >= 10) grantAchievement(winnerUid, 'ten_wins');
+  const wMeta = getPlayerMeta(winnerUid);
+  wMeta.seasonWins = (wMeta.seasonWins || 0) + 1;
+  db.set(`playerMeta.${winnerUid}.seasonWins`, wMeta.seasonWins).write();
+  const t = getTournamentState();
+  if (t.entries.includes(winnerUid)) {
+    t.scores[winnerUid] = (t.scores[winnerUid] || 0) + 3;
+    db.set('tournament', t).write();
+  }
+
+  room.send(winnerSeat, {
+    type: 'eloResult',
+    won: true,
+    eloChange: +winnerGain,
+    newElo: newWinner.elo,
+    newLeague: getLeague(newWinner.elo).name,
+  });
+  room.send(1 - winnerSeat, {
+    type: 'eloResult',
+    won: false,
+    eloChange: loserLoss,
+    newElo: newLoser.elo,
+    newLeague: getLeague(newLoser.elo).name,
+  });
+  room.broadcast({ type: 'matchEnd', winner: winnerSeat, ranked: true, forfeit: true });
+  return true;
 }
 
 function validateUsername(name) {
@@ -375,7 +436,11 @@ class Room {
       ws,
     );
     this.disconnectTimers[seat] = setTimeout(() => {
+      const oppSeat = this.opponentSeat(seat);
       this.broadcast({ type: 'opponent_left', seat });
+      if (this.ranked && this.uids[oppSeat]) {
+        settleRankedMatch(this, oppSeat);
+      }
       this.players[seat] = null;
       this.uids[seat] = '';
       this.names[seat] = '';
@@ -787,18 +852,23 @@ wss.on('connection', (ws) => {
 
     switch (msg.type) {
       case 'login': {
-        const uid = msg.uid || `guest_${makeCode()}`;
-        const name = msg.name || 'Oyuncu';
-        ws.uid = uid;
-        const player = upsertPlayer(uid, name);
-        ws.send(
-          JSON.stringify({
-            type: 'profile',
-            player,
-            leagues: LEAGUES,
-            league: getLeague(player.elo),
-          }),
-        );
+        (async () => {
+          const identity = await resolveLoginIdentity(msg);
+          let uid = identity.uid || msg.uid || `guest_${makeCode()}`;
+          const name = msg.name || 'Oyuncu';
+          ws.uid = uid;
+          ws.isAnonymous = identity.isAnonymous;
+          ws.rankedEligible = canPlayRanked(ws, uid);
+          const player = upsertPlayer(uid, name);
+          ws.send(
+            JSON.stringify({
+              type: 'profile',
+              player: { ...player, isAnonymous: ws.isAnonymous },
+              leagues: LEAGUES,
+              league: getLeague(player.elo),
+            }),
+          );
+        })();
         break;
       }
 
@@ -839,8 +909,8 @@ wss.on('connection', (ws) => {
         const uid = ws.uid || msg.uid || `guest_${makeCode()}`;
         ws.uid = uid;
 
-        if (!GUEST_RANKED && isGuestUid(uid)) {
-          ws.send(JSON.stringify({ type: 'error', msg: 'Ranked için Google ile giriş yapın' }));
+        if (!canPlayRanked(ws, uid)) {
+          ws.send(JSON.stringify({ type: 'error', msg: 'Ranked için Google veya Apple ile giriş yapın' }));
           return;
         }
 
@@ -973,63 +1043,10 @@ wss.on('connection', (ws) => {
           room?.broadcast(msg, ws);
           break;
         }
-        if (room.eloSettled) break;
         const winnerSeat = msg.winner;
-        if (winnerSeat !== 0 && winnerSeat !== 1) break;
-        const winnerUid = room.uids[winnerSeat];
-        const loserUid = room.uids[1 - winnerSeat];
-        if (!winnerUid || !loserUid) break;
-        const winner = getPlayer(winnerUid);
-        const loser = getPlayer(loserUid);
-        if (!winner || !loser) break;
-        room.eloSettled = true;
-
-        const winnerGain = calcElo(winner.elo, loser.elo, true);
-        const loserLoss = calcElo(loser.elo, winner.elo, false);
-        const newWinner = updateElo(winnerUid, winnerGain, true);
-        const newLoser = updateElo(loserUid, loserLoss, false);
-
-        db.get('matchHistory')
-          .push({
-            winner: winnerUid,
-            loser: loserUid,
-            winnerEloChange: winnerGain,
-            loserEloChange: loserLoss,
-            ranked: true,
-            timestamp: Date.now(),
-            seasonId: getSeasonInfo().id,
-          })
-          .write();
-
-        bumpQuest(winnerUid, 'play');
-        bumpQuest(loserUid, 'play');
-        bumpQuest(winnerUid, 'win');
-        grantAchievement(winnerUid, 'first_win');
-        if (newWinner.wins >= 10) grantAchievement(winnerUid, 'ten_wins');
-        const wMeta = getPlayerMeta(winnerUid);
-        wMeta.seasonWins = (wMeta.seasonWins || 0) + 1;
-        db.set(`playerMeta.${winnerUid}.seasonWins`, wMeta.seasonWins).write();
-        const t = getTournamentState();
-        if (t.entries.includes(winnerUid)) {
-          t.scores[winnerUid] = (t.scores[winnerUid] || 0) + 3;
-          db.set('tournament', t).write();
+        if (settleRankedMatch(room, winnerSeat)) {
+          room.broadcast(msg, ws);
         }
-
-        room.send(winnerSeat, {
-          type: 'eloResult',
-          won: true,
-          eloChange: +winnerGain,
-          newElo: newWinner.elo,
-          newLeague: getLeague(newWinner.elo).name,
-        });
-        room.send(1 - winnerSeat, {
-          type: 'eloResult',
-          won: false,
-          eloChange: loserLoss,
-          newElo: newLoser.elo,
-          newLeague: getLeague(newLoser.elo).name,
-        });
-        room.broadcast(msg, ws);
         break;
       }
 
@@ -1041,7 +1058,9 @@ wss.on('connection', (ws) => {
         if (room.rematchVotes[0] && room.rematchVotes[1]) {
           room.resetRematch();
           room.gameSnapshot = null;
-          room.broadcast({ type: 'rematch_accepted' });
+          room.eloSettled = false;
+          room.ranked = false;
+          room.broadcast({ type: 'rematch_accepted', ranked: false });
         }
         break;
       }
@@ -1115,6 +1134,7 @@ setInterval(() => {
 }, 30000);
 
 async function startServer() {
+  await initFirebaseAuth();
   await db.init();
   db.defaults({
     players: {},

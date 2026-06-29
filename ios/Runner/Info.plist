@@ -47,6 +47,8 @@
 	<string>623091701096-d8djgirimlovmk8dt1t7bbbrug3cmpv1.apps.googleusercontent.com</string>
 	<key>GIDServerClientID</key>
 	<string>623091701096-rhfs1o4hop8f3q2ul2q89n4aivml8qtd.apps.googleusercontent.com</string>
+	<key>NSAppleSignInUsageDescription</key>
+	<string>Ranked maçlara katılmak ve ilerlemenizi kaydetmek için Apple ile giriş yapın.</string>
 	<key>GADApplicationIdentifier</key>
 	<string>ca-app-pub-3940256099942544~1458002511</string>
 	<key>LSRequiresIPhoneOS</key>

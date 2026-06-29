@@ -10,6 +10,7 @@ import '../theme/app_theme.dart';
 import '../widgets/ad_banner_widget.dart';
 import '../widgets/daily_quests_panel.dart';
 import '../widgets/pucket_button.dart';
+import '../widgets/ranked_login_dialog.dart';
 import 'app_router.dart';
 import 'rank_screen.dart';
 
@@ -237,43 +238,16 @@ class MenuScreen extends StatelessWidget {
   }
 
   void _profileTap(BuildContext context, AuthService auth) {
-    if (auth.user?.isAnonymous ?? true) {
-      auth.signInWithGoogle();
+    if (!auth.canPlayRanked) {
+      showRankedLoginDialog(context);
     } else {
       AppRouter.goProfile(context);
     }
   }
 
   void _goRanked(BuildContext context, AuthService auth) {
-    final l10n = context.l10n;
-    if (auth.user?.isAnonymous ?? true) {
-      showDialog<void>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          backgroundColor: AppColors.card,
-          title: Text(
-            l10n.menuRanked,
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
-          ),
-          content: Text(
-            l10n.authRankedHint,
-            style: const TextStyle(color: Color(0xFF888888), height: 1.4),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text(l10n.queueCancel),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(ctx);
-                auth.signInWithGoogle();
-              },
-              child: Text(l10n.authGoogle),
-            ),
-          ],
-        ),
-      );
+    if (!auth.canPlayRanked) {
+      showRankedLoginDialog(context);
       return;
     }
     AppRouter.goQueue(context);

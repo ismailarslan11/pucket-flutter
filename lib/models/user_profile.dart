@@ -21,7 +21,7 @@ class UserProfile {
     this.isAnonymous = false,
   });
 
-  factory UserProfile.fromServer(Map<String, dynamic> json) {
+  factory UserProfile.fromServer(Map<String, dynamic> json, {bool? isAnonymous}) {
     return UserProfile(
       uid: json['uid'] as String? ?? '',
       name: json['name'] as String? ?? 'Oyuncu',
@@ -30,6 +30,7 @@ class UserProfile {
       losses: (json['losses'] as num?)?.toInt() ?? 0,
       matches: (json['matches'] as num?)?.toInt() ?? 0,
       league: json['league'] as String? ?? 'Bronz',
+      isAnonymous: isAnonymous ?? json['isAnonymous'] as bool? ?? false,
     );
   }
 

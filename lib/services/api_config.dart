@@ -1,5 +1,3 @@
-import 'package:flutter/foundation.dart';
-
 /// Canlı sunucu (Render). Yerel test için:
 /// flutter run --dart-define=WS_URL=ws://localhost:8080 --dart-define=API_URL=http://localhost:8080
 const kProductionServer = 'https://pucket-flutter-2.onrender.com';

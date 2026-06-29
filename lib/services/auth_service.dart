@@ -37,6 +37,20 @@ class AuthService extends ChangeNotifier {
   bool get isLoggedIn => authState == AuthState.authenticated && user != null;
   bool get firebaseAvailable => _firebaseReady;
 
+  /// Ranked için Google/Apple (anonim veya yerel misafir değil).
+  bool get canPlayRanked {
+    final u = user;
+    if (u == null) return false;
+    if (u.isAnonymous) return false;
+    if (u.uid.startsWith('u_') || u.uid.startsWith('guest_')) return false;
+    return true;
+  }
+
+  bool get appleSignInAvailable =>
+      _firebaseReady && !_isMacOS && !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
+
+  String? _cachedGuestUid;
+
   /// Google giriş butonu aktif mi?
   bool get googleSignInAvailable {
     if (_isMacOS) return GoogleAuthConfig.hasIosClientId;
@@ -407,13 +421,23 @@ class AuthService extends ChangeNotifier {
 
   String getUid() {
     if (user != null) return user!.uid;
-    return _localUid();
+    return _cachedGuestUid ?? _localUid();
+  }
+
+  Future<String?> getIdToken() async {
+    if (!_firebaseReady || _auth?.currentUser == null) return null;
+    try {
+      return await _auth!.currentUser!.getIdToken();
+    } catch (_) {
+      return null;
+    }
   }
 
   String getName() => user?.name ?? 'Oyuncu';
 
   void applyServerProfile(Map<String, dynamic> data) {
-    user = UserProfile.fromServer(data);
+    final anon = _auth?.currentUser?.isAnonymous ?? user?.isAnonymous ?? true;
+    user = UserProfile.fromServer(data, isAnonymous: anon);
     _persistLocal();
     notifyListeners();
   }
@@ -457,6 +481,7 @@ class AuthService extends ChangeNotifier {
       uid = _localUid();
       await prefs.setString(_uidKey, uid);
     }
+    _cachedGuestUid = uid;
     user = UserProfile(
       uid: uid,
       name: prefs.getString(_nameKey) ?? '',
@@ -466,7 +491,11 @@ class AuthService extends ChangeNotifier {
     );
   }
 
-  String _localUid() => 'u_${const Uuid().v4().substring(0, 8)}';
+  String _localUid() {
+    final uid = 'u_${const Uuid().v4().substring(0, 8)}';
+    _cachedGuestUid = uid;
+    return uid;
+  }
 
   Future<void> _persistLocal() async {
     if (user == null) return;
@@ -494,6 +523,7 @@ class AuthService extends ChangeNotifier {
         league: j['league'] as String? ?? 'Bronz',
         isAnonymous: j['isAnonymous'] as bool? ?? true,
       );
+      _cachedGuestUid = user!.uid;
     } catch (_) {}
   }
 }

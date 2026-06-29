@@ -68,7 +68,12 @@ class _QueueScreenState extends State<QueueScreen> {
       }
     };
 
-    final ok = await game.openConnection(uid: auth.getUid(), name: auth.getName());
+    final ok = await game.openConnection(
+      uid: auth.getUid(),
+      name: auth.getName(),
+      idToken: await auth.getIdToken(),
+      isAnonymous: auth.user?.isAnonymous ?? true,
+    );
     if (!mounted) return;
     if (!ok) {
       ScaffoldMessenger.of(context).showSnackBar(

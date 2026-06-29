@@ -12,7 +12,6 @@ import '../services/ad_service.dart';
 import '../services/audio_service.dart';
 import '../services/auth_service.dart';
 import '../services/career_service.dart';
-import '../services/match_api.dart';
 import '../services/meta_api.dart';
 import '../services/player_meta_service.dart';
 import '../services/settings_service.dart';
@@ -31,6 +30,7 @@ class GameScreen extends StatefulWidget {
 }
 
 class _GameScreenState extends State<GameScreen> {
+  bool _rematchDialogOpen = false;
   bool _showPause = false;
   bool _showSettings = false;
   bool _showOverlay = false;
@@ -90,7 +90,8 @@ class _GameScreenState extends State<GameScreen> {
         }
       };
       game.onRematchRequest = () {
-        if (!mounted) return;
+        if (!mounted || _rematchDialogOpen) return;
+        _rematchDialogOpen = true;
         final l10n = context.l10nRead;
         showDialog<void>(
           context: context,
@@ -109,7 +110,9 @@ class _GameScreenState extends State<GameScreen> {
               }, child: Text(l10n.yes)),
             ],
           ),
-        );
+        ).whenComplete(() {
+          if (mounted) _rematchDialogOpen = false;
+        });
       };
       game.onEloResult = (r) {
         if (mounted) {
@@ -228,33 +231,9 @@ class _GameScreenState extends State<GameScreen> {
 
   void _scheduleEloFallback(GameController game) {
     _eloFallbackTimer?.cancel();
-    _eloFallbackTimer = Timer(const Duration(seconds: 3), () async {
+    _eloFallbackTimer = Timer(const Duration(seconds: 5), () {
       if (!mounted) return;
       if (_eloResult != null || game.pendingEloResult != null) return;
-
-      final auth = context.read<AuthService>();
-      final uid = auth.getUid();
-      final oldElo = auth.user?.elo ?? 1000;
-      final player = await MatchApi.fetchPlayer(uid);
-      if (!mounted || _eloResult != null || game.pendingEloResult != null) return;
-
-      if (player != null) {
-        final newElo = (player['elo'] as num?)?.toInt() ?? oldElo;
-        final league = player['league'] as String? ?? auth.user?.league ?? 'Bronz';
-        auth.applyServerProfile(player);
-        final won = game.lastWinner == game.mySeat;
-        setState(() {
-          _eloResult = EloResult(
-            won: won,
-            eloChange: newElo - oldElo,
-            newElo: newElo,
-            newLeague: league,
-          );
-          _showElo = true;
-        });
-        return;
-      }
-
       _showRoundOverlay(game);
     });
   }

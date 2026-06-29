@@ -132,7 +132,6 @@ class WebSocketService {
           'uid': _uid,
           'sessionToken': _sessionToken,
         });
-        onReconnected?.call();
       } else {
         _tryReconnect();
       }

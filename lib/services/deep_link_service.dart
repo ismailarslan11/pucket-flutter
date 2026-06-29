@@ -21,9 +21,6 @@ class DeepLinkService {
     if (code == null || code.isEmpty) return;
     code = code.toUpperCase();
     pendingJoinCode = code;
-    if (context.mounted) {
-      AppRouter.goLobby(context, joinCode: code);
-    }
   }
 
   static void consumePending(BuildContext context) {
