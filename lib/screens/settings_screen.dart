@@ -6,14 +6,20 @@ import '../l10n/app_language.dart';
 import '../l10n/l10n_extension.dart';
 import '../services/audio_service.dart';
 import '../services/auth_service.dart';
+import '../services/push_service.dart';
 import '../services/settings_service.dart';
 import 'legal_screen.dart';
 import '../theme/app_theme.dart';
 import '../widgets/pucket_button.dart';
 
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final settings = context.watch<SettingsService>();
@@ -67,6 +73,7 @@ class SettingsScreen extends StatelessWidget {
                   ),
                   _sliderRow(l10n.settingsMusicVol, settings.musicVolume, settings.setMusicVolume),
                   _sliderRow(l10n.settingsSfxVol, settings.sfxVolume, settings.setSfxVolume),
+                  _pushSection(),
                   _row(
                     l10n.settingsVibration,
                     l10n.settingsVibrationSub,
@@ -144,6 +151,80 @@ class SettingsScreen extends StatelessWidget {
                 onSelected: (_) => settings.setLanguage(lang),
               );
             }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _pushSection() {
+    final auth = context.read<AuthService>();
+    return Container(
+      constraints: const BoxConstraints(maxWidth: 340),
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: Color(0xFF222222))),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Bildirimler',
+            style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFDDDDDD), fontSize: 13),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            PushService.statusMessage,
+            style: const TextStyle(color: Color(0xFF888888), fontSize: 10),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              OutlinedButton(
+                onPressed: () async {
+                  await PushService.refreshToken();
+                  if (auth.user != null) {
+                    await PushService.initAndRegister(auth.getUid());
+                  }
+                  if (mounted) setState(() {});
+                },
+                child: const Text('Yenile', style: TextStyle(fontSize: 11)),
+              ),
+              OutlinedButton(
+                onPressed: () async {
+                  await PushService.copyTokenToClipboard();
+                  if (mounted) setState(() {});
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('FCM token panoya kopyalandı')),
+                    );
+                  }
+                },
+                child: const Text('Token kopyala', style: TextStyle(fontSize: 11)),
+              ),
+              OutlinedButton(
+                onPressed: () async {
+                  final ok = await PushService.showTestNotification();
+                  if (mounted) setState(() {});
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(ok ? 'Yerel test bildirimi gönderildi' : PushService.statusMessage),
+                      ),
+                    );
+                  }
+                },
+                child: const Text('Test bildirimi', style: TextStyle(fontSize: 11)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Firebase test: Messaging → Send test message → token yapıştır.\n'
+            'Topic kampanya: hedef topic = pucket',
+            style: TextStyle(color: Color(0xFF555555), fontSize: 9, height: 1.4),
           ),
         ],
       ),

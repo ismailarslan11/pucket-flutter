@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -36,7 +38,8 @@ void main() async {
   await initFirebaseIfConfigured();
   if (firebaseEnabled) {
     FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-    await PushService.setup();
+    // Push kurulumu UI'ı bloklamasın; simülatörde FCM/APNS yine de çalışmaz.
+    unawaited(PushService.setup());
   }
 
   final settings = SettingsService();
