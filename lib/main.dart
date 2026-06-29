@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 
+import 'package:firebase_messaging/firebase_messaging.dart';
+
 import 'game/game_controller.dart';
 import 'l10n/app_language.dart';
 import 'screens/auth_screen.dart';
@@ -19,6 +21,7 @@ import 'services/settings_service.dart';
 import 'services/deep_link_service.dart';
 import 'services/deep_link_listener.dart';
 import 'services/player_meta_service.dart';
+import 'services/firebase_messaging_background.dart';
 import 'services/push_service.dart';
 import 'theme/app_theme.dart';
 import 'widgets/pucket_logo.dart';
@@ -31,6 +34,10 @@ void main() async {
   ]);
 
   await initFirebaseIfConfigured();
+  if (firebaseEnabled) {
+    FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+    await PushService.setup();
+  }
 
   final settings = SettingsService();
   await settings.load();
