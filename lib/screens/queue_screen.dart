@@ -163,7 +163,7 @@ class _QueueScreenState extends State<QueueScreen> {
             gradient: RadialGradient(
               center: Alignment(0, -0.3),
               radius: 1.2,
-              colors: [Color(0xFF0D1A2A), AppColors.bg],
+              colors: [Color(0xFF1A1035), AppColors.bg],
             ),
           ),
           child: SafeArea(
@@ -177,7 +177,7 @@ class _QueueScreenState extends State<QueueScreen> {
                     style: const TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.w900,
-                      color: Color(0xFF60AAFF),
+                      color: AppColors.purple,
                       letterSpacing: 3,
                     ),
                   ),

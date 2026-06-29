@@ -212,7 +212,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
             gradient: RadialGradient(
               center: Alignment(0, -0.3),
               radius: 1.4,
-              colors: [Color(0xFF0D2A0D), AppColors.bg],
+              colors: [Color(0xFF1A1035), AppColors.bg],
             ),
           ),
           child: SafeArea(

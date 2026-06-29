@@ -7,6 +7,7 @@ import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import '../l10n/l10n_extension.dart';
 import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/pucket_logo.dart';
 
 class AuthScreen extends StatelessWidget {
   const AuthScreen({super.key});
@@ -19,40 +20,18 @@ class AuthScreen extends StatelessWidget {
 
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: RadialGradient(
-            center: Alignment(0, -0.4),
-            radius: 1.2,
-            colors: [Color(0xFF1C3A0A), AppColors.bg],
-          ),
-        ),
+        decoration: const BoxDecoration(gradient: AppGradients.screenBg),
         child: SafeArea(
           child: Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(32),
               child: Column(
                 children: [
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: ShaderMask(
-                      shaderCallback: (bounds) => const LinearGradient(
-                        colors: [AppColors.green, Color(0xFFB0EE50)],
-                      ).createShader(bounds),
-                      child: const Text(
-                        'PUCKET',
-                        style: TextStyle(
-                          fontSize: 56,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 6,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ),
+                  const PucketLogo(height: 120, showTagline: true),
                   const SizedBox(height: 6),
                   Text(
                     l10n.onlineMultiplayer,
-                    style: const TextStyle(color: AppColors.gold, letterSpacing: 4, fontSize: 10),
+                    style: const TextStyle(color: AppColors.cyan, letterSpacing: 4, fontSize: 10),
                   ),
                   const SizedBox(height: 28),
                   Container(

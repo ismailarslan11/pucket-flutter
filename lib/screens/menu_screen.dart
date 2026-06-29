@@ -10,6 +10,7 @@ import '../theme/app_theme.dart';
 import '../widgets/ad_banner_widget.dart';
 import '../widgets/daily_quests_panel.dart';
 import '../widgets/pucket_button.dart';
+import '../widgets/pucket_logo.dart';
 import '../widgets/ranked_login_dialog.dart';
 import 'app_router.dart';
 import 'rank_screen.dart';
@@ -27,13 +28,7 @@ class MenuScreen extends StatelessWidget {
 
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: RadialGradient(
-            center: Alignment(0, -0.4),
-            radius: 1.2,
-            colors: [Color(0xFF1C3A0A), AppColors.bg],
-          ),
-        ),
+        decoration: const BoxDecoration(gradient: AppGradients.screenBg),
         child: SafeArea(
           child: Column(
             children: [
@@ -111,34 +106,19 @@ class MenuScreen extends StatelessWidget {
                   child: Column(
                     children: [
                       const SizedBox(height: 16),
-                      FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: ShaderMask(
-                          shaderCallback: (bounds) => const LinearGradient(
-                            colors: [AppColors.green, Color(0xFFB0EE50)],
-                          ).createShader(bounds),
-                          child: const Text(
-                            'PUCKET',
-                            style: TextStyle(
-                              fontSize: 72,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 8,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ),
+                      const PucketLogo(height: 130, showTagline: true),
+                      const SizedBox(height: 8),
                       Text(
                         l10n.onlineMultiplayer,
-                        style: const TextStyle(color: AppColors.gold, fontSize: 10, letterSpacing: 4),
+                        style: const TextStyle(color: AppColors.cyan, fontSize: 10, letterSpacing: 4),
                       ),
                       const SizedBox(height: 28),
                       const DailyQuestsPanel(),
                       const SizedBox(height: 16),
                       PucketButton(
                         label: l10n.menuRanked,
-                        gradient: const LinearGradient(colors: [Color(0xFF2060C0), AppColors.green]),
-                        shadowColor: const Color(0xFF1040A0),
+                        gradient: AppGradients.ranked,
+                        shadowColor: AppColors.purpleDark,
                         onPressed: () => _goRanked(context, auth),
                       ),
                       const SizedBox(height: 14),

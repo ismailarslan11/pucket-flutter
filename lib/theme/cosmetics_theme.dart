@@ -36,8 +36,8 @@ class CosmeticsTheme {
           topGrass: Color(0xFF4A8C0C),
           bottomGrass: Color(0xFF57A00F),
           wall: Color(0xFF0D0D0D),
-          gateFill: Color(0x33F0C040),
-          gateStroke: Color(0xB3F0C040),
+          gateFill: Color(0x337C3AED),
+          gateStroke: Color(0xB3A855F7),
         );
     }
   }

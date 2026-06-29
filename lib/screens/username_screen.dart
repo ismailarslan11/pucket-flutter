@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
 import '../services/username_api.dart';
 import '../theme/app_theme.dart';
+import '../widgets/pucket_logo.dart';
 import '../widgets/pucket_button.dart';
 
 class UsernameScreen extends StatefulWidget {
@@ -118,20 +119,16 @@ class _UsernameScreenState extends State<UsernameScreen> {
 
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: RadialGradient(
-            center: Alignment(0, -0.4),
-            radius: 1.2,
-            colors: [Color(0xFF1C3A0A), AppColors.bg],
-          ),
-        ),
+        decoration: const BoxDecoration(gradient: AppGradients.screenBg),
         child: SafeArea(
           child: Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(32),
               child: Column(
                 children: [
-                  const Text('👋', style: TextStyle(fontSize: 32)),
+                  const PucketLogo(height: 72),
+                  const SizedBox(height: 12),
+                  const Text('👋', style: TextStyle(fontSize: 28)),
                   const SizedBox(height: 8),
                   const Text(
                     'KULLANICI ADI',

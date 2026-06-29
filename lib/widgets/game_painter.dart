@@ -219,7 +219,7 @@ class GamePainter extends CustomPainter {
     final ny = -ddy / dist;
 
     final dashPaint = Paint()
-      ..color = AppColors.gold.withValues(alpha: 0.85)
+      ..color = AppColors.purple.withValues(alpha: 0.85)
       ..strokeWidth = 2
       ..style = PaintingStyle.stroke;
     canvas.drawLine(discPos, pullPos, dashPaint);

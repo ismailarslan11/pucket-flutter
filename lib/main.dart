@@ -21,6 +21,7 @@ import 'services/deep_link_listener.dart';
 import 'services/player_meta_service.dart';
 import 'services/push_service.dart';
 import 'theme/app_theme.dart';
+import 'widgets/pucket_logo.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -183,24 +184,19 @@ class _Splash extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+    return Scaffold(
       backgroundColor: AppColors.bg,
-      body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'PUCKET',
-              style: TextStyle(
-                fontSize: 48,
-                fontWeight: FontWeight.w900,
-                color: AppColors.green,
-                letterSpacing: 6,
-              ),
-            ),
-            SizedBox(height: 20),
-            CircularProgressIndicator(color: AppColors.green),
-          ],
+      body: Container(
+        decoration: const BoxDecoration(gradient: AppGradients.screenBg),
+        child: const Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              PucketLogo(height: 160, showTagline: true),
+              SizedBox(height: 28),
+              CircularProgressIndicator(color: AppColors.purple),
+            ],
+          ),
         ),
       ),
     );

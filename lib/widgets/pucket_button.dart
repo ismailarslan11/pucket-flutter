@@ -50,9 +50,7 @@ class PucketButton extends StatelessWidget {
 
     final bg = color ?? AppColors.green;
     final shadow = shadowColor ?? AppColors.darkGreen;
-    final textColor = gradient != null || (color != null && color != AppColors.green)
-        ? Colors.white
-        : Colors.black;
+    final textColor = gradient != null || bg.computeLuminance() < 0.45 ? Colors.white : Colors.black;
 
     return SizedBox(
       width: btnWidth,

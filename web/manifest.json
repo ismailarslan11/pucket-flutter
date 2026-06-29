@@ -1,11 +1,11 @@
 {
-    "name": "pucket_flutter",
-    "short_name": "pucket_flutter",
+    "name": "PUCKET",
+    "short_name": "PUCKET",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#FFFFFF",
+    "theme_color": "#7C3AED",
+    "description": "Online multiplayer disk flicking game",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

@@ -19,6 +19,7 @@ import '../services/share_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/game_board.dart';
 import '../widgets/ping_indicator.dart';
+import '../widgets/pucket_logo.dart';
 import '../widgets/pucket_button.dart';
 import 'app_router.dart';
 
@@ -908,6 +909,8 @@ class _GameScreenState extends State<GameScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              const PucketLogo(height: 56, compact: true),
+              const SizedBox(height: 16),
               Text(
                 isOpponentPause ? l10n.pausedByOpponent : l10n.paused,
                 style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: AppColors.gold),
@@ -999,7 +1002,9 @@ class _GameScreenState extends State<GameScreen> {
           padding: const EdgeInsets.all(24),
           child: Column(
             children: [
-              Text(l10n.settingsTitle, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: AppColors.green, letterSpacing: 3)),
+              const PucketLogo(height: 48, compact: true),
+              const SizedBox(height: 12),
+              Text(l10n.settingsTitle, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: AppColors.purple, letterSpacing: 3)),
               SwitchListTile(title: Text(l10n.settingsMusic), value: settings.musicOn, onChanged: settings.setMusic),
               SwitchListTile(title: Text(l10n.settingsSfx), value: settings.sfxOn, onChanged: settings.setSfx),
               SwitchListTile(title: Text(l10n.settingsVibration), value: settings.vibrationOn, onChanged: settings.setVibration),
