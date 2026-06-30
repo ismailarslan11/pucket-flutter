@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../l10n/app_localizations.dart';
 import '../l10n/app_language.dart';
 import '../l10n/l10n_extension.dart';
+import '../services/ad_service.dart';
 import '../services/audio_service.dart';
 import '../services/auth_service.dart';
 import '../services/consent_service.dart';
@@ -97,7 +98,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     child: Text(l10n.privacyPolicy, style: const TextStyle(color: Color(0xFF666666))),
                   ),
                   TextButton(
-                    onPressed: () => ConsentService.showPrivacyOptions(),
+                    onPressed: () async {
+                      await ConsentService.showPrivacyOptions();
+                      if (context.mounted) {
+                        await context.read<AdService>().refreshAfterConsent();
+                      }
+                    },
                     child: const Text('Reklam gizlilik tercihleri', style: TextStyle(color: Color(0xFF666666))),
                   ),
                   TextButton(
@@ -224,6 +230,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 child: const Text('Test bildirimi', style: TextStyle(fontSize: 11)),
               ),
             ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            context.watch<AdService>().statusMessage,
+            style: const TextStyle(color: Color(0xFF666666), fontSize: 10),
           ),
           const SizedBox(height: 6),
           const Text(

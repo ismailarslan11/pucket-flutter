@@ -8,8 +8,12 @@ class AdService extends ChangeNotifier {
   AdService();
 
   bool initialized = false;
+  bool canLoadAds = false;
+  String statusMessage = 'Başlatılıyor…';
+
   InterstitialAd? _interstitial;
   bool _loadingInterstitial = false;
+  int _initRetries = 0;
 
   /// İki tam ekran reklam arası minimum süre.
   static const _minInterval = Duration(minutes: 3);
@@ -23,21 +27,58 @@ class AdService extends ChangeNotifier {
   Future<void> init() async {
     if (!AdConfig.supported || initialized) return;
     try {
-      if (!await ConsentService.canRequestAds()) {
-        debugPrint('AdMob: rıza bekleniyor veya reklam isteği kapalı');
-        return;
-      }
       await MobileAds.instance.initialize();
       initialized = true;
       notifyListeners();
-      preloadInterstitial();
+      await _refreshLoadPermission();
     } catch (e) {
+      statusMessage = 'AdMob başlatılamadı: $e';
       debugPrint('AdMob init failed: $e');
+      _scheduleRetry();
     }
   }
 
+  Future<void> _refreshLoadPermission() async {
+    if (!initialized) return;
+
+    canLoadAds = await ConsentService.canRequestAds();
+    if (canLoadAds) {
+      statusMessage = 'Reklamlar aktif';
+      _initRetries = 0;
+      preloadInterstitial();
+    } else {
+      statusMessage = 'Reklam rızası bekleniyor (Ayarlar → gizlilik tercihleri)';
+      _scheduleRetry();
+    }
+    notifyListeners();
+  }
+
+  void _scheduleRetry() {
+    if (_initRetries >= 8 || !AdConfig.supported) return;
+    _initRetries++;
+    final delay = Duration(seconds: 2 * _initRetries);
+    Future.delayed(delay, () async {
+      if (!initialized) {
+        await init();
+        return;
+      }
+      await _refreshLoadPermission();
+    });
+  }
+
+  /// Rıza güncellendikten sonra (Ayarlar) tekrar dene.
+  Future<void> refreshAfterConsent() async {
+    if (!AdConfig.supported) return;
+    if (!initialized) {
+      await init();
+      return;
+    }
+    _initRetries = 0;
+    await _refreshLoadPermission();
+  }
+
   void preloadInterstitial() {
-    if (!AdConfig.supported || !initialized) return;
+    if (!AdConfig.supported || !initialized || !canLoadAds) return;
     if (_loadingInterstitial || _interstitial != null) return;
     final unitId = AdConfig.interstitialUnitId;
     if (unitId.isEmpty) return;
@@ -63,7 +104,8 @@ class AdService extends ChangeNotifier {
             },
           );
         },
-        onAdFailedToLoad: (_) {
+        onAdFailedToLoad: (error) {
+          debugPrint('Interstitial load failed: ${error.message}');
           _loadingInterstitial = false;
           Future.delayed(const Duration(seconds: 30), preloadInterstitial);
         },
@@ -82,7 +124,7 @@ class AdService extends ChangeNotifier {
     bool skip = false,
   }) async {
     if (skip || !matchFinished) return;
-    if (!AdConfig.supported || !initialized) return;
+    if (!AdConfig.supported || !initialized || !canLoadAds) return;
 
     _matchesSinceAd++;
     if (_matchesSinceAd < _matchesPerAd) return;
@@ -101,7 +143,6 @@ class AdService extends ChangeNotifier {
     preloadInterstitial();
   }
 
-  /// Menüye dönüşte reklam gösterme — çok sık rahatsız ediyordu.
   Future<void> showInterstitialOnMenuReturn() async {}
 
   @override
