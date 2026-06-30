@@ -9,12 +9,14 @@ import 'package:provider/provider.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 
 import 'game/game_controller.dart';
+import 'config/ad_config.dart';
 import 'l10n/app_language.dart';
 import 'screens/auth_screen.dart';
 import 'screens/menu_screen.dart';
 import 'screens/tutorial_screen.dart';
 import 'screens/username_screen.dart';
 import 'services/ad_service.dart';
+import 'services/consent_service.dart';
 import 'services/api_config.dart';
 import 'services/audio_service.dart';
 import 'services/auth_service.dart';
@@ -61,6 +63,9 @@ void main() async {
 
   final audio = AudioService(settings);
   final ads = AdService();
+  if (AdConfig.supported) {
+    await ConsentService.ensureConsent();
+  }
   await ads.init();
 
   runApp(

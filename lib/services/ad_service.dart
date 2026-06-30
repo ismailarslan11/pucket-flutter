@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 import '../config/ad_config.dart';
+import 'consent_service.dart';
 
 class AdService extends ChangeNotifier {
   AdService();
@@ -22,6 +23,10 @@ class AdService extends ChangeNotifier {
   Future<void> init() async {
     if (!AdConfig.supported || initialized) return;
     try {
+      if (!await ConsentService.canRequestAds()) {
+        debugPrint('AdMob: rıza bekleniyor veya reklam isteği kapalı');
+        return;
+      }
       await MobileAds.instance.initialize();
       initialized = true;
       notifyListeners();

@@ -1,28 +1,20 @@
 #!/usr/bin/env bash
-# Production APK/AAB build — sunucu URL'si zorunlu.
+# Production APK/AAB build
 #
 # Kullanım:
-#   export WS_URL=wss://pucket-server.fly.dev
-#   export API_URL=https://pucket-server.fly.dev
-#   ./tool/build_release.sh apk
 #   ./tool/build_release.sh appbundle
+#   ./tool/build_release.sh apk
+#
+# İsteğe bağlı override:
+#   export WS_URL=wss://...
+#   export API_URL=https://...
 #
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-TARGET="${1:-apk}"
-WS_URL="${WS_URL:-}"
-API_URL="${API_URL:-}"
-
-if [[ -z "$WS_URL" || -z "$API_URL" ]]; then
-  echo "HATA: WS_URL ve API_URL tanımlı olmalı."
-  echo ""
-  echo "Örnek (Fly.io):"
-  echo "  export WS_URL=wss://pucket-server.fly.dev"
-  echo "  export API_URL=https://pucket-server.fly.dev"
-  echo "  ./tool/build_release.sh apk"
-  exit 1
-fi
+TARGET="${1:-appbundle}"
+WS_URL="${WS_URL:-wss://pucket-flutter-2.onrender.com}"
+API_URL="${API_URL:-https://pucket-flutter-2.onrender.com}"
 
 DEFINES=(
   "--dart-define=WS_URL=${WS_URL}"
@@ -32,7 +24,7 @@ DEFINES=(
 echo "→ WS_URL=$WS_URL"
 echo "→ API_URL=$API_URL"
 echo "→ Build: $TARGET"
-echo "→ AdMob: test ID'leri (gerçek gelir için AdMob Console ID'lerini dart-define ile ver)"
+echo "→ AdMob: release Android ID'leri ad_config.dart içinde"
 
 if [[ "$TARGET" == "appbundle" ]]; then
   flutter build appbundle --release "${DEFINES[@]}"
@@ -40,8 +32,11 @@ if [[ "$TARGET" == "appbundle" ]]; then
   echo "AAB: build/app/outputs/bundle/release/app-release.aab"
 elif [[ "$TARGET" == "apk" ]]; then
   flutter build apk --release "${DEFINES[@]}"
+  OUT="pucket-$(grep '^version:' pubspec.yaml | awk '{print $2}').apk"
+  cp build/app/outputs/flutter-apk/app-release.apk "$OUT"
   echo ""
   echo "APK: build/app/outputs/flutter-apk/app-release.apk"
+  echo "     $OUT"
 elif [[ "$TARGET" == "ios" ]]; then
   flutter build ipa --release "${DEFINES[@]}"
   echo ""

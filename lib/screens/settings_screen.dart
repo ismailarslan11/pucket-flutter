@@ -6,6 +6,7 @@ import '../l10n/app_language.dart';
 import '../l10n/l10n_extension.dart';
 import '../services/audio_service.dart';
 import '../services/auth_service.dart';
+import '../services/consent_service.dart';
 import '../services/push_service.dart';
 import '../services/settings_service.dart';
 import 'legal_screen.dart';
@@ -94,6 +95,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   TextButton(
                     onPressed: () => LegalScreen.showPrivacy(context),
                     child: Text(l10n.privacyPolicy, style: const TextStyle(color: Color(0xFF666666))),
+                  ),
+                  TextButton(
+                    onPressed: () => ConsentService.showPrivacyOptions(),
+                    child: const Text('Reklam gizlilik tercihleri', style: TextStyle(color: Color(0xFF666666))),
                   ),
                   TextButton(
                     onPressed: () => LegalScreen.showTerms(context),
