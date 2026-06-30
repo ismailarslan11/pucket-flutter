@@ -79,9 +79,9 @@ class GamePainter extends CustomPainter {
 
   void _drawFieldStatic(Canvas canvas, Size size) {
     final palette = CosmeticsTheme.boardPalette(boardTheme);
-    final gap = _s2c(GameConstants.gapX, GameConstants.vHalf - 5);
+    final gap = _s2c(GameConstants.gapX, GameConstants.gapY);
     final gw = GameConstants.gapW * sx;
-    final gh = 10 * sy;
+    final gh = GameConstants.gapH * sy;
     final hw = size.width;
     final hh = size.height / 2;
 

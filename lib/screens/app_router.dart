@@ -8,7 +8,6 @@ import '../models/career_opponent.dart';
 import '../services/ad_service.dart';
 import '../services/audio_service.dart';
 import '../screens/cosmetics_screen.dart';
-import '../screens/tournament_screen.dart';
 import '../game/training_layout.dart';
 import '../screens/training_screen.dart';
 import 'career_screen.dart';
@@ -120,10 +119,6 @@ class AppRouter {
 
   static void goTraining(BuildContext context) {
     Navigator.push(context, MaterialPageRoute(builder: (_) => const TrainingScreen()));
-  }
-
-  static void goTournament(BuildContext context) {
-    Navigator.push(context, MaterialPageRoute(builder: (_) => const TournamentScreen()));
   }
 
   static void goCosmetics(BuildContext context) {

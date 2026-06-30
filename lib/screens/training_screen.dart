@@ -9,42 +9,115 @@ import 'app_router.dart';
 class TrainingScreen extends StatelessWidget {
   const TrainingScreen({super.key});
 
+  void _goBack(BuildContext context) {
+    if (Navigator.canPop(context)) {
+      Navigator.pop(context);
+    } else {
+      AppRouter.goMenu(context);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+
     return Scaffold(
-      backgroundColor: AppColors.bg,
-      appBar: AppBar(
-        title: Text(l10n.menuTraining),
-        backgroundColor: AppColors.bg,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(24),
-        child: SingleChildScrollView(
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: RadialGradient(
+            center: Alignment(0, -0.4),
+            radius: 1.2,
+            colors: [Color(0xFF1A3A08), AppColors.bg],
+          ),
+        ),
+        child: SafeArea(
           child: Column(
             children: [
-            Text(
-              l10n.trainingDesc,
-              style: const TextStyle(color: Color(0xFF888888), height: 1.5),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            PucketButton(
-              label: l10n.trainingShooting,
-              onPressed: () => AppRouter.startTraining(context, TrainingType.shooting),
-            ),
-            const SizedBox(height: 12),
-            PucketButton(
-              label: l10n.trainingDefense,
-              secondary: true,
-              onPressed: () => AppRouter.startTraining(context, TrainingType.defense),
-            ),
-            const SizedBox(height: 12),
-            PucketButton(
-              label: l10n.trainingFull,
-              secondary: true,
-              onPressed: () => AppRouter.startTraining(context, TrainingType.full, level: AiLevel.easy),
-            ),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: IconButton(
+                  onPressed: () => _goBack(context),
+                  icon: const Icon(Icons.arrow_back, color: Color(0xFF888888)),
+                ),
+              ),
+              Expanded(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    return SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Text(
+                              l10n.menuTraining,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                fontSize: 26,
+                                fontWeight: FontWeight.w900,
+                                color: AppColors.green,
+                                letterSpacing: 3,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 320),
+                              child: Text(
+                                l10n.trainingDesc,
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  color: Color(0xFF888888),
+                                  fontSize: 13,
+                                  height: 1.5,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 28),
+                            PucketButton(
+                              label: l10n.trainingShooting,
+                              subtitle: l10n.trainingGoalShooting,
+                              width: 280,
+                              onPressed: () => AppRouter.startTraining(context, TrainingType.shooting),
+                            ),
+                            const SizedBox(height: 14),
+                            PucketButton(
+                              label: l10n.trainingDefense,
+                              subtitle: l10n.trainingGoalDefense,
+                              color: const Color(0xFFE67E22),
+                              shadowColor: const Color(0xFFCA6F1E),
+                              width: 280,
+                              onPressed: () => AppRouter.startTraining(context, TrainingType.defense),
+                            ),
+                            const SizedBox(height: 14),
+                            PucketButton(
+                              label: l10n.trainingFull,
+                              subtitle: l10n.trainingGoalFull,
+                              color: const Color(0xFF7D5BA6),
+                              shadowColor: const Color(0xFF5A3F7A),
+                              width: 280,
+                              onPressed: () => AppRouter.startTraining(
+                                context,
+                                TrainingType.full,
+                                level: AiLevel.easy,
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            PucketButton(
+                              label: l10n.back,
+                              secondary: true,
+                              width: 200,
+                              onPressed: () => _goBack(context),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
             ],
           ),
         ),

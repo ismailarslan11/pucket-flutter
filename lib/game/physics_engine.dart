@@ -82,8 +82,8 @@ class PhysicsEngine {
 
   static void stepPhysics(List<Disc> discs) {
     final dr = GameConstants.discRadius;
-    final wallTop = GameConstants.vHalf - 6;
-    final wallBot = GameConstants.vHalf + 6;
+    final wallTop = GameConstants.wallTop;
+    final wallBot = GameConstants.wallBottom;
 
     for (final d in discs) {
       d.vx += d.vvx;
@@ -110,15 +110,18 @@ class PhysicsEngine {
         d.vvy = -d.vvy.abs() * GameConstants.restitution;
       }
 
-      final inGap = d.vx > GameConstants.gapX && d.vx < GameConstants.gapX + GameConstants.gapW;
-      if (!inGap) {
-        if (d.vy + dr > wallTop && d.vy - dr < wallBot) {
-          if (d.vvy > 0 && d.vy < GameConstants.vHalf) {
+      if (_blockedByMidWall(d)) {
+        if (d.vvy > 0 && d.vy < GameConstants.vHalf) {
+          d.vy = wallTop - dr;
+          d.vvy = -d.vvy.abs() * GameConstants.restitution;
+        } else if (d.vvy < 0 && d.vy > GameConstants.vHalf) {
+          d.vy = wallBot + dr;
+          d.vvy = d.vvy.abs() * GameConstants.restitution;
+        } else if (d.vvy.abs() < 0.5) {
+          if (d.vy < GameConstants.vHalf) {
             d.vy = wallTop - dr;
-            d.vvy = -d.vvy.abs() * GameConstants.restitution;
-          } else if (d.vvy < 0 && d.vy > GameConstants.vHalf) {
+          } else {
             d.vy = wallBot + dr;
-            d.vvy = d.vvy.abs() * GameConstants.restitution;
           }
         }
       }
@@ -153,9 +156,36 @@ class PhysicsEngine {
 
   static const int discsPerPlayer = 5;
 
+  static bool _blockedByMidWall(Disc d) {
+    final dr = GameConstants.discRadius;
+    final wt = GameConstants.wallTop;
+    final wb = GameConstants.wallBottom;
+
+    if (d.vy + dr <= wt || d.vy - dr >= wb) return false;
+
+    final gx0 = GameConstants.gapX;
+    final gx1 = GameConstants.gapX + GameConstants.gapW;
+    final gy0 = GameConstants.gapY;
+    final gy1 = GameConstants.gapY + GameConstants.gapH;
+
+    // Sol / sağ duvar segmentleri
+    if (d.vx + dr <= gx0 || d.vx - dr >= gx1) return true;
+
+    // Kapı sütunu: yalnızca açıklıktan geçerken serbest
+    final centerInGate = d.vx > gx0 && d.vx < gx1 && d.vy > gy0 && d.vy < gy1;
+    if (centerInGate) return false;
+
+    final crossingGate =
+        d.vx > gx0 && d.vx < gx1 && (d.vy - GameConstants.vHalf).abs() < dr;
+    if (crossingGate) return false;
+
+    // Kapının üst/alt kapakları (turuncu işaretli köşeler)
+    return true;
+  }
+
   static bool inGateZone(Disc d) {
     final inGapX = d.vx > GameConstants.gapX && d.vx < GameConstants.gapX + GameConstants.gapW;
-    final nearMid = (d.vy - GameConstants.vHalf).abs() < GameConstants.discRadius + 10;
+    final nearMid = (d.vy - GameConstants.vHalf).abs() < GameConstants.discRadius + GameConstants.gapH / 2;
     return inGapX && nearMid;
   }
 

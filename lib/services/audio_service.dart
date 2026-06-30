@@ -6,7 +6,9 @@ import 'settings_service.dart';
 enum MusicTrack { menu, game, none }
 
 class AudioService extends ChangeNotifier {
-  AudioService(this.settings);
+  AudioService(this.settings) {
+    settings.addListener(_onSettingsUpdate);
+  }
 
   final SettingsService settings;
   final AudioPlayer _sfx = AudioPlayer();
@@ -59,8 +61,11 @@ class AudioService extends ChangeNotifier {
     }
   }
 
+  void _onSettingsUpdate() => onSettingsChanged();
+
   @override
   void dispose() {
+    settings.removeListener(_onSettingsUpdate);
     _sfx.dispose();
     _music.dispose();
     super.dispose();

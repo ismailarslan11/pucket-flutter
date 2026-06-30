@@ -4,26 +4,14 @@ import 'package:provider/provider.dart';
 import '../l10n/app_localizations.dart';
 import '../l10n/app_language.dart';
 import '../l10n/l10n_extension.dart';
-import '../widgets/ad_banner_widget.dart';
-import '../config/ad_config.dart';
-import '../services/ad_service.dart';
-import '../services/audio_service.dart';
 import '../services/auth_service.dart';
-import '../services/consent_service.dart';
-import '../services/push_service.dart';
 import '../services/settings_service.dart';
 import 'legal_screen.dart';
 import '../theme/app_theme.dart';
-import '../widgets/pucket_button.dart';
 
-class SettingsScreen extends StatefulWidget {
+class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
-  @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
-}
-
-class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final settings = context.watch<SettingsService>();
@@ -34,14 +22,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: SafeArea(
         child: Stack(
           children: [
-            Positioned(
-              top: 8,
-              left: 8,
-              child: IconButton(
-                icon: const Icon(Icons.arrow_back, color: Color(0xFF888888), size: 28),
-                onPressed: () => Navigator.pop(context),
-              ),
-            ),
             SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(24, 52, 24, 40),
               child: Column(
@@ -77,8 +57,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   _sliderRow(l10n.settingsMusicVol, settings.musicVolume, settings.setMusicVolume),
                   _sliderRow(l10n.settingsSfxVol, settings.sfxVolume, settings.setSfxVolume),
-                  _adsSection(),
-                  _pushSection(),
                   _row(
                     l10n.settingsVibration,
                     l10n.settingsVibrationSub,
@@ -101,43 +79,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     child: Text(l10n.privacyPolicy, style: const TextStyle(color: Color(0xFF666666))),
                   ),
                   TextButton(
-                    onPressed: () async {
-                      if (ConsentService.umpUnavailable) {
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Gizlilik formu AdMob\'da yok — Türkiye için zorunlu değil'),
-                            ),
-                          );
-                        }
-                        return;
-                      }
-                      final ok = await ConsentService.showPrivacyOptions();
-                      if (context.mounted) {
-                        await context.read<AdService>().refreshAfterConsent();
-                        if (!ok) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Gizlilik formu açılamadı')),
-                          );
-                        }
-                      }
-                    },
-                    child: const Text('Reklam gizlilik tercihleri', style: TextStyle(color: Color(0xFF666666))),
-                  ),
-                  TextButton(
                     onPressed: () => LegalScreen.showTerms(context),
                     child: Text(l10n.termsOfUse, style: const TextStyle(color: Color(0xFF666666))),
                   ),
-                  const SizedBox(height: 16),
-                  PucketButton(
-                    label: l10n.saveAndBack,
-                    width: double.infinity,
-                    onPressed: () {
-                      context.read<AudioService>().onSettingsChanged();
-                      Navigator.pop(context);
-                    },
-                  ),
                 ],
+              ),
+            ),
+            Positioned(
+              top: 8,
+              left: 8,
+              child: IconButton(
+                icon: const Icon(Icons.arrow_back, color: Color(0xFF888888), size: 28),
+                onPressed: () => Navigator.pop(context),
               ),
             ),
           ],
@@ -180,153 +133,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 onSelected: (_) => settings.setLanguage(lang),
               );
             }).toList(),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _adsSection() {
-    final ads = context.watch<AdService>();
-    return Container(
-      constraints: const BoxConstraints(maxWidth: 340),
-      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: Color(0xFF222222))),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Reklamlar (AdMob)',
-            style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFDDDDDD), fontSize: 13),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            ads.statusMessage,
-            style: TextStyle(
-              color: ads.canLoadAds ? AppColors.green : const Color(0xFF888888),
-              fontSize: 10,
-            ),
-          ),
-          if (ads.consentDebug.isNotEmpty) ...[
-            const SizedBox(height: 4),
-            Text(ads.consentDebug, style: const TextStyle(color: Color(0xFF555555), fontSize: 9)),
-          ],
-          if (ads.lastBannerError.isNotEmpty) ...[
-            const SizedBox(height: 4),
-            Text(ads.lastBannerError, style: const TextStyle(color: AppColors.red, fontSize: 9)),
-          ],
-          const SizedBox(height: 4),
-          Text(
-            'Birim: ${AdConfig.bannerUnitId}\n'
-            'Mod: ${AdConfig.useTestAds ? "Google test reklam" : "Prod (gerçek reklam)"}',
-            style: const TextStyle(color: Color(0xFF444444), fontSize: 9, height: 1.4),
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              OutlinedButton(
-                onPressed: () async {
-                  await ads.refreshAfterConsent();
-                  AdBannerController.reload();
-                  if (mounted) setState(() {});
-                },
-                child: const Text('Reklamı yenile', style: TextStyle(fontSize: 11)),
-              ),
-              if (!ConsentService.umpUnavailable)
-                OutlinedButton(
-                  onPressed: () async {
-                    final ok = await ConsentService.showPrivacyOptions();
-                    if (context.mounted) await ads.refreshAfterConsent();
-                    if (context.mounted && !ok) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('AdMob gizlilik formu yapılandırılmamış (TR için gerekli değil)'),
-                        ),
-                      );
-                    }
-                    if (mounted) setState(() {});
-                  },
-                  child: const Text('Gizlilik tercihleri', style: TextStyle(fontSize: 11)),
-                ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _pushSection() {
-    final auth = context.read<AuthService>();
-    return Container(
-      constraints: const BoxConstraints(maxWidth: 340),
-      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: Color(0xFF222222))),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Bildirimler',
-            style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFDDDDDD), fontSize: 13),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            PushService.statusMessage,
-            style: const TextStyle(color: Color(0xFF888888), fontSize: 10),
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              OutlinedButton(
-                onPressed: () async {
-                  await PushService.refreshToken();
-                  if (auth.user != null) {
-                    await PushService.initAndRegister(auth.getUid());
-                  }
-                  if (mounted) setState(() {});
-                },
-                child: const Text('Yenile', style: TextStyle(fontSize: 11)),
-              ),
-              OutlinedButton(
-                onPressed: () async {
-                  await PushService.copyTokenToClipboard();
-                  if (mounted) setState(() {});
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('FCM token panoya kopyalandı')),
-                    );
-                  }
-                },
-                child: const Text('Token kopyala', style: TextStyle(fontSize: 11)),
-              ),
-              OutlinedButton(
-                onPressed: () async {
-                  final ok = await PushService.showTestNotification();
-                  if (mounted) setState(() {});
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(ok ? 'Yerel test bildirimi gönderildi' : PushService.statusMessage),
-                      ),
-                    );
-                  }
-                },
-                child: const Text('Test bildirimi', style: TextStyle(fontSize: 11)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          const Text(
-            'Firebase test: Messaging → Send test message → token yapıştır.\n'
-            'Topic kampanya: hedef topic = pucket',
-            style: TextStyle(color: Color(0xFF555555), fontSize: 9, height: 1.4),
           ),
         ],
       ),

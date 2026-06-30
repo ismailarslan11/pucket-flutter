@@ -5,7 +5,6 @@ import 'meta_api.dart';
 class PlayerMetaService extends ChangeNotifier {
   PlayerMeta? meta;
   SeasonInfo? season;
-  List<TournamentEntry> tournament = [];
   bool loading = false;
   String? lastMessage;
 
@@ -16,7 +15,6 @@ class PlayerMetaService extends ChangeNotifier {
     'training_done': '🏋️ Antrenman',
     'streak_3': '📅 3 Gün Seri',
     'streak_7': '⭐ 7 Gün Seri',
-    'tournament_join': '🏅 Turnuva',
   };
 
   Future<void> load(String uid, {String name = ''}) async {
@@ -25,7 +23,6 @@ class PlayerMetaService extends ChangeNotifier {
     await MetaApi.registerPlayer(uid, name.isNotEmpty ? name : 'Oyuncu');
     meta = await MetaApi.fetchMeta(uid, name: name);
     season = await MetaApi.fetchSeason();
-    tournament = await MetaApi.fetchTournament();
     loading = false;
     notifyListeners();
   }
@@ -54,12 +51,6 @@ class PlayerMetaService extends ChangeNotifier {
   Future<void> setCosmetics(String uid, Map<String, String> cosmetics) async {
     await MetaApi.saveCosmetics(uid, cosmetics);
     await load(uid);
-  }
-
-  Future<bool> joinTournament(String uid, String name) async {
-    final ok = await MetaApi.joinTournament(uid, name);
-    if (ok) await load(uid);
-    return ok;
   }
 
   Future<void> saveFcmToken(String uid, String token) async {

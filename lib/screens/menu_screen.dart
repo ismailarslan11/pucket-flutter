@@ -5,7 +5,6 @@ import '../l10n/l10n_extension.dart';
 import '../models/rank_tier.dart';
 import '../services/auth_service.dart';
 import '../services/career_service.dart';
-import '../services/share_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/ad_banner_widget.dart';
 import '../widgets/daily_quests_panel.dart';
@@ -159,11 +158,6 @@ class MenuScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 14),
                       PucketButton(
-                        label: l10n.menuTournament,
-                        onPressed: () => AppRouter.goTournament(context),
-                      ),
-                      const SizedBox(height: 14),
-                      PucketButton(
                         label: l10n.menuVsBot,
                         color: const Color(0xFF252525),
                         shadowColor: const Color(0xFF111111),
@@ -197,12 +191,6 @@ class MenuScreen extends StatelessWidget {
                         label: l10n.menuCosmetics,
                         secondary: true,
                         onPressed: () => AppRouter.goCosmetics(context),
-                      ),
-                      const SizedBox(height: 14),
-                      PucketButton(
-                        label: l10n.menuInvite,
-                        secondary: true,
-                        onPressed: () => ShareService.shareInviteLink(),
                       ),
                       const SizedBox(height: 14),
                       PucketButton(
