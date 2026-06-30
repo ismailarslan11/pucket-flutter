@@ -1,14 +1,16 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import '../firebase_options.dart';
+
+const _androidLargeIcon = DrawableResourceAndroidBitmap('@mipmap/ic_launcher');
 
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  // Arka planda data-only mesajlar için yerel bildirim göster.
   final n = message.notification;
   final title = n?.title ?? message.data['title'] as String? ?? 'PUCKET';
   final body = n?.body ?? message.data['body'] as String? ?? '';
@@ -37,6 +39,8 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     importance: Importance.max,
     priority: Priority.high,
     icon: '@drawable/ic_stat_notify',
+    largeIcon: _androidLargeIcon,
+    color: Color(0xFF7C3AED),
   );
   await plugin.show(
     message.hashCode,

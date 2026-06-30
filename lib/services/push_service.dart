@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
@@ -28,7 +29,17 @@ class PushService {
   static String statusMessage = 'Henüz başlatılmadı';
   static bool permissionGranted = false;
 
-  static String? get token => _cachedToken;
+  static const _androidLargeIcon = DrawableResourceAndroidBitmap('@mipmap/ic_launcher');
+
+  static const AndroidNotificationDetails _androidDetails = AndroidNotificationDetails(
+    channelId,
+    channelName,
+    importance: Importance.max,
+    priority: Priority.high,
+    icon: '@drawable/ic_stat_notify',
+    largeIcon: _androidLargeIcon,
+    color: Color(0xFF7C3AED),
+  );
 
   static Future<void> setup() async {
     if (kIsWeb || !firebaseEnabled) {
@@ -164,19 +175,12 @@ class PushService {
 
   static Future<bool> showTestNotification() async {
     try {
-      const androidDetails = AndroidNotificationDetails(
-        channelId,
-        channelName,
-        importance: Importance.max,
-        priority: Priority.high,
-        icon: '@drawable/ic_stat_notify',
-      );
       const iosDetails = DarwinNotificationDetails();
       await _local.show(
         999,
         'PUCKET test',
         'Bildirimler çalışıyor!',
-        const NotificationDetails(android: androidDetails, iOS: iosDetails),
+        const NotificationDetails(android: _androidDetails, iOS: iosDetails),
       );
       return true;
     } catch (e) {
@@ -238,15 +242,8 @@ class PushService {
     final title = n?.title ?? message.data['title'] as String? ?? 'PUCKET';
     final body = n?.body ?? message.data['body'] as String? ?? '';
 
-    const androidDetails = AndroidNotificationDetails(
-      channelId,
-      channelName,
-      importance: Importance.max,
-      priority: Priority.high,
-      icon: '@drawable/ic_stat_notify',
-    );
     const iosDetails = DarwinNotificationDetails();
-    const details = NotificationDetails(android: androidDetails, iOS: iosDetails);
+    const details = NotificationDetails(android: _androidDetails, iOS: iosDetails);
 
     await _local.show(message.hashCode, title, body, details);
   }
