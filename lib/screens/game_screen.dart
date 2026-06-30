@@ -294,7 +294,15 @@ class _GameScreenState extends State<GameScreen> {
               },
             ),
             Expanded(
-              child: Stack(
+              child: DecoratedBox(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Color(0xFF0A0618), Color(0xFF060410)],
+                  ),
+                ),
+                child: Stack(
                 children: [
                   const RepaintBoundary(child: GameBoard()),
                   ListenableBuilder(
@@ -320,6 +328,7 @@ class _GameScreenState extends State<GameScreen> {
                   ),
                 ],
               ),
+              ),
             ),
             ListenableBuilder(
               listenable: game,
@@ -342,9 +351,11 @@ class _GameScreenState extends State<GameScreen> {
     return Container(
       height: 52,
       padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: const BoxDecoration(
-        color: Color(0xFF1A1A1A),
-        border: Border(bottom: BorderSide(color: Color(0xFF2A2A2A))),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0C0818),
+        border: Border(
+          bottom: BorderSide(color: AppColors.cyan.withValues(alpha: 0.25)),
+        ),
       ),
       child: Row(
         children: [
@@ -421,19 +432,21 @@ class _GameScreenState extends State<GameScreen> {
   Widget _roundRow(GameController game, String timer, l10n) {
     return Container(
       height: 28,
-      decoration: const BoxDecoration(
-        color: Color(0xFF141414),
-        border: Border(bottom: BorderSide(color: Color(0xFF2A2A2A))),
+      decoration: BoxDecoration(
+        color: const Color(0xFF080612),
+        border: Border(
+          bottom: BorderSide(color: AppColors.purple.withValues(alpha: 0.2)),
+        ),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
             'ROUND ${game.currentRound}/3',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 9,
               fontWeight: FontWeight.w900,
-              color: Color(0xFF444444),
+              color: AppColors.cyan.withValues(alpha: 0.45),
               letterSpacing: 2,
             ),
           ),
@@ -511,16 +524,18 @@ class _GameScreenState extends State<GameScreen> {
   Widget _bottomBar(GameController game, l10n) {
     return Container(
       height: 44,
-      decoration: const BoxDecoration(
-        color: Color(0xFF1A1A1A),
-        border: Border(top: BorderSide(color: Color(0xFF2A2A2A))),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0C0818),
+        border: Border(
+          top: BorderSide(color: AppColors.cyan.withValues(alpha: 0.25)),
+        ),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text('🔴 ${game.redRemaining()}', style: const TextStyle(color: AppColors.red, fontWeight: FontWeight.w900, fontSize: 15)),
           const SizedBox(width: 8),
-          Text(l10n.yourHalf, style: const TextStyle(color: Color(0xFF444444), fontSize: 10, letterSpacing: 1)),
+          Text(l10n.yourHalf, style: TextStyle(color: AppColors.cyan.withValues(alpha: 0.45), fontSize: 10, letterSpacing: 1)),
           const SizedBox(width: 8),
           Text(l10n.discsLeft(game.mySideRemaining()), style: const TextStyle(color: AppColors.gold, fontWeight: FontWeight.w900, fontSize: 15)),
         ],

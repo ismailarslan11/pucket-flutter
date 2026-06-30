@@ -30,10 +30,12 @@ class GamePainter extends CustomPainter {
   final String myDiscColor;
   final String boardTheme;
 
+  static const _fieldVersion = 2;
   static ui.Picture? _fieldPicture;
   static Size? _fieldSize;
   static int? _fieldSeat;
   static String? _fieldBoardTheme;
+  static int? _fieldVersionCached;
 
   Offset _s2c(double vx, double vy) => Offset(vx * sx, vy * sy);
 
@@ -41,7 +43,8 @@ class GamePainter extends CustomPainter {
     if (_fieldPicture != null &&
         _fieldSize == size &&
         _fieldSeat == mySeat &&
-        _fieldBoardTheme == boardTheme) {
+        _fieldBoardTheme == boardTheme &&
+        _fieldVersionCached == _fieldVersion) {
       return _fieldPicture!;
     }
 
@@ -52,6 +55,7 @@ class GamePainter extends CustomPainter {
     _fieldSize = size;
     _fieldSeat = mySeat;
     _fieldBoardTheme = boardTheme;
+    _fieldVersionCached = _fieldVersion;
     return _fieldPicture!;
   }
 
@@ -81,124 +85,303 @@ class GamePainter extends CustomPainter {
     final hw = size.width;
     final hh = size.height / 2;
 
-    canvas.drawRect(Rect.fromLTWH(0, 0, hw, hh), Paint()..color = palette.topGrass);
-    canvas.drawRect(Rect.fromLTWH(0, hh, hw, hh), Paint()..color = palette.bottomGrass);
-    canvas.drawRect(
-      Rect.fromLTWH(0, 0, hw, hh),
-      Paint()..color = AppColors.blue.withValues(alpha: 0.07),
+    _drawSpaceHalf(canvas, Rect.fromLTWH(0, 0, hw, hh), palette.topGrass, palette.topTint, palette);
+    _drawSpaceHalf(canvas, Rect.fromLTWH(0, hh, hw, hh), palette.bottomGrass, palette.bottomTint, palette);
+    _drawStarfield(canvas, size, palette);
+    _drawNeonGrid(canvas, size, palette);
+
+    _neonLine(canvas, Offset(0, hh), Offset(hw, hh), palette.neonPrimary, width: 1.5);
+    _neonCircle(canvas, Offset(hw / 2, hh / 2), hw * 0.11, palette.neonPrimary);
+    _neonCircle(canvas, Offset(hw / 2, hh + hh / 2), hw * 0.11, palette.neonSecondary);
+
+    final pb = math.min(hh * 0.14, 52.0);
+    final boxW = hw * 0.42;
+    final boxLeft = (hw - boxW) / 2;
+    _neonRect(
+      canvas,
+      RRect.fromRectAndRadius(Rect.fromLTWH(boxLeft, 8, boxW, pb), const Radius.circular(4)),
+      palette.neonPrimary.withValues(alpha: 0.5),
     );
-    canvas.drawRect(
-      Rect.fromLTWH(0, hh, hw, hh),
-      Paint()..color = AppColors.red.withValues(alpha: 0.07),
+    _neonRect(
+      canvas,
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(boxLeft, size.height - 8 - pb, boxW, pb),
+        const Radius.circular(4),
+      ),
+      palette.neonSecondary.withValues(alpha: 0.5),
     );
 
-    final linePaint = Paint()
-      ..color = Colors.black.withValues(alpha: 0.15)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1;
-    canvas.drawCircle(Offset(hw / 2, hh / 2), hw * 0.12, linePaint);
-    canvas.drawCircle(Offset(hw / 2, hh + hh / 2), hw * 0.12, linePaint);
-    final pb = math.min(hh * 0.15, 55.0);
-    canvas.drawRect(Rect.fromLTWH(hw * 0.28, 4, hw * 0.44, pb), linePaint);
-    canvas.drawRect(Rect.fromLTWH(hw * 0.28, size.height - 4 - pb, hw * 0.44, pb), linePaint);
-
-    final wallPaint = Paint()..color = palette.wall;
-    canvas.drawRect(Rect.fromLTWH(0, hh - 7, gap.dx - 2, 14), wallPaint);
-    canvas.drawRect(Rect.fromLTWH(gap.dx + gw + 2, hh - 7, hw, 14), wallPaint);
-
-    final gapPaint = Paint()..color = palette.gateFill;
-    canvas.drawRect(Rect.fromLTWH(gap.dx, gap.dy, gw, gh), gapPaint);
-    final gapStroke = Paint()
-      ..color = palette.gateStroke
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5;
-    canvas.drawRect(Rect.fromLTWH(gap.dx, gap.dy, gw, gh), gapStroke);
+    _drawNeonWall(canvas, Rect.fromLTWH(0, hh - 8, gap.dx - 2, 16), palette);
+    _drawNeonWall(canvas, Rect.fromLTWH(gap.dx + gw + 2, hh - 8, hw - gap.dx - gw - 2, 16), palette);
+    _drawPortalGoal(canvas, Rect.fromLTWH(gap.dx, gap.dy, gw, gh), palette);
 
     canvas.save();
     if (mySeat == 1) {
       canvas.translate(size.width, size.height);
       canvas.rotate(math.pi);
     }
+    _drawFieldLabel(canvas, Offset(size.width / 2, 18), mySeat == 0 ? 'SECTOR α' : 'SECTOR β', palette.neonPrimary);
+    _drawFieldLabel(
+      canvas,
+      Offset(size.width / 2, size.height - 22),
+      mySeat == 0 ? 'SECTOR β' : 'SECTOR α',
+      palette.neonSecondary,
+    );
+    _drawYouBadge(canvas, size, palette);
+    canvas.restore();
+  }
+
+  void _drawSpaceHalf(Canvas canvas, Rect rect, Color base, Color tint, BoardPalette palette) {
+    final mid = Color.lerp(base, palette.neonPrimary, 0.08)!;
+    canvas.drawRect(
+      rect,
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color.lerp(base, Colors.white, 0.04)!, mid, base],
+        ).createShader(rect),
+    );
+    if (tint.a > 0) canvas.drawRect(rect, Paint()..color = tint);
+  }
+
+  void _drawStarfield(Canvas canvas, Size size, BoardPalette palette) {
+    final rng = math.Random(42);
+    for (var i = 0; i < 55; i++) {
+      final x = rng.nextDouble() * size.width;
+      final y = rng.nextDouble() * size.height;
+      final r = rng.nextDouble() * 1.2 + 0.3;
+      final alpha = rng.nextDouble() * 0.35 + 0.08;
+      canvas.drawCircle(
+        Offset(x, y),
+        r,
+        Paint()..color = Colors.white.withValues(alpha: alpha),
+      );
+    }
+  }
+
+  void _drawNeonGrid(Canvas canvas, Size size, BoardPalette palette) {
+    final gridPaint = Paint()
+      ..color = palette.gridColor
+      ..strokeWidth = 0.6;
+    const step = 24.0;
+    for (var x = 0.0; x <= size.width; x += step) {
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), gridPaint);
+    }
+    for (var y = 0.0; y <= size.height; y += step) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
+    }
+  }
+
+  void _neonLine(Canvas canvas, Offset a, Offset b, Color color, {double width = 1.5}) {
+    canvas.drawLine(
+      a,
+      b,
+      Paint()
+        ..color = color.withValues(alpha: 0.25)
+        ..strokeWidth = width + 5
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4),
+    );
+    canvas.drawLine(a, b, Paint()..color = color..strokeWidth = width);
+  }
+
+  void _neonCircle(Canvas canvas, Offset c, double r, Color color) {
+    canvas.drawCircle(
+      c,
+      r,
+      Paint()
+        ..color = color.withValues(alpha: 0.2)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 4
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3),
+    );
+    canvas.drawCircle(
+      c,
+      r,
+      Paint()
+        ..color = color.withValues(alpha: 0.75)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.2,
+    );
+  }
+
+  void _neonRect(Canvas canvas, RRect rrect, Color color) {
+    canvas.drawRRect(
+      rrect,
+      Paint()
+        ..color = color.withValues(alpha: 0.15)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 5
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4),
+    );
+    canvas.drawRRect(
+      rrect,
+      Paint()
+        ..color = color
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1,
+    );
+  }
+
+  void _drawNeonWall(Canvas canvas, Rect rect, BoardPalette palette) {
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(rect, const Radius.circular(3)),
+      Paint()
+        ..shader = LinearGradient(
+          colors: [
+            palette.wall,
+            Color.lerp(palette.wall, palette.neonPrimary, 0.35)!,
+            palette.wall,
+          ],
+        ).createShader(rect),
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(rect, const Radius.circular(3)),
+      Paint()
+        ..color = palette.neonPrimary.withValues(alpha: 0.6)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1,
+    );
+  }
+
+  void _drawPortalGoal(Canvas canvas, Rect rect, BoardPalette palette) {
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(rect, const Radius.circular(2)),
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            palette.gateFill,
+            palette.neonSecondary.withValues(alpha: 0.35),
+          ],
+        ).createShader(rect),
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(rect, const Radius.circular(2)),
+      Paint()
+        ..color = palette.gateStroke.withValues(alpha: 0.35)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 4
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5),
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(rect, const Radius.circular(2)),
+      Paint()
+        ..color = palette.gateStroke
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5,
+    );
+  }
+
+  void _drawFieldLabel(Canvas canvas, Offset center, String text, Color color) {
     final tp = TextPainter(
       text: TextSpan(
-        text: mySeat == 0 ? 'MAVİ SAHA' : 'KIRMIZI SAHA',
+        text: text,
         style: TextStyle(
-          color: Colors.black.withValues(alpha: 0.2),
-          fontSize: 11,
-          fontWeight: FontWeight.bold,
+          color: color.withValues(alpha: 0.85),
+          fontSize: 9,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 3,
         ),
       ),
       textDirection: TextDirection.ltr,
     )..layout();
-    tp.paint(canvas, Offset(size.width / 2 - tp.width / 2, 16));
+    tp.paint(canvas, Offset(center.dx - tp.width / 2, center.dy - tp.height / 2));
+  }
 
-    final tp2 = TextPainter(
+  void _drawYouBadge(Canvas canvas, Size size, BoardPalette palette) {
+    final teamColor = mySeat == 0 ? AppColors.red : AppColors.blue;
+    final neon = mySeat == 0 ? palette.neonSecondary : palette.neonPrimary;
+    final badgeW = 78.0;
+    final badgeH = 22.0;
+    final left = size.width / 2 - badgeW / 2;
+    final top = size.height / 2 + 10;
+    final rrect = RRect.fromRectAndRadius(
+      Rect.fromLTWH(left, top, badgeW, badgeH),
+      const Radius.circular(11),
+    );
+    canvas.drawRRect(
+      rrect,
+      Paint()
+        ..color = neon.withValues(alpha: 0.2)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
+    );
+    canvas.drawRRect(rrect, Paint()..color = teamColor.withValues(alpha: 0.15));
+    canvas.drawRRect(
+      rrect,
+      Paint()
+        ..color = neon.withValues(alpha: 0.85)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.2,
+    );
+    final tp = TextPainter(
       text: TextSpan(
-        text: mySeat == 0 ? 'KIRMIZI SAHA' : 'MAVİ SAHA',
+        text: '◆ YOU ◆',
         style: TextStyle(
-          color: Colors.black.withValues(alpha: 0.2),
-          fontSize: 11,
-          fontWeight: FontWeight.bold,
+          color: neon,
+          fontSize: 9,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 1.8,
         ),
       ),
       textDirection: TextDirection.ltr,
     )..layout();
-    tp2.paint(canvas, Offset(size.width / 2 - tp2.width / 2, size.height - 20));
-
-    final tp3 = TextPainter(
-      text: TextSpan(
-        text: '▲ SEN ▲',
-        style: TextStyle(
-          color: (mySeat == 0 ? AppColors.red : AppColors.blue).withValues(alpha: 0.35),
-          fontSize: 10,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-      textDirection: TextDirection.ltr,
-    )..layout();
-    tp3.paint(canvas, Offset(size.width / 2 - tp3.width / 2, size.height / 2 + 15));
-    canvas.restore();
+    tp.paint(canvas, Offset(size.width / 2 - tp.width / 2, top + 5));
   }
 
   void _drawDisc(Canvas canvas, Disc d) {
     final pos = _s2c(d.vx, d.vy);
     final r = GameConstants.discRadius * sx;
 
+    final defaultColor = d.owner == 0 ? const Color(0xFFFF3366) : const Color(0xFF00D4FF);
+    final color = d.owner == mySeat ? CosmeticsTheme.discColor(myDiscColor) : defaultColor;
+
     canvas.drawCircle(
-      Offset(pos.dx + 1, pos.dy + 2),
-      r,
-      Paint()..color = Colors.black.withValues(alpha: 0.28),
+      pos,
+      r + 6,
+      Paint()
+        ..color = color.withValues(alpha: 0.22)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8),
     );
 
-    final defaultColor = d.owner == 0 ? AppColors.red : AppColors.blue;
-    final color = d.owner == mySeat ? CosmeticsTheme.discColor(myDiscColor) : defaultColor;
-    canvas.drawCircle(pos, r, Paint()..color = color);
+    final discPaint = Paint()
+      ..shader = RadialGradient(
+        center: const Alignment(-0.3, -0.3),
+        colors: [
+          Color.lerp(color, Colors.white, 0.5)!,
+          color,
+          Color.lerp(color, Colors.black, 0.35)!,
+        ],
+      ).createShader(Rect.fromCircle(center: pos, radius: r));
+    canvas.drawCircle(pos, r, discPaint);
+
     canvas.drawCircle(
       pos,
       r,
       Paint()
-        ..color = Colors.white.withValues(alpha: 0.9)
+        ..color = color.withValues(alpha: 0.9)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.5,
     );
     canvas.drawCircle(
       pos,
-      r * 0.44,
+      r * 0.38,
       Paint()
-        ..color = Colors.white.withValues(alpha: 0.4)
+        ..color = Colors.white.withValues(alpha: 0.5)
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 1,
+        ..strokeWidth = 0.8,
     );
 
     final spokePaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.4)
+      ..color = Colors.white.withValues(alpha: 0.55)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1;
+      ..strokeWidth = 0.8;
     for (var k = 0; k < 5; k++) {
       final a = (k / 5) * math.pi * 2 - math.pi / 2;
       canvas.drawLine(
-        Offset(pos.dx + math.cos(a) * r * 0.44, pos.dy + math.sin(a) * r * 0.44),
-        Offset(pos.dx + math.cos(a) * r * 0.87, pos.dy + math.sin(a) * r * 0.87),
+        Offset(pos.dx + math.cos(a) * r * 0.38, pos.dy + math.sin(a) * r * 0.38),
+        Offset(pos.dx + math.cos(a) * r * 0.88, pos.dy + math.sin(a) * r * 0.88),
         spokePaint,
       );
     }
@@ -218,34 +401,34 @@ class GamePainter extends CustomPainter {
     final nx = -ddx / dist;
     final ny = -ddy / dist;
 
-    final dashPaint = Paint()
-      ..color = AppColors.purple.withValues(alpha: 0.85)
-      ..strokeWidth = 2
-      ..style = PaintingStyle.stroke;
-    canvas.drawLine(discPos, pullPos, dashPaint);
+    _neonLine(canvas, discPos, pullPos, const Color(0xFF00F0FF), width: 1.5);
 
-    final col = pow > 0.7 ? const Color(0xFFFF4444) : const Color(0xFFFFCC00);
-    final arrowPaint = Paint()
-      ..color = col
-      ..strokeWidth = 2
-      ..style = PaintingStyle.stroke;
-    canvas.drawLine(
-      discPos,
-      Offset(discPos.dx + nx * lim * sx * 0.55, discPos.dy + ny * lim * sy * 0.55),
-      arrowPaint,
-    );
+    final col = pow > 0.7 ? const Color(0xFFFF3366) : const Color(0xFF00F0FF);
+    final tip = Offset(discPos.dx + nx * lim * sx * 0.55, discPos.dy + ny * lim * sy * 0.55);
+    _neonLine(canvas, discPos, tip, col, width: 2.5);
 
-    final arcPaint = Paint()
-      ..color = col
-      ..strokeWidth = 3
-      ..style = PaintingStyle.stroke;
     final r = GameConstants.discRadius * sx;
     canvas.drawArc(
-      Rect.fromCircle(center: discPos, radius: r + 4),
+      Rect.fromCircle(center: discPos, radius: r + 5),
       -math.pi / 2,
       math.pi * 2 * pow,
       false,
-      arcPaint,
+      Paint()
+        ..color = col.withValues(alpha: 0.25)
+        ..strokeWidth = 6
+        ..style = PaintingStyle.stroke
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4),
+    );
+    canvas.drawArc(
+      Rect.fromCircle(center: discPos, radius: r + 5),
+      -math.pi / 2,
+      math.pi * 2 * pow,
+      false,
+      Paint()
+        ..color = col
+        ..strokeWidth = 2
+        ..style = PaintingStyle.stroke
+        ..strokeCap = StrokeCap.round,
     );
   }
 
