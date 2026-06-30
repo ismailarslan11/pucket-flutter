@@ -78,6 +78,10 @@ class GameController extends ChangeNotifier {
   bool isRanked = false;
   bool careerMode = false;
   bool trainingMode = false;
+  bool localDuoMode = false;
+  String localPlayerRed = 'Oyuncu 1';
+  String localPlayerBlue = 'Oyuncu 2';
+  final Map<int, DragState> _duoDrags = {};
   TrainingLayout trainingLayout = TrainingLayout.full;
   String trainingGoalLabel = '';
   CareerOpponent? careerOpponent;
@@ -142,9 +146,19 @@ class GameController extends ChangeNotifier {
   void Function()? onRoundEnd;
 
   void _setSeat(int seat) {
-    mySeat = seat;
-    if (!aiMode) isOnlineHost = seat == 0;
+    if (localDuoMode) {
+      mySeat = 0;
+      isOnlineHost = true;
+    } else {
+      mySeat = seat;
+      if (!aiMode) isOnlineHost = seat == 0;
+    }
   }
+
+  String localPlayerName(int seat) => seat == 0 ? localPlayerRed : localPlayerBlue;
+
+  List<DragState> get activeDrags =>
+      localDuoMode ? _duoDrags.values.toList() : (drag != null ? [drag!] : const []);
 
   void _cancelPendingMatchStart() {
     _matchStartTimer?.cancel();
@@ -174,7 +188,7 @@ class GameController extends ChangeNotifier {
 
   /// Bir fizik adımı. Round biterse true döner.
   bool _physicsStep() {
-    if (aiMode || isOnlineHost) {
+    if (aiMode || isOnlineHost || localDuoMode) {
       PhysicsEngine.stepPhysics(discs);
 
       final moving = discs.where((d) => d.vvx.abs() > 0.05 || d.vvy.abs() > 0.05).length;
@@ -211,6 +225,7 @@ class GameController extends ChangeNotifier {
     _clearPauseState();
     seconds = 0;
     drag = null;
+    _duoDrags.clear();
     _frameCount = 0;
     _lastMovingDiscs = 0;
     _physicsAccum = 0;
@@ -223,6 +238,7 @@ class GameController extends ChangeNotifier {
     lastWinner = null;
     myRematchPending = false;
     opponentRematchRequested = false;
+    if (localDuoMode) _setSeat(0);
     _visualGeneration++;
     notifyListeners();
   }
@@ -261,7 +277,7 @@ class GameController extends ChangeNotifier {
 
   void _startAfkTimer() {
     _afkTimer?.cancel();
-    if (aiMode) return;
+    if (aiMode || localDuoMode) return;
     _afkTimer = Timer(const Duration(seconds: afkForfeitSeconds), () {
       if (phase != GamePhase.playing) return;
       onToast?.call('AFK — maç sonlandırıldı');
@@ -273,6 +289,7 @@ class GameController extends ChangeNotifier {
   void startAiGame(AiLevel level, {bool botFallback = false}) {
     ws.disconnect();
     aiMode = true;
+    localDuoMode = false;
     careerMode = false;
     trainingMode = false;
     careerOpponent = null;
@@ -299,6 +316,7 @@ class GameController extends ChangeNotifier {
   void startCareerGame(CareerOpponent opponent) {
     ws.disconnect();
     aiMode = true;
+    localDuoMode = false;
     careerMode = true;
     trainingMode = false;
     careerOpponent = opponent;
@@ -322,6 +340,7 @@ class GameController extends ChangeNotifier {
   }) {
     ws.disconnect();
     aiMode = true;
+    localDuoMode = false;
     careerMode = false;
     trainingMode = true;
     careerOpponent = null;
@@ -339,7 +358,29 @@ class GameController extends ChangeNotifier {
     startCountdown();
   }
 
+  void startLocalDuoGame({String playerRed = 'Oyuncu 1', String playerBlue = 'Oyuncu 2'}) {
+    ws.disconnect();
+    aiMode = false;
+    localDuoMode = true;
+    careerMode = false;
+    trainingMode = false;
+    careerOpponent = null;
+    isBotFallback = false;
+    isRanked = false;
+    localPlayerRed = playerRed;
+    localPlayerBlue = playerBlue;
+    _duoDrags.clear();
+    _setSeat(0);
+    roomCode = 'LOCAL';
+    opponentName = playerBlue;
+    opponentElo = 0;
+    opponentLeague = '';
+    resetMatch();
+    startCountdown();
+  }
+
   void startOnlineGame(int seat, String room) {
+    localDuoMode = false;
     aiMode = false;
     isBotFallback = false;
     careerMode = false;
@@ -831,7 +872,7 @@ class GameController extends ChangeNotifier {
   }
 
   void requestRematch() {
-    if (aiMode) {
+    if (aiMode || localDuoMode) {
       rematchLocal();
       return;
     }
@@ -875,9 +916,27 @@ class GameController extends ChangeNotifier {
     }
   }
 
-  void onPointerDown(double vx, double vy) {
+  void onPointerDown(int pointerId, double vx, double vy) {
     if (phase != GamePhase.playing) return;
     _startAfkTimer();
+
+    if (localDuoMode) {
+      final used = _duoDrags.values.map((d) => d.discIndex).toSet();
+      final idx = PhysicsEngine.findDiscAtLocalDuo(discs, vx, vy);
+      if (idx == -1 || used.contains(idx)) return;
+      final d = discs[idx];
+      _duoDrags[pointerId] = DragState(
+        discIndex: idx,
+        startVx: d.vx,
+        startVy: d.vy,
+        currentVx: vx,
+        currentVy: vy,
+      );
+      _visualGeneration++;
+      notifyListeners();
+      return;
+    }
+
     final idx = PhysicsEngine.findDiscAt(discs, vx, vy, mySeat);
     if (idx == -1) return;
     final d = discs[idx];
@@ -892,7 +951,20 @@ class GameController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void onPointerMove(double vx, double vy) {
+  void onPointerMove(int pointerId, double vx, double vy) {
+    if (localDuoMode) {
+      final d = _duoDrags[pointerId];
+      if (d == null) return;
+      d.currentVx = vx;
+      d.currentVy = vy;
+      _dragMoveCounter++;
+      if (_dragMoveCounter.isEven) {
+        _visualGeneration++;
+        notifyListeners();
+      }
+      return;
+    }
+
     if (drag == null) return;
     drag!.currentVx = vx;
     drag!.currentVy = vy;
@@ -903,25 +975,35 @@ class GameController extends ChangeNotifier {
     }
   }
 
-  void onPointerUp() {
+  void onPointerUp(int pointerId) {
+    if (localDuoMode) {
+      final d = _duoDrags.remove(pointerId);
+      if (d != null) _releaseDrag(d);
+      return;
+    }
+
     if (drag == null) return;
-    final dx = drag!.startVx - drag!.currentVx;
-    final dy = drag!.startVy - drag!.currentVy;
+    _releaseDrag(drag!);
+    drag = null;
+  }
+
+  void _releaseDrag(DragState dragState) {
+    final dx = dragState.startVx - dragState.currentVx;
+    final dy = dragState.startVy - dragState.currentVy;
     final dist = math.sqrt(dx * dx + dy * dy);
     final lim = dist > 0 ? math.min(dist, GameConstants.slingMax) : 0.0;
     if (lim > 6) {
       final vvx = (dx / dist) * lim * GameConstants.slingPower;
       final vvy = (dy / dist) * lim * GameConstants.slingPower;
-      if (aiMode || isOnlineHost) {
-        discs[drag!.discIndex].vvx = vvx;
-        discs[drag!.discIndex].vvy = vvy;
+      if (aiMode || isOnlineHost || localDuoMode) {
+        discs[dragState.discIndex].vvx = vvx;
+        discs[dragState.discIndex].vvy = vvy;
       } else {
-        // Anında yerel tepki; host state ile yumuşak düzeltme gelir
-        discs[drag!.discIndex].vvx = vvx;
-        discs[drag!.discIndex].vvy = vvy;
+        discs[dragState.discIndex].vvx = vvx;
+        discs[dragState.discIndex].vvy = vvy;
         ws.send({
           'type': 'shot',
-          'disc': drag!.discIndex,
+          'disc': dragState.discIndex,
           'vvx': vvx,
           'vvy': vvy,
         });
@@ -929,7 +1011,7 @@ class GameController extends ChangeNotifier {
       audio?.playShot();
       _haptic(25);
     }
-    drag = null;
+    _visualGeneration++;
     notifyListeners();
   }
 
@@ -937,9 +1019,9 @@ class GameController extends ChangeNotifier {
     if (phase == GamePhase.gameover || phase == GamePhase.countdown) return;
     if (phase == GamePhase.paused) {
       if (pauseByOpponent) return;
-      _resumeFromPause(broadcast: !aiMode);
+      _resumeFromPause(broadcast: !aiMode && !localDuoMode);
     } else if (phase == GamePhase.playing) {
-      _pauseGame(byOpponent: false, broadcast: !aiMode);
+      _pauseGame(byOpponent: false, broadcast: !aiMode && !localDuoMode);
     }
   }
 
@@ -981,7 +1063,7 @@ class GameController extends ChangeNotifier {
       if (pauseSecondsLeft <= 0) {
         t.cancel();
         if (!pauseByOpponent) {
-          _resumeFromPause(broadcast: !aiMode);
+          _resumeFromPause(broadcast: !aiMode && !localDuoMode);
         }
       }
       notifyListeners();
@@ -1005,6 +1087,8 @@ class GameController extends ChangeNotifier {
     _clearPauseState();
     phase = GamePhase.idle;
     aiMode = false;
+    localDuoMode = false;
+    _duoDrags.clear();
     isOnlineHost = true;
     isBotFallback = false;
     isRanked = false;
@@ -1021,6 +1105,7 @@ class GameController extends ChangeNotifier {
     matchFinished = false;
     pendingEloResult = null;
     drag = null;
+    _duoDrags.clear();
     notifyListeners();
   }
 
@@ -1030,7 +1115,11 @@ class GameController extends ChangeNotifier {
   int blueRemaining() =>
       discs.where((d) => d.owner == 1 && d.vy < GameConstants.vHalf).length;
 
-  int mySideRemaining() => mySeat == 0 ? redRemaining() + blueRemainingOnRedSide() : blueRemaining() + redRemainingOnBlueSide();
+  int redHalfTotal() => redRemaining() + blueRemainingOnRedSide();
+
+  int blueHalfTotal() => blueRemaining() + redRemainingOnBlueSide();
+
+  int mySideRemaining() => mySeat == 0 ? redHalfTotal() : blueHalfTotal();
 
   int blueRemainingOnRedSide() =>
       discs.where((d) => d.owner == 1 && d.vy >= GameConstants.vHalf).length;

@@ -5,11 +5,11 @@ import '../l10n/l10n_extension.dart';
 import '../models/rank_tier.dart';
 import '../services/auth_service.dart';
 import '../services/career_service.dart';
+import '../services/player_meta_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/ad_banner_widget.dart';
 import '../widgets/daily_quests_panel.dart';
 import '../widgets/pucket_button.dart';
-import '../widgets/pucket_logo.dart';
 import '../widgets/ranked_login_dialog.dart';
 import 'app_router.dart';
 import 'rank_screen.dart';
@@ -21,6 +21,7 @@ class MenuScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthService>();
     final career = context.watch<CareerService>();
+    final meta = context.watch<PlayerMetaService>();
     final l10n = context.l10n;
     final user = auth.user;
     final tier = user != null ? RankTier.forElo(user.elo) : null;
@@ -74,11 +75,38 @@ class MenuScreen extends StatelessWidget {
                             ),
                             Text(
                               '${user.elo} ELO  •  ${user.wins}${l10n.winsLosses} ${user.losses}M',
-                              style: const TextStyle(color: Color(0xFF666666), fontSize: 10),
+                              style: const TextStyle(color: AppColors.textMuted, fontSize: 10),
                             ),
                           ],
                         ),
                       ),
+                      GestureDetector(
+                        onTap: () => AppRouter.goCosmetics(context),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: AppColors.gold.withValues(alpha: 0.6)),
+                            color: AppColors.gold.withValues(alpha: 0.1),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.monetization_on, color: AppColors.gold, size: 14),
+                              const SizedBox(width: 4),
+                              Text(
+                                '${meta.tokens}',
+                                style: const TextStyle(
+                                  color: AppColors.gold,
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
                       GestureDetector(
                         onTap: () => Navigator.push(
                           context,
@@ -93,7 +121,7 @@ class MenuScreen extends StatelessWidget {
                             border: Border.all(color: tier.color),
                           ),
                           child: Text(
-                            '${tier.emoji} ${l10n.tierName(tier)}',
+                            l10n.tierName(tier),
                             style: TextStyle(color: tier.color, fontWeight: FontWeight.w700, fontSize: 11),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -110,8 +138,6 @@ class MenuScreen extends StatelessWidget {
                   child: Column(
                     children: [
                       const SizedBox(height: 16),
-                      const PucketLogo(height: 130, showTagline: true),
-                      const SizedBox(height: 8),
                       Text(
                         l10n.onlineMultiplayer,
                         style: const TextStyle(color: AppColors.cyan, fontSize: 10, letterSpacing: 4),
@@ -145,10 +171,10 @@ class MenuScreen extends StatelessWidget {
                         label: l10n.menuCareer,
                         subtitle: l10n.careerSubtitle(
                           career.careerPoints,
-                          '${career.currentLeague.emoji} ${l10n.tierName(career.currentLeague)}',
+                          l10n.tierName(career.currentLeague),
                         ),
-                        gradient: const LinearGradient(colors: [Color(0xFF6A3093), Color(0xFF2A1A4A)]),
-                        shadowColor: const Color(0xFF1A0A2A),
+                        gradient: AppGradients.career,
+                        shadowColor: AppColors.nightBlue,
                         onPressed: () => AppRouter.goCareer(context),
                       ),
                       const SizedBox(height: 14),
@@ -159,9 +185,17 @@ class MenuScreen extends StatelessWidget {
                       const SizedBox(height: 14),
                       PucketButton(
                         label: l10n.menuVsBot,
-                        color: const Color(0xFF252525),
-                        shadowColor: const Color(0xFF111111),
+                        color: AppColors.cardElevated,
+                        shadowColor: AppColors.bgDeep,
                         onPressed: () => AppRouter.goDifficulty(context),
+                      ),
+                      const SizedBox(height: 14),
+                      PucketButton(
+                        label: l10n.menuLocalDuo,
+                        subtitle: l10n.menuLocalDuoSub,
+                        gradient: AppGradients.career,
+                        shadowColor: AppColors.nightBlue,
+                        onPressed: () => AppRouter.goLocalDuo(context),
                       ),
                       const SizedBox(height: 20),
                       _DividerRow(label: l10n.more),
@@ -238,7 +272,7 @@ class _DividerRow extends StatelessWidget {
         Expanded(child: Container(height: 1, color: AppColors.border)),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 10),
-          child: Text(label, style: const TextStyle(color: Color(0xFF444444), fontSize: 11)),
+          child: Text(label, style: const TextStyle(color: AppColors.textDim, fontSize: 11)),
         ),
         Expanded(child: Container(height: 1, color: AppColors.border)),
       ],

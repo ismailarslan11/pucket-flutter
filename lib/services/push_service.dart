@@ -8,6 +8,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import 'firebase_init.dart';
 import 'meta_api.dart';
+import '../theme/app_theme.dart';
 
 /// FCM push bildirimleri.
 class PushService {
@@ -38,7 +39,7 @@ class PushService {
     priority: Priority.high,
     icon: '@drawable/ic_stat_notify',
     largeIcon: _androidLargeIcon,
-    color: Color(0xFF7C3AED),
+      color: AppColors.brandBlue,
   );
 
   static Future<void> setup() async {
@@ -89,8 +90,9 @@ class PushService {
 
       _cachedToken = await _fetchTokenWithRetry();
       if (_cachedToken == null) {
-        statusMessage =
-            'FCM token alınamadı. Ayarlar → Yenile veya Google Play Services kontrol edin.';
+        statusMessage = Platform.isIOS
+            ? 'FCM token alınamadı. Gerçek iPhone + bildirim izni + Firebase APNs anahtarı gerekir.'
+            : 'FCM token alınamadı. Ayarlar → Yenile veya Google Play Services kontrol edin.';
         debugPrint('Push: $statusMessage');
       } else {
         statusMessage = 'Token alındı (${_cachedToken!.substring(0, 12)}…)';
@@ -194,7 +196,11 @@ class PushService {
   }
 
   static Future<String?> _fetchTokenWithRetry() async {
-    final maxAttempts = Platform.isAndroid ? 10 : 5;
+    if (Platform.isIOS) {
+      await _ensureApnsToken();
+    }
+
+    final maxAttempts = Platform.isAndroid ? 10 : 12;
     for (var i = 0; i < maxAttempts; i++) {
       try {
         final token = await FirebaseMessaging.instance.getToken();
@@ -203,15 +209,26 @@ class PushService {
         final msg = e.toString();
         debugPrint('getToken deneme ${i + 1}: $e');
         if (Platform.isIOS && msg.contains('apns-token-not-set')) {
-          statusMessage = 'Simülatörde push token alınamaz (gerçek cihaz gerekir)';
-          return null;
+          statusMessage = 'APNs token bekleniyor… (simülatörde push çalışmaz)';
         }
       }
       if (i < maxAttempts - 1) {
         await Future<void>.delayed(Duration(seconds: 1 + (i ~/ 2)));
       }
     }
+    if (Platform.isIOS) {
+      statusMessage =
+          'iOS push token alınamadı. Xcode Push Notifications + Firebase APNs (.p8) kontrol edin.';
+    }
     return null;
+  }
+
+  static Future<void> _ensureApnsToken() async {
+    for (var i = 0; i < 12; i++) {
+      final apns = await FirebaseMessaging.instance.getAPNSToken();
+      if (apns != null && apns.isNotEmpty) return;
+      await Future<void>.delayed(Duration(seconds: 1 + (i ~/ 3)));
+    }
   }
 
   static Future<void> _initLocalNotifications() async {
@@ -220,6 +237,12 @@ class PushService {
     await _local.initialize(
       const InitializationSettings(android: android, iOS: ios),
     );
+
+    if (Platform.isIOS) {
+      await _local
+          .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()
+          ?.requestPermissions(alert: true, badge: true, sound: true);
+    }
 
     if (Platform.isAndroid) {
       const channel = AndroidNotificationChannel(

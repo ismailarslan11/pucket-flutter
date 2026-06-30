@@ -39,13 +39,13 @@ class DailyQuestsPanel extends StatelessWidget {
             children: [
               Text(l10n.dailyQuests, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
               const Spacer(),
-              Text('🔥 $streak', style: const TextStyle(color: AppColors.gold, fontWeight: FontWeight.w800)),
+              Text('$streak', style: const TextStyle(color: AppColors.gold, fontWeight: FontWeight.w800)),
             ],
           ),
           const SizedBox(height: 8),
-          _questRow('🎮 ${l10n.questPlay3}', play, 3),
-          _questRow('🏆 ${l10n.questWin1}', win, 1),
-          _questRow('🎯 ${l10n.questCareer1}', career, 1),
+          _questRow(l10n.questPlay3, play, 3),
+          _questRow(l10n.questWin1, win, 1),
+          _questRow(l10n.questCareer1, career, 1),
           if (meta.lastMessage != null) ...[
             const SizedBox(height: 6),
             Text(meta.lastMessage!, style: const TextStyle(color: AppColors.green, fontSize: 11)),
@@ -70,8 +70,8 @@ class DailyQuestsPanel extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 3),
       child: Row(
         children: [
-          Expanded(child: Text(label, style: TextStyle(fontSize: 11, color: done ? AppColors.green : const Color(0xFF888888)))),
-          Text('$current/$target', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: done ? AppColors.green : const Color(0xFF666666))),
+          Expanded(child: Text(label, style: TextStyle(fontSize: 11, color: done ? AppColors.green : AppColors.textMuted))),
+          Text('$current/$target', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: done ? AppColors.green : AppColors.textMuted)),
         ],
       ),
     );

@@ -208,13 +208,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
       backgroundColor: AppColors.bg,
       body: SizedBox.expand(
         child: DecoratedBox(
-          decoration: const BoxDecoration(
-            gradient: RadialGradient(
-              center: Alignment(0, -0.3),
-              radius: 1.4,
-              colors: [Color(0xFF1A1035), AppColors.bg],
-            ),
-          ),
+          decoration: const BoxDecoration(gradient: AppGradients.screenBg),
           child: SafeArea(
             child: Stack(
               children: [
@@ -222,7 +216,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
                   top: 4,
                   left: 4,
                   child: IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Color(0xFF666666)),
+                    icon: const Icon(Icons.arrow_back, color: AppColors.textMuted),
                     onPressed: _goBack,
                   ),
                 ),
@@ -271,7 +265,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
                                   l10n.lobbyRoomCode,
                                   style: const TextStyle(
                                     fontSize: 10,
-                                    color: Color(0xFF555555),
+                                    color: AppColors.textDim,
                                     letterSpacing: 3,
                                   ),
                                 ),
@@ -294,7 +288,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
                                 _message.isEmpty ? l10n.lobbyConnecting : _message,
                                 textAlign: TextAlign.center,
                                 style: const TextStyle(
-                                  color: Color(0xFF888888),
+                                  color: AppColors.textMuted,
                                   fontSize: 13,
                                   height: 1.55,
                                 ),

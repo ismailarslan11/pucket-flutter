@@ -93,9 +93,9 @@ class _UsernameScreenState extends State<UsernameScreen> {
       _available = result.isAvailable;
       _serverError = result.isServerError;
       if (result.isAvailable) {
-        _hint = '✓ Bu ad müsait';
+        _hint = 'Bu ad müsait';
       } else if (result.isTaken) {
-        _hint = '✗ Bu kullanıcı adı alınmış';
+        _hint = 'Bu kullanıcı adı alınmış';
       } else if (result.isInvalid) {
         _hint = result.error ?? 'Geçersiz kullanıcı adı';
       } else {
@@ -128,8 +128,6 @@ class _UsernameScreenState extends State<UsernameScreen> {
                 children: [
                   const PucketLogo(height: 72),
                   const SizedBox(height: 12),
-                  const Text('👋', style: TextStyle(fontSize: 28)),
-                  const SizedBox(height: 8),
                   const Text(
                     'KULLANICI ADI',
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, letterSpacing: 2),
@@ -139,7 +137,7 @@ class _UsernameScreenState extends State<UsernameScreen> {
                         ? 'Misafir olarak devam — adın benzersiz olmalı'
                         : 'Oyuncu adını belirle',
                     textAlign: TextAlign.center,
-                    style: const TextStyle(color: Color(0xFF666666), fontSize: 12),
+                    style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
                   ),
                   const SizedBox(height: 24),
                   ConstrainedBox(
@@ -187,10 +185,10 @@ class _UsernameScreenState extends State<UsernameScreen> {
                             counterText: '',
                             hintText: 'ör. PucketKing',
                             filled: true,
-                            fillColor: const Color(0xFF111111),
+                            fillColor: AppColors.bgDeep,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(color: Color(0xFF333333)),
+                              borderSide: const BorderSide(color: AppColors.borderSubtle),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
@@ -209,7 +207,7 @@ class _UsernameScreenState extends State<UsernameScreen> {
                                 ? AppColors.green
                                 : (_serverError
                                     ? AppColors.gold
-                                    : (_valid && !_checking ? AppColors.red : const Color(0xFF555555))),
+                                    : (_valid && !_checking ? AppColors.red : AppColors.textDim)),
                             fontSize: 11,
                           ),
                           textAlign: TextAlign.center,
@@ -226,7 +224,7 @@ class _UsernameScreenState extends State<UsernameScreen> {
                         Opacity(
                           opacity: canSubmit ? 1 : 0.4,
                           child: PucketButton(
-                            label: _submitting ? 'KAYDEDİLİYOR...' : 'TAMAM →',
+                            label: _submitting ? 'KAYDEDİLİYOR...' : 'TAMAM',
                             width: double.infinity,
                             onPressed: canSubmit ? _submit : () {},
                           ),
@@ -258,7 +256,7 @@ class _UsernameScreenState extends State<UsernameScreen> {
         _submitting = false;
         _available = false;
         _serverError = !taken;
-        _hint = taken ? '✗ Bu kullanıcı adı alınmış' : '⚠ $err';
+        _hint = taken ? 'Bu kullanıcı adı alınmış' : err;
       });
       if (taken) _scheduleCheck(_ctrl.text.trim());
     }

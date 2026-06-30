@@ -50,9 +50,13 @@
 	<key>NSAppleSignInUsageDescription</key>
 	<string>Ranked maçlara katılmak ve ilerlemenizi kaydetmek için Apple ile giriş yapın.</string>
 	<key>GADApplicationIdentifier</key>
-	<string>ca-app-pub-3940256099942544~1458002511</string>
+	<string>ca-app-pub-2558408055462441~7988103551</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

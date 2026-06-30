@@ -35,8 +35,8 @@ class PucketButton extends StatelessWidget {
         child: OutlinedButton(
           onPressed: onPressed,
           style: OutlinedButton.styleFrom(
-            foregroundColor: const Color(0xFFAAAAAA),
-            side: const BorderSide(color: Color(0xFF444444), width: 2),
+            foregroundColor: AppColors.textMuted,
+            side: const BorderSide(color: AppColors.border, width: 2),
             padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 32),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
           ),

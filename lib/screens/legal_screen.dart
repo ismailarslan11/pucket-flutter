@@ -80,7 +80,7 @@ PUCKET — ${l10n.termsOfUse}
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(body.trim(), style: const TextStyle(height: 1.6, color: Color(0xFFCCCCCC))),
+            Text(body.trim(), style: const TextStyle(height: 1.6, color: AppColors.silver)),
             if (url != null) ...[
               const SizedBox(height: 20),
               OutlinedButton(

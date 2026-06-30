@@ -9,82 +9,119 @@ import 'app_router.dart';
 class DifficultyScreen extends StatelessWidget {
   const DifficultyScreen({super.key});
 
+  void _goBack(BuildContext context) {
+    if (Navigator.canPop(context)) {
+      Navigator.pop(context);
+    } else {
+      AppRouter.goMenu(context);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
 
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: RadialGradient(
-            center: Alignment(0, -0.4),
-            radius: 1.2,
-            colors: [Color(0xFF1A1A3A), AppColors.bg],
-          ),
-        ),
+        decoration: const BoxDecoration(gradient: AppGradients.screenBg),
         child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                minHeight: MediaQuery.sizeOf(context).height -
-                    MediaQuery.paddingOf(context).top -
-                    MediaQuery.paddingOf(context).bottom -
-                    48,
+          child: Column(
+            children: [
+              Align(
+                alignment: Alignment.centerLeft,
+                child: IconButton(
+                  onPressed: () => _goBack(context),
+                  icon: const Icon(Icons.arrow_back, color: AppColors.textMuted),
+                ),
               ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    l10n.pickDifficulty,
-                    style: const TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w900,
-                      color: Color(0xFFA0A0FF),
-                      letterSpacing: 3,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    l10n.youRedBotBlue,
-                    style: const TextStyle(color: Color(0xFF666666), fontSize: 12, letterSpacing: 2),
-                  ),
-                  const SizedBox(height: 24),
-                  PucketButton(
-                    label: l10n.diffEasy,
-                    subtitle: l10n.diffEasySub,
-                    color: const Color(0xFF27AE60),
-                    shadowColor: const Color(0xFF1E8449),
-                    width: 260,
-                    onPressed: () => AppRouter.startAi(context, AiLevel.easy),
-                  ),
-                  const SizedBox(height: 16),
-                  PucketButton(
-                    label: l10n.diffMedium,
-                    subtitle: l10n.diffMediumSub,
-                    color: const Color(0xFFE67E22),
-                    shadowColor: const Color(0xFFCA6F1E),
-                    width: 260,
-                    onPressed: () => AppRouter.startAi(context, AiLevel.medium),
-                  ),
-                  const SizedBox(height: 16),
-                  PucketButton(
-                    label: l10n.diffHard,
-                    subtitle: l10n.diffHardSub,
-                    color: const Color(0xFFC0392B),
-                    shadowColor: const Color(0xFFA93226),
-                    width: 260,
-                    onPressed: () => AppRouter.startAi(context, AiLevel.hard),
-                  ),
-                  const SizedBox(height: 24),
-                  PucketButton(
-                    label: l10n.back,
-                    secondary: true,
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
+              Expanded(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    return SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Text(
+                              l10n.menuVsBot,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                fontSize: 26,
+                                fontWeight: FontWeight.w900,
+                                color: AppColors.fieldBlue,
+                                letterSpacing: 3,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              l10n.pickDifficulty,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                color: AppColors.textMuted,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 2,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 320),
+                              child: Text(
+                                l10n.youRedBotBlue,
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  color: AppColors.textMuted,
+                                  fontSize: 13,
+                                  height: 1.5,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 28),
+                            PucketButton(
+                              label: l10n.diffEasy,
+                              subtitle: l10n.diffEasySub,
+                              color: AppColors.brandBlue,
+                              shadowColor: AppColors.nightBlue,
+                              width: 280,
+                              onPressed: () => AppRouter.startAi(context, AiLevel.easy),
+                            ),
+                            const SizedBox(height: 14),
+                            PucketButton(
+                              label: l10n.diffMedium,
+                              subtitle: l10n.diffMediumSub,
+                              color: AppColors.brandOrange,
+                              shadowColor: AppColors.darkOrange,
+                              width: 280,
+                              onPressed: () => AppRouter.startAi(context, AiLevel.medium),
+                            ),
+                            const SizedBox(height: 14),
+                            PucketButton(
+                              label: l10n.diffHard,
+                              subtitle: l10n.diffHardSub,
+                              color: AppColors.darkOrange,
+                              shadowColor: AppColors.bgDeep,
+                              width: 280,
+                              onPressed: () => AppRouter.startAi(context, AiLevel.hard),
+                            ),
+                            const SizedBox(height: 24),
+                            PucketButton(
+                              label: l10n.back,
+                              secondary: true,
+                              width: 200,
+                              onPressed: () => _goBack(context),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
               ),
-            ),
+            ],
           ),
         ),
       ),

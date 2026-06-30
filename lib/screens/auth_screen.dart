@@ -48,7 +48,7 @@ class AuthScreen extends StatelessWidget {
                       children: [
                         Text(
                           l10n.authContinueLogin,
-                          style: const TextStyle(color: Color(0xFF666666), fontSize: 13),
+                          style: const TextStyle(color: AppColors.textMuted, fontSize: 13),
                         ),
                         const SizedBox(height: 16),
                         if (auth.loading)
@@ -79,7 +79,7 @@ class AuthScreen extends StatelessWidget {
                               child: Text(
                                 l10n.authGoogleSetup,
                                 textAlign: TextAlign.center,
-                                style: const TextStyle(color: Color(0xFF555555), fontSize: 10),
+                                style: const TextStyle(color: AppColors.textDim, fontSize: 10),
                               ),
                             ),
                           const SizedBox(height: 14),
@@ -88,21 +88,20 @@ class AuthScreen extends StatelessWidget {
                               Expanded(child: Container(height: 1, color: AppColors.border)),
                               Padding(
                                 padding: const EdgeInsets.symmetric(horizontal: 10),
-                                child: Text(l10n.or, style: const TextStyle(color: Color(0xFF444444), fontSize: 11)),
+                                child: Text(l10n.or, style: const TextStyle(color: AppColors.textFaint, fontSize: 11)),
                               ),
                               Expanded(child: Container(height: 1, color: AppColors.border)),
                             ],
                           ),
                           const SizedBox(height: 14),
-                          OutlinedButton.icon(
+                          OutlinedButton(
                             onPressed: () => auth.signInAsGuest(),
-                            icon: const Text('👤', style: TextStyle(fontSize: 16)),
-                            label: Text(l10n.authGuest),
                             style: OutlinedButton.styleFrom(
-                              foregroundColor: const Color(0xFF666666),
+                              foregroundColor: AppColors.textMuted,
                               side: const BorderSide(color: AppColors.border),
                               minimumSize: const Size(double.infinity, 48),
                             ),
+                            child: Text(l10n.authGuest),
                           ),
                         ],
                         if (auth.lastError != null) ...[
@@ -113,7 +112,7 @@ class AuthScreen extends StatelessWidget {
                         Text(
                           l10n.authRankedHint,
                           textAlign: TextAlign.center,
-                          style: const TextStyle(color: Color(0xFF444444), fontSize: 10, height: 1.6),
+                          style: const TextStyle(color: AppColors.textFaint, fontSize: 10, height: 1.6),
                         ),
                       ],
                     ),
@@ -169,7 +168,7 @@ class _GoogleButton extends StatelessWidget {
                 Text(
                   label,
                   style: const TextStyle(
-                    color: Color(0xFF333333),
+                    color: AppColors.borderSubtle,
                     fontWeight: FontWeight.w600,
                     fontSize: 14,
                   ),

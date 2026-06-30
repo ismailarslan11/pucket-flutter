@@ -19,7 +19,7 @@ Future<void> showRankedLoginDialog(BuildContext context) {
       ),
       content: Text(
         l10n.authRankedHint,
-        style: const TextStyle(color: Color(0xFF888888), height: 1.4),
+        style: const TextStyle(color: AppColors.textMuted, height: 1.4),
       ),
       actions: [
         TextButton(

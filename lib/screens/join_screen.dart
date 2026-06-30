@@ -26,13 +26,7 @@ class _JoinScreenState extends State<JoinScreen> {
     return Scaffold(
       resizeToAvoidBottomInset: true,
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: RadialGradient(
-            center: Alignment(0, -0.4),
-            radius: 1.2,
-            colors: [Color(0xFF1A2A3A), AppColors.bg],
-          ),
-        ),
+        decoration: const BoxDecoration(gradient: AppGradients.screenBg),
         child: SafeArea(
           child: LayoutBuilder(
             builder: (context, constraints) {
@@ -48,14 +42,14 @@ class _JoinScreenState extends State<JoinScreen> {
                   style: TextStyle(
                     fontSize: 26,
                     fontWeight: FontWeight.w900,
-                    color: Color(0xFF60AAFF),
+                    color: AppColors.fieldBlue,
                     letterSpacing: 3,
                   ),
                 ),
                 const SizedBox(height: 8),
                 const Text(
                   'Arkadaşının oda kodunu gir',
-                  style: TextStyle(color: Color(0xFF666666), fontSize: 12, letterSpacing: 2),
+                  style: TextStyle(color: AppColors.textMuted, fontSize: 12, letterSpacing: 2),
                 ),
                 const SizedBox(height: 24),
                 TextField(
@@ -83,7 +77,7 @@ class _JoinScreenState extends State<JoinScreen> {
                     fillColor: AppColors.card,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(6),
-                      borderSide: const BorderSide(color: Color(0xFF444444), width: 2),
+                      borderSide: const BorderSide(color: AppColors.border, width: 2),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(6),
@@ -93,7 +87,7 @@ class _JoinScreenState extends State<JoinScreen> {
                   onSubmitted: (_) => _join(),
                 ),
                 const SizedBox(height: 24),
-                PucketButton(label: 'KATIL →', onPressed: _join),
+                PucketButton(label: 'KATIL', onPressed: _join),
                 const SizedBox(height: 14),
                 PucketButton(
                   label: 'GERİ',

@@ -15,6 +15,7 @@ import 'difficulty_screen.dart';
 import 'game_screen.dart';
 import 'instructions_screen.dart';
 import 'join_screen.dart';
+import 'local_duo_screen.dart';
 import 'lobby_screen.dart';
 import 'menu_screen.dart';
 import 'queue_screen.dart';
@@ -41,6 +42,21 @@ class AppRouter {
 
   static void goDifficulty(BuildContext context) {
     Navigator.push(context, MaterialPageRoute(builder: (_) => const DifficultyScreen()));
+  }
+
+  static void goLocalDuo(BuildContext context) {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => const LocalDuoScreen()));
+  }
+
+  static void startLocalDuo(
+    BuildContext context, {
+    required String playerRed,
+    required String playerBlue,
+  }) {
+    final game = context.read<GameController>();
+    game.leave();
+    game.startLocalDuoGame(playerRed: playerRed, playerBlue: playerBlue);
+    goGame(context);
   }
 
   static void goCareer(BuildContext context) {

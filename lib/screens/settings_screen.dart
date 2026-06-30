@@ -18,7 +18,7 @@ class SettingsScreen extends StatelessWidget {
     final l10n = context.l10n;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0E0E0E),
+      backgroundColor: AppColors.bg,
       body: SafeArea(
         child: Stack(
           children: [
@@ -72,15 +72,15 @@ class SettingsScreen extends StatelessWidget {
                       await context.read<AuthService>().signOut();
                       if (context.mounted) Navigator.pop(context);
                     },
-                    child: Text(l10n.signOut, style: const TextStyle(color: Color(0xFFAA4444))),
+                    child: Text(l10n.signOut, style: const TextStyle(color: AppColors.brandOrange)),
                   ),
                   TextButton(
                     onPressed: () => LegalScreen.showPrivacy(context),
-                    child: Text(l10n.privacyPolicy, style: const TextStyle(color: Color(0xFF666666))),
+                    child: Text(l10n.privacyPolicy, style: const TextStyle(color: AppColors.textMuted)),
                   ),
                   TextButton(
                     onPressed: () => LegalScreen.showTerms(context),
-                    child: Text(l10n.termsOfUse, style: const TextStyle(color: Color(0xFF666666))),
+                    child: Text(l10n.termsOfUse, style: const TextStyle(color: AppColors.textMuted)),
                   ),
                 ],
               ),
@@ -89,7 +89,7 @@ class SettingsScreen extends StatelessWidget {
               top: 8,
               left: 8,
               child: IconButton(
-                icon: const Icon(Icons.arrow_back, color: Color(0xFF888888), size: 28),
+                icon: const Icon(Icons.arrow_back, color: AppColors.textMuted, size: 28),
                 onPressed: () => Navigator.pop(context),
               ),
             ),
@@ -104,16 +104,16 @@ class SettingsScreen extends StatelessWidget {
       constraints: const BoxConstraints(maxWidth: 340),
       padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
       decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: Color(0xFF222222))),
+        border: Border(bottom: BorderSide(color: AppColors.borderSubtle)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             l10n.settingsLanguage,
-            style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFDDDDDD), fontSize: 13),
+            style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.silverWhite, fontSize: 13),
           ),
-          Text(l10n.settingsLanguageSub, style: const TextStyle(color: Color(0xFF666666), fontSize: 11)),
+          Text(l10n.settingsLanguageSub, style: const TextStyle(color: AppColors.textMuted, fontSize: 11)),
           const SizedBox(height: 10),
           Wrap(
             spacing: 8,
@@ -124,9 +124,9 @@ class SettingsScreen extends StatelessWidget {
                 label: Text('${lang.flag} ${lang.label}'),
                 selected: selected,
                 selectedColor: AppColors.green.withValues(alpha: 0.25),
-                side: BorderSide(color: selected ? AppColors.green : const Color(0xFF333333)),
+                side: BorderSide(color: selected ? AppColors.green : AppColors.borderSubtle),
                 labelStyle: TextStyle(
-                  color: selected ? AppColors.green : const Color(0xFFAAAAAA),
+                  color: selected ? AppColors.green : AppColors.textMuted,
                   fontWeight: selected ? FontWeight.w700 : FontWeight.normal,
                   fontSize: 12,
                 ),
@@ -144,7 +144,7 @@ class SettingsScreen extends StatelessWidget {
       constraints: const BoxConstraints(maxWidth: 340),
       padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
       decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: Color(0xFF222222))),
+        border: Border(bottom: BorderSide(color: AppColors.borderSubtle)),
       ),
       child: Row(
         children: [
@@ -152,8 +152,8 @@ class SettingsScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFDDDDDD), fontSize: 13)),
-                Text(sub, style: const TextStyle(color: Color(0xFF666666), fontSize: 11)),
+                Text(title, style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.silverWhite, fontSize: 13)),
+                Text(sub, style: const TextStyle(color: AppColors.textMuted, fontSize: 11)),
               ],
             ),
           ),
@@ -168,12 +168,12 @@ class SettingsScreen extends StatelessWidget {
       constraints: const BoxConstraints(maxWidth: 340),
       padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
       decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: Color(0xFF222222))),
+        border: Border(bottom: BorderSide(color: AppColors.borderSubtle)),
       ),
       child: Row(
         children: [
           Expanded(
-            child: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFDDDDDD), fontSize: 13)),
+            child: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.silverWhite, fontSize: 13)),
           ),
           SizedBox(
             width: 140,

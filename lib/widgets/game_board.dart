@@ -101,55 +101,87 @@ class _GameBoardState extends State<GameBoard> with SingleTickerProviderStateMix
                   padding: const EdgeInsets.all(frameWidth),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(13),
-                    child: GestureDetector(
-                      onPanDown: (d) {
-                        var vx = d.localPosition.dx / sx;
-                        var vy = d.localPosition.dy / sy;
-                        if (game.mySeat == 1) {
-                          vx = GameConstants.vw - vx;
-                          vy = GameConstants.vh - vy;
-                        }
-                        game.onPointerDown(vx, vy);
-                      },
-                      onPanUpdate: (d) {
-                        var vx = d.localPosition.dx / sx;
-                        var vy = d.localPosition.dy / sy;
-                        if (game.mySeat == 1) {
-                          vx = GameConstants.vw - vx;
-                          vy = GameConstants.vh - vy;
-                        }
-                        game.onPointerMove(vx, vy);
-                      },
-                      onPanEnd: (_) => game.onPointerUp(),
-                      onPanCancel: () => game.onPointerUp(),
-                      child: ListenableBuilder(
-                        listenable: Listenable.merge([
-                          game,
-                          context.read<PlayerMetaService>(),
-                        ]),
-                        builder: (context, _) {
-                          final g = context.read<GameController>();
-                          final uid = auth.getUid();
-                          return CustomPaint(
-                            size: Size(innerW, innerH),
-                            painter: GamePainter(
-                              discs: g.discs,
-                              mySeat: g.mySeat,
-                              drag: g.drag,
-                              visualGeneration: g.visualGeneration,
-                              sx: sx,
-                              sy: sy,
-                              myDiscColor: meta.discColor(uid),
-                              boardTheme: meta.boardTheme(uid),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
+                    child: game.localDuoMode
+                        ? Listener(
+                            behavior: HitTestBehavior.opaque,
+                            onPointerDown: (e) {
+                              if (game.phase != GamePhase.playing) return;
+                              game.onPointerDown(
+                                e.pointer,
+                                e.localPosition.dx / sx,
+                                e.localPosition.dy / sy,
+                              );
+                            },
+                            onPointerMove: (e) {
+                              game.onPointerMove(
+                                e.pointer,
+                                e.localPosition.dx / sx,
+                                e.localPosition.dy / sy,
+                              );
+                            },
+                            onPointerUp: (e) => game.onPointerUp(e.pointer),
+                            onPointerCancel: (e) => game.onPointerUp(e.pointer),
+                            child: _buildPaint(innerW, innerH, sx, sy, game, meta, auth),
+                          )
+                        : GestureDetector(
+                            onPanDown: (d) {
+                              var vx = d.localPosition.dx / sx;
+                              var vy = d.localPosition.dy / sy;
+                              if (game.mySeat == 1) {
+                                vx = GameConstants.vw - vx;
+                                vy = GameConstants.vh - vy;
+                              }
+                              game.onPointerDown(0, vx, vy);
+                            },
+                            onPanUpdate: (d) {
+                              var vx = d.localPosition.dx / sx;
+                              var vy = d.localPosition.dy / sy;
+                              if (game.mySeat == 1) {
+                                vx = GameConstants.vw - vx;
+                                vy = GameConstants.vh - vy;
+                              }
+                              game.onPointerMove(0, vx, vy);
+                            },
+                            onPanEnd: (_) => game.onPointerUp(0),
+                            onPanCancel: () => game.onPointerUp(0),
+                            child: _buildPaint(innerW, innerH, sx, sy, game, meta, auth),
+                          ),
                   ),
                 ),
               );
             },
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildPaint(
+    double innerW,
+    double innerH,
+    double sx,
+    double sy,
+    GameController game,
+    PlayerMetaService meta,
+    AuthService auth,
+  ) {
+    return ListenableBuilder(
+      listenable: Listenable.merge([game, meta]),
+      builder: (context, _) {
+        final g = context.read<GameController>();
+        final uid = auth.getUid();
+        return CustomPaint(
+          size: Size(innerW, innerH),
+          painter: GamePainter(
+            discs: g.discs,
+            mySeat: g.mySeat,
+            drags: g.activeDrags,
+            visualGeneration: g.visualGeneration,
+            sx: sx,
+            sy: sy,
+            localDuoMode: g.localDuoMode,
+            myDiscColor: meta.discColor(uid),
+            boardTheme: meta.boardTheme(uid),
           ),
         );
       },

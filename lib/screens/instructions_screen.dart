@@ -10,13 +10,7 @@ class InstructionsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: RadialGradient(
-            center: Alignment(0, -0.6),
-            radius: 1.2,
-            colors: [Color(0xFF1A3A08), AppColors.bg],
-          ),
-        ),
+        decoration: const BoxDecoration(gradient: AppGradients.screenBg),
         child: SafeArea(
           child: Stack(
             children: [
@@ -24,7 +18,7 @@ class InstructionsScreen extends StatelessWidget {
                 top: 8,
                 left: 8,
                 child: IconButton(
-                  icon: const Icon(Icons.arrow_back, color: Color(0xFF888888), size: 28),
+                  icon: const Icon(Icons.arrow_back, color: AppColors.textMuted, size: 28),
                   onPressed: () => Navigator.pop(context),
                 ),
               ),
@@ -42,10 +36,10 @@ class InstructionsScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    _card('🎯 Amaç', 'Kendi renkli disklerinin tamamını rakibin sahasına geçir. Önce boşaltan kazanır!'),
-                    _card('👆 Kontroller', 'Kendi yarındaki bir diski basılı tut → geri çek → bırak. Sapan gibi fırlat!'),
-                    _card('🌐 Online', 'Hızlı eşleştir ile rastgele rakip bul. Ya da oda kodu ile arkadaşınla özel maç kur.'),
-                    _card('🔄 İpucu', 'Karşıya geçen rakip diskini de sen fırlatabilirsin — geri yolla!'),
+                    _card('Amaç', 'Kendi renkli disklerinin tamamını rakibin sahasına geçir. Önce boşaltan kazanır!'),
+                    _card('Kontroller', 'Kendi yarındaki bir diski basılı tut → geri çek → bırak. Sapan gibi fırlat!'),
+                    _card('Online', 'Hızlı eşleştir ile rastgele rakip bul. Ya da oda kodu ile arkadaşınla özel maç kur.'),
+                    _card('İpucu', 'Karşıya geçen rakip diskini de sen fırlatabilirsin — geri yolla!'),
                     const SizedBox(height: 16),
                     PucketButton(
                       label: 'GERİ',
@@ -85,7 +79,7 @@ class InstructionsScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          Text(body, style: const TextStyle(color: Color(0xFFCCCCCC), fontSize: 13, height: 1.6)),
+          Text(body, style: const TextStyle(color: AppColors.textMuted, fontSize: 13, height: 1.6)),
         ],
       ),
     );

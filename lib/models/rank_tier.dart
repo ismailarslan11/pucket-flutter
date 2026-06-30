@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../theme/app_theme.dart';
+
 class RankTier {
   final String name;
   final String emoji;
@@ -9,12 +11,12 @@ class RankTier {
   const RankTier(this.name, this.emoji, this.minElo, this.color);
 
   static const tiers = [
-    RankTier('Bronz', '🥉', 0, Color(0xFFCD7F32)),
-    RankTier('Gümüş', '🥈', 1100, Color(0xFFAAAAAA)),
-    RankTier('Altın', '🥇', 1200, Color(0xFFF0C040)),
-    RankTier('Elmas', '💎', 1350, Color(0xFF60D0FF)),
-    RankTier('Usta', '🏆', 1500, Color(0xFF9B59B6)),
-    RankTier('Efsane', '👑', 1700, Color(0xFFE83030)),
+    RankTier('Bronz', '', 0, AppColors.darkOrange),
+    RankTier('Gümüş', '', 1100, AppColors.silver),
+    RankTier('Altın', '', 1200, AppColors.accentYellow),
+    RankTier('Elmas', '', 1350, AppColors.fieldBlue),
+    RankTier('Usta', '', 1500, AppColors.brandBlue),
+    RankTier('Efsane', '', 1700, AppColors.brandOrange),
   ];
 
   static RankTier forElo(int elo) {

@@ -243,6 +243,50 @@ function defaultQuests() {
   return { date: todayKey(), play: 0, win: 0, career: 0, claimed: false };
 }
 
+const DISC_PRICES = {
+  gryphon: 50,
+  abyssal_serpent: 100,
+  ascended_phoenix: 200,
+  world_tree: 250,
+  desert_cobra: 75,
+  leviathan: 150,
+  clockwork_golem: 175,
+  heavens_step: 225,
+  ifrit_fire: 300,
+  mountain_dwarven: 125,
+  void_crystal: 500,
+  sprite_blessing: 350,
+};
+const BOARD_PRICES = { neon: 120, wood: 150 };
+const FREE_DISCS = new Set(['green', 'gold', 'blue', 'red', 'purple']);
+const FREE_BOARDS = new Set(['classic']);
+
+function winTokenAmount(elo) {
+  if (elo >= 1700) return 35;
+  if (elo >= 1500) return 28;
+  if (elo >= 1350) return 22;
+  if (elo >= 1200) return 18;
+  if (elo >= 1100) return 14;
+  return 10;
+}
+
+function adTokenAmount(elo) {
+  if (elo >= 1700) return 40;
+  if (elo >= 1500) return 32;
+  if (elo >= 1350) return 26;
+  if (elo >= 1200) return 22;
+  if (elo >= 1100) return 18;
+  return 15;
+}
+
+function ensureTokenFields(meta) {
+  if (typeof meta.tokens !== 'number') meta.tokens = 0;
+  if (!Array.isArray(meta.unlockedDiscs)) meta.unlockedDiscs = [];
+  if (!Array.isArray(meta.unlockedBoards)) meta.unlockedBoards = [];
+  if (typeof meta.lastAdReward !== 'number') meta.lastAdReward = 0;
+  return meta;
+}
+
 function getPlayerMeta(uid) {
   if (!uid) return null;
   const meta = db.get(`playerMeta.${uid}`).value();
@@ -255,6 +299,10 @@ function getPlayerMeta(uid) {
       cosmetics: { discColor: 'green', boardTheme: 'classic' },
       fcmToken: '',
       seasonWins: 0,
+      tokens: 0,
+      unlockedDiscs: [],
+      unlockedBoards: [],
+      lastAdReward: 0,
     };
     db.set(`playerMeta.${uid}`, fresh).write();
     return fresh;
@@ -263,7 +311,7 @@ function getPlayerMeta(uid) {
     meta.quests = defaultQuests();
     db.set(`playerMeta.${uid}.quests`, meta.quests).write();
   }
-  return meta;
+  return ensureTokenFields(meta);
 }
 
 function touchLoginStreak(uid) {
@@ -733,7 +781,114 @@ const server = http.createServer((req, res) => {
             return;
           }
           if (data.cosmetics) {
-            db.set(`playerMeta.${uid}.cosmetics`, { ...meta.cosmetics, ...data.cosmetics }).write();
+            const next = { ...meta.cosmetics, ...data.cosmetics };
+            const disc = next.discColor;
+            const board = next.boardTheme;
+            if (disc && !FREE_DISCS.has(disc) && !(meta.unlockedDiscs || []).includes(disc)) {
+              res.writeHead(403, cors);
+              res.end(JSON.stringify({ ok: false, error: 'Kilitli kozmetik' }));
+              return;
+            }
+            if (board && !FREE_BOARDS.has(board) && !(meta.unlockedBoards || []).includes(board)) {
+              res.writeHead(403, cors);
+              res.end(JSON.stringify({ ok: false, error: 'Kilitli kozmetik' }));
+              return;
+            }
+            db.set(`playerMeta.${uid}.cosmetics`, next).write();
+          }
+          if (data.action === 'earn_win') {
+            ensureTokenFields(meta);
+            const p = upsertPlayer(uid);
+            const gain = winTokenAmount(p.elo || 1000);
+            meta.tokens += gain;
+            db.set(`playerMeta.${uid}.tokens`, meta.tokens).write();
+            res.writeHead(200, cors);
+            res.end(JSON.stringify({ ok: true, meta: getPlayerMeta(uid), tokenGain: gain }));
+            return;
+          }
+          if (data.action === 'reward_ad') {
+            ensureTokenFields(meta);
+            const now = Date.now();
+            if (now - (meta.lastAdReward || 0) < 45000) {
+              res.writeHead(429, cors);
+              res.end(JSON.stringify({ ok: false, error: 'Çok sık' }));
+              return;
+            }
+            const p = upsertPlayer(uid);
+            const gain = adTokenAmount(p.elo || 1000);
+            meta.tokens += gain;
+            meta.lastAdReward = now;
+            db.set(`playerMeta.${uid}.tokens`, meta.tokens).write();
+            db.set(`playerMeta.${uid}.lastAdReward`, now).write();
+            res.writeHead(200, cors);
+            res.end(JSON.stringify({ ok: true, meta: getPlayerMeta(uid), tokenGain: gain }));
+            return;
+          }
+          if (data.action === 'purchase') {
+            ensureTokenFields(meta);
+            const type = data.itemType;
+            const itemId = data.itemId;
+            let price = 0;
+            if (type === 'disc') {
+              if (FREE_DISCS.has(itemId)) {
+                res.writeHead(400, cors);
+                res.end(JSON.stringify({ ok: false, error: 'Ücretsiz' }));
+                return;
+              }
+              price = DISC_PRICES[itemId];
+              if (!price) {
+                res.writeHead(400, cors);
+                res.end(JSON.stringify({ ok: false, error: 'Geçersiz pul' }));
+                return;
+              }
+              if (meta.unlockedDiscs.includes(itemId)) {
+                res.writeHead(409, cors);
+                res.end(JSON.stringify({ ok: false, error: 'Zaten açık' }));
+                return;
+              }
+              if (meta.tokens < price) {
+                res.writeHead(402, cors);
+                res.end(JSON.stringify({ ok: false, error: 'Yetersiz jeton' }));
+                return;
+              }
+              meta.tokens -= price;
+              meta.unlockedDiscs.push(itemId);
+              db.set(`playerMeta.${uid}.tokens`, meta.tokens).write();
+              db.set(`playerMeta.${uid}.unlockedDiscs`, meta.unlockedDiscs).write();
+            } else if (type === 'board') {
+              if (FREE_BOARDS.has(itemId)) {
+                res.writeHead(400, cors);
+                res.end(JSON.stringify({ ok: false, error: 'Ücretsiz' }));
+                return;
+              }
+              price = BOARD_PRICES[itemId];
+              if (!price) {
+                res.writeHead(400, cors);
+                res.end(JSON.stringify({ ok: false, error: 'Geçersiz tema' }));
+                return;
+              }
+              if (meta.unlockedBoards.includes(itemId)) {
+                res.writeHead(409, cors);
+                res.end(JSON.stringify({ ok: false, error: 'Zaten açık' }));
+                return;
+              }
+              if (meta.tokens < price) {
+                res.writeHead(402, cors);
+                res.end(JSON.stringify({ ok: false, error: 'Yetersiz jeton' }));
+                return;
+              }
+              meta.tokens -= price;
+              meta.unlockedBoards.push(itemId);
+              db.set(`playerMeta.${uid}.tokens`, meta.tokens).write();
+              db.set(`playerMeta.${uid}.unlockedBoards`, meta.unlockedBoards).write();
+            } else {
+              res.writeHead(400, cors);
+              res.end(JSON.stringify({ ok: false, error: 'Geçersiz tip' }));
+              return;
+            }
+            res.writeHead(200, cors);
+            res.end(JSON.stringify({ ok: true, meta: getPlayerMeta(uid), spent: price }));
+            return;
           }
           if (data.fcmToken) {
             db.set(`playerMeta.${uid}.fcmToken`, data.fcmToken).write();

@@ -40,7 +40,6 @@ class _GameScreenState extends State<GameScreen> {
   String _overlaySub = '';
   String? _overlayPrimaryLabel;
   VoidCallback? _overlayPrimaryAction;
-  int _lastCountdown = -1;
   GamePhase? _lastPhase;
   EloResult? _eloResult;
   CareerMatchResult? _careerResult;
@@ -48,6 +47,7 @@ class _GameScreenState extends State<GameScreen> {
   GameController? _game;
   Timer? _eloFallbackTimer;
   int _lastRoundAdKey = -1;
+  int _lastWinTokenKey = -1;
 
   @override
   void didChangeDependencies() {
@@ -57,6 +57,9 @@ class _GameScreenState extends State<GameScreen> {
     _game?.removeListener(_onGameChanged);
     _game = game;
     game.addListener(_onGameChanged);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _game == game) _onGameChanged();
+    });
   }
 
   @override
@@ -150,25 +153,13 @@ class _GameScreenState extends State<GameScreen> {
     final game = _game;
     if (game == null) return;
 
-    if (game.phase == GamePhase.countdown && game.countdown != _lastCountdown) {
-      _lastCountdown = game.countdown;
-      final l10n = context.l10n;
-      final team = game.mySeat == 0 ? l10n.teamRed : l10n.teamBlue;
-      setState(() {
-        _showOverlay = true;
-        _showElo = false;
-        _overlayTitle = '${game.countdown}';
-        _overlaySub = l10n.youAreTeam(team);
-        _overlayPrimaryLabel = null;
-        _overlayPrimaryAction = null;
-      });
-    } else if (game.phase == GamePhase.playing && _lastPhase == GamePhase.countdown) {
-      _lastCountdown = 0;
+    if (game.phase == GamePhase.playing &&
+        (_lastPhase == GamePhase.countdown || _lastPhase == null)) {
       context.read<AudioService>().playGameMusic();
-      setState(() => _showOverlay = false);
     }
 
     if (game.phase == GamePhase.gameover && _lastPhase != GamePhase.gameover) {
+      _maybeAwardWinTokens(game);
       if (game.careerMode && game.matchFinished && game.careerOpponent != null) {
         final won = game.lastWinner == game.mySeat;
         final career = context.read<CareerService>();
@@ -219,6 +210,22 @@ class _GameScreenState extends State<GameScreen> {
     _lastPhase = game.phase;
   }
 
+  void _maybeAwardWinTokens(GameController game) {
+    if (!game.matchFinished || game.lastWinner != game.mySeat) return;
+    if (game.trainingMode || game.localDuoMode) return;
+    final key = game.visualGeneration;
+    if (_lastWinTokenKey == key) return;
+    _lastWinTokenKey = key;
+
+    final uid = context.read<AuthService>().getUid();
+    context.read<PlayerMetaService>().earnWinTokens(uid).then((gain) {
+      if (!mounted || gain == null || gain <= 0) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.tokensEarned(gain))),
+      );
+    });
+  }
+
   void _maybeShowRoundAd(GameController game) {
     if (game.lastWinner == null) return;
     final adKey = game.currentRound * 10 + game.lastWinner!;
@@ -265,7 +272,7 @@ class _GameScreenState extends State<GameScreen> {
                     if (g.reconnecting)
                       Container(
                         width: double.infinity,
-                        color: const Color(0xFF3A2A00),
+                        color: AppColors.darkOrange.withValues(alpha: 0.35),
                         padding: const EdgeInsets.symmetric(vertical: 6),
                         child: Text(
                           l10n.reconnecting,
@@ -276,7 +283,7 @@ class _GameScreenState extends State<GameScreen> {
                     if (g.opponentDisconnected)
                       Container(
                         width: double.infinity,
-                        color: const Color(0xFF2A1010),
+                        color: AppColors.nightBlue.withValues(alpha: 0.6),
                         padding: const EdgeInsets.symmetric(vertical: 6),
                         child: Text(
                           l10n.opponentDisconnected(g.opponentGraceLeft),
@@ -295,13 +302,7 @@ class _GameScreenState extends State<GameScreen> {
             ),
             Expanded(
               child: DecoratedBox(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [Color(0xFF0A0618), Color(0xFF060410)],
-                  ),
-                ),
+                decoration: const BoxDecoration(gradient: AppGradients.boardBg),
                 child: Stack(
                 children: [
                   const RepaintBoundary(child: GameBoard()),
@@ -313,8 +314,11 @@ class _GameScreenState extends State<GameScreen> {
                       return Stack(
                         children: [
                           if (phaseOverlay != null) phaseOverlay,
+                          if (g.phase == GamePhase.countdown)
+                            _buildCountdownOverlay(g, l10n),
                           if (_showOverlay &&
                               g.phase != GamePhase.gameover &&
+                              g.phase != GamePhase.countdown &&
                               !_showElo &&
                               !_showCareer)
                             _buildOverlay(g, l10n),
@@ -341,26 +345,32 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   Widget _topBar(GameController game, l10n) {
-    final lbl0 = l10n.youRed;
-    final lbl1 = game.careerMode || game.isBotFallback
-        ? game.opponentName.toUpperCase()
-        : game.aiMode
-            ? l10n.botBlue
-            : (game.opponentName.isNotEmpty ? game.opponentName.toUpperCase() : l10n.blue);
+    final lbl0 = game.localDuoMode ? game.localPlayerRed.toUpperCase() : l10n.youRed;
+    final lbl1 = game.localDuoMode
+        ? game.localPlayerBlue.toUpperCase()
+        : game.careerMode || game.isBotFallback
+            ? game.opponentName.toUpperCase()
+            : game.aiMode
+                ? l10n.botBlue
+                : (game.opponentName.isNotEmpty ? game.opponentName.toUpperCase() : l10n.blue);
 
     return Container(
       height: 52,
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFF0C0818),
+        color: AppColors.card,
         border: Border(
-          bottom: BorderSide(color: AppColors.cyan.withValues(alpha: 0.25)),
+          bottom: BorderSide(color: AppColors.fieldBlue.withValues(alpha: 0.25)),
         ),
       ),
       child: Row(
         children: [
           Expanded(child: _scoreBox(lbl0, game.roundWins[0], AppColors.red, alignEnd: false)),
-          if (game.careerMode || game.isBotFallback || game.trainingMode || (!game.aiMode && game.opponentName.isNotEmpty))
+          if (game.careerMode ||
+              game.isBotFallback ||
+              game.trainingMode ||
+              game.localDuoMode ||
+              (!game.aiMode && game.opponentName.isNotEmpty))
             Flexible(
               flex: 0,
               child: Padding(
@@ -370,7 +380,9 @@ class _GameScreenState extends State<GameScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      game.trainingMode
+                      game.localDuoMode
+                          ? l10n.localDuoMode
+                          : game.trainingMode
                           ? l10n.trainingMode
                           : game.isBotFallback
                               ? l10n.botFallbackLabel
@@ -379,7 +391,7 @@ class _GameScreenState extends State<GameScreen> {
                                   : (game.isRanked && !game.isBotFallback ? l10n.ranked : l10n.online),
                       style: TextStyle(
                         fontSize: 7,
-                        color: game.careerMode ? AppColors.gold : const Color(0xFF555555),
+                        color: game.careerMode ? AppColors.gold : AppColors.textDim,
                         letterSpacing: 1,
                         fontWeight: game.careerMode ? FontWeight.w800 : FontWeight.normal,
                       ),
@@ -388,7 +400,9 @@ class _GameScreenState extends State<GameScreen> {
                       textAlign: TextAlign.center,
                     ),
                     Text(
-                      game.trainingMode
+                      game.localDuoMode
+                          ? l10n.localDuoSimultaneous
+                          : game.trainingMode
                           ? (game.trainingGoalLabel.isNotEmpty ? game.trainingGoalLabel : l10n.trainingMode)
                           : game.isBotFallback
                               ? l10n.botFallbackEloHint
@@ -397,7 +411,7 @@ class _GameScreenState extends State<GameScreen> {
                                   : '${game.opponentElo}',
                       style: TextStyle(
                         fontSize: 10,
-                        color: game.careerMode ? const Color(0xFF888888) : AppColors.gold,
+                        color: game.careerMode ? AppColors.textMuted : AppColors.gold,
                         fontWeight: FontWeight.w800,
                       ),
                       maxLines: 1,
@@ -422,11 +436,11 @@ class _GameScreenState extends State<GameScreen> {
                         },
                   icon: Icon(
                     game.phase == GamePhase.paused ? Icons.play_arrow : Icons.pause,
-                    color: const Color(0xFF666666),
+                    color: AppColors.textMuted,
                     size: 20,
                   ),
                   style: IconButton.styleFrom(
-                    side: const BorderSide(color: Color(0xFF333333)),
+                    side: const BorderSide(color: AppColors.borderSubtle),
                     minimumSize: const Size(32, 32),
                     padding: EdgeInsets.zero,
                   ),
@@ -443,9 +457,9 @@ class _GameScreenState extends State<GameScreen> {
     return Container(
       height: 28,
       decoration: BoxDecoration(
-        color: const Color(0xFF080612),
+        color: AppColors.bgDeep,
         border: Border(
-          bottom: BorderSide(color: AppColors.purple.withValues(alpha: 0.2)),
+          bottom: BorderSide(color: AppColors.brandBlue.withValues(alpha: 0.2)),
         ),
       ),
       child: SingleChildScrollView(
@@ -459,7 +473,7 @@ class _GameScreenState extends State<GameScreen> {
               style: TextStyle(
                 fontSize: 9,
                 fontWeight: FontWeight.w900,
-                color: AppColors.cyan.withValues(alpha: 0.45),
+                color: AppColors.fieldBlue.withValues(alpha: 0.45),
                 letterSpacing: 2,
               ),
             ),
@@ -470,20 +484,22 @@ class _GameScreenState extends State<GameScreen> {
               width: 1,
               height: 12,
               margin: const EdgeInsets.symmetric(horizontal: 4),
-              color: const Color(0xFF2A2A2A),
+              color: const Color(0xFF2A4A66),
             ),
             _pip(game.roundWins[1] > 0, AppColors.blue),
             _pip(game.roundWins[1] > 1, AppColors.blue),
             const SizedBox(width: 8),
             Text(timer, style: const TextStyle(color: AppColors.gold, fontWeight: FontWeight.bold, fontSize: 11)),
-            if (!game.aiMode && game.pingMs != null) ...[
+            if (!game.aiMode && !game.localDuoMode && game.pingMs != null) ...[
               const SizedBox(width: 6),
               PingIndicator(pingMs: game.pingMs),
             ],
             if (game.roomCode.isNotEmpty) ...[
               const SizedBox(width: 8),
               Text(
-                game.careerMode
+                game.localDuoMode
+                    ? l10n.localDuoMode
+                    : game.careerMode
                     ? l10n.careerMode
                     : game.isBotFallback
                         ? game.roomCode
@@ -491,7 +507,7 @@ class _GameScreenState extends State<GameScreen> {
                             ? l10n.bot
                             : game.roomCode,
                 style: TextStyle(
-                  color: game.careerMode ? AppColors.gold : const Color(0xFF444444),
+                  color: game.careerMode ? AppColors.gold : AppColors.textFaint,
                   fontSize: 9,
                   letterSpacing: 1,
                   fontWeight: game.careerMode ? FontWeight.w800 : FontWeight.normal,
@@ -543,24 +559,56 @@ class _GameScreenState extends State<GameScreen> {
       height: 44,
       padding: const EdgeInsets.symmetric(horizontal: 8),
       decoration: BoxDecoration(
-        color: const Color(0xFF0C0818),
+        color: AppColors.card,
         border: Border(
           top: BorderSide(color: AppColors.cyan.withValues(alpha: 0.25)),
         ),
       ),
-      child: FittedBox(
-        fit: BoxFit.scaleDown,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text('🔴 ${game.redRemaining()}', style: const TextStyle(color: AppColors.red, fontWeight: FontWeight.w900, fontSize: 15)),
-            const SizedBox(width: 8),
-            Text(l10n.yourHalf, style: TextStyle(color: AppColors.cyan.withValues(alpha: 0.45), fontSize: 10, letterSpacing: 1)),
-            const SizedBox(width: 8),
-            Text(l10n.discsLeft(game.mySideRemaining()), style: const TextStyle(color: AppColors.gold, fontWeight: FontWeight.w900, fontSize: 15)),
-          ],
-        ),
+      child: Center(
+        child: game.localDuoMode
+            ? FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      '${game.localPlayerRed}: ${game.redHalfTotal()}',
+                      style: const TextStyle(color: AppColors.red, fontWeight: FontWeight.w900, fontSize: 14),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                      child: Text(
+                        '·',
+                        style: TextStyle(color: AppColors.textDim.withValues(alpha: 0.6), fontSize: 16),
+                      ),
+                    ),
+                    Text(
+                      '${game.localPlayerBlue}: ${game.blueHalfTotal()}',
+                      style: const TextStyle(color: AppColors.blue, fontWeight: FontWeight.w900, fontSize: 14),
+                    ),
+                  ],
+                ),
+              )
+            : Text(
+                l10n.discsLeft(game.mySideRemaining()),
+                style: TextStyle(
+                  color: game.mySeat == 0 ? AppColors.red : AppColors.blue,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 15,
+                  letterSpacing: 0.5,
+                ),
+              ),
       ),
+    );
+  }
+
+  Widget _buildCountdownOverlay(GameController game, l10n) {
+    final team = game.mySeat == 0 ? l10n.teamRed : l10n.teamBlue;
+    return _buildOverlayContent(
+      game,
+      l10n,
+      title: '${game.countdown}',
+      sub: game.localDuoMode ? l10n.localDuoSimultaneous : l10n.youAreTeam(team),
     );
   }
 
@@ -572,18 +620,27 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   Widget _buildRoundEndOverlay(GameController game, l10n) {
-    final won = game.lastWinner == game.mySeat;
     final score = '${game.roundWins[0]} - ${game.roundWins[1]}';
-    final title = game.matchFinished
-        ? (won ? l10n.matchWon : l10n.matchLost)
-        : l10n.roundEnded(game.currentRound - 1);
-    final sub = game.matchFinished
-        ? (won ? l10n.congrats(score) : l10n.sorry(score))
-        : '${won ? l10n.roundWon : l10n.roundLost}\n$score';
+    final winnerSeat = game.lastWinner!;
+    final String title;
+    final String sub;
+    if (game.localDuoMode) {
+      final winner = game.localPlayerName(winnerSeat);
+      title = game.matchFinished ? l10n.localDuoWinner(winner) : l10n.localDuoRoundWin(winner);
+      sub = score;
+    } else {
+      final won = winnerSeat == game.mySeat;
+      title = game.matchFinished
+          ? (won ? l10n.matchWon : l10n.matchLost)
+          : l10n.roundEnded(game.currentRound - 1);
+      sub = game.matchFinished
+          ? (won ? l10n.congrats(score) : l10n.sorry(score))
+          : '${won ? l10n.roundWon : l10n.roundLost}\n$score';
+    }
     final primaryLabel = game.matchFinished ? l10n.newMatch : l10n.nextRound;
     final onPrimary = game.matchFinished
         ? () {
-            if (game.aiMode || game.trainingMode) {
+            if (game.aiMode || game.trainingMode || game.localDuoMode) {
               game.rematchLocal();
             } else {
               game.requestRematch();
@@ -641,7 +698,7 @@ class _GameScreenState extends State<GameScreen> {
               Text(
                 sub,
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: Color(0xFF777777), fontSize: 13, height: 1.6),
+                style: const TextStyle(color: AppColors.textMuted, fontSize: 13, height: 1.6),
               ),
               if (primaryLabel != null && onPrimary != null) ...[
                 const SizedBox(height: 20),
@@ -724,7 +781,7 @@ class _GameScreenState extends State<GameScreen> {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
-              Text(score, style: const TextStyle(color: Color(0xFF666666), fontSize: 13)),
+              Text(score, style: const TextStyle(color: AppColors.textMuted, fontSize: 13)),
               if (result.won && result.firstTimeWin) ...[
                 const SizedBox(height: 16),
                 Text(
@@ -735,7 +792,7 @@ class _GameScreenState extends State<GameScreen> {
                     color: AppColors.green,
                   ),
                 ),
-                Text(l10n.careerPoints, style: const TextStyle(color: Color(0xFF666666), fontSize: 12)),
+                Text(l10n.careerPoints, style: const TextStyle(color: AppColors.textMuted, fontSize: 12)),
                 Text(
                   '${result.totalCareerPoints} KP',
                   style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
@@ -745,7 +802,7 @@ class _GameScreenState extends State<GameScreen> {
                   padding: const EdgeInsets.only(top: 12),
                   child: Text(
                     l10n.kpAlreadyEarned,
-                    style: const TextStyle(color: Color(0xFF777777), fontSize: 11),
+                    style: const TextStyle(color: AppColors.textMuted, fontSize: 11),
                     textAlign: TextAlign.center,
                   ),
                 )
@@ -754,7 +811,7 @@ class _GameScreenState extends State<GameScreen> {
                   padding: const EdgeInsets.only(top: 12),
                   child: Text(
                     l10n.opponentBeatYou(result.opponent.name),
-                    style: const TextStyle(color: Color(0xFF888888), fontSize: 12),
+                    style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
                     textAlign: TextAlign.center,
                   ),
                 ),
@@ -857,13 +914,13 @@ class _GameScreenState extends State<GameScreen> {
                   color: result.eloChange >= 0 ? AppColors.green : AppColors.red,
                 ),
               ),
-              Text(l10n.eloPoints, style: const TextStyle(color: Color(0xFF666666), fontSize: 12)),
+              Text(l10n.eloPoints, style: const TextStyle(color: AppColors.textMuted, fontSize: 12)),
               Text('${result.newElo} ELO', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
               if (game.opponentName.isNotEmpty) ...[
                 const SizedBox(height: 6),
                 Text(
                   '${l10n.opponentProfile}: ${game.opponentName} · ${game.opponentElo} ELO · ${game.opponentLeague}',
-                  style: const TextStyle(color: Color(0xFF777777), fontSize: 11),
+                  style: const TextStyle(color: AppColors.textMuted, fontSize: 11),
                   textAlign: TextAlign.center,
                 ),
               ],
@@ -874,7 +931,7 @@ class _GameScreenState extends State<GameScreen> {
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: tier.color),
                 ),
-                child: Text('${tier.emoji} $tierLabel', style: TextStyle(color: tier.color, fontWeight: FontWeight.w700)),
+                child: Text(tierLabel, style: TextStyle(color: tier.color, fontWeight: FontWeight.w700)),
               ),
               if (result.newLeague != oldLeague && result.won)
                 Padding(
@@ -918,7 +975,7 @@ class _GameScreenState extends State<GameScreen> {
                     sub: won ? l10n.congrats(score) : l10n.sorry(score),
                     primaryLabel: l10n.newMatch,
                     onPrimary: () {
-                      if (game.aiMode || game.trainingMode) {
+                      if (game.aiMode || game.trainingMode || game.localDuoMode) {
                         game.rematchLocal();
                       } else {
                         game.requestRematch();
@@ -957,7 +1014,7 @@ class _GameScreenState extends State<GameScreen> {
                 isOpponentPause
                     ? l10n.pauseWait(GameController.maxPauseSeconds)
                     : l10n.pauseSelfMsg(GameController.maxPauseSeconds),
-                style: const TextStyle(fontSize: 14, color: Color(0xFFAAAAAA), height: 1.4),
+                style: const TextStyle(fontSize: 14, color: AppColors.textMuted, height: 1.4),
                 textAlign: TextAlign.center,
               ),
               if (game.pauseSecondsLeft > 0) ...[
@@ -977,7 +1034,7 @@ class _GameScreenState extends State<GameScreen> {
                     setState(() => _showPause = false);
                   },
                 ),
-              if (game.aiMode) ...[
+              if (game.aiMode || game.localDuoMode) ...[
                 const SizedBox(height: 12),
                 PucketButton(
                   label: l10n.restart,

@@ -8,7 +8,7 @@ class PingIndicator extends StatelessWidget {
   final int? pingMs;
 
   Color get _color {
-    if (pingMs == null) return const Color(0xFF555555);
+    if (pingMs == null) return AppColors.textDim;
     if (pingMs! < 80) return AppColors.green;
     if (pingMs! < 150) return AppColors.gold;
     return AppColors.red;

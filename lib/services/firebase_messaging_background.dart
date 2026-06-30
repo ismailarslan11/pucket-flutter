@@ -1,9 +1,12 @@
+import 'dart:io';
+
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import '../firebase_options.dart';
+import '../theme/app_theme.dart';
 
 const _androidLargeIcon = DrawableResourceAndroidBitmap('@mipmap/ic_launcher');
 
@@ -16,36 +19,38 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   final body = n?.body ?? message.data['body'] as String? ?? '';
   if (title.isEmpty && body.isEmpty) return;
 
-  const channel = AndroidNotificationChannel(
-    'pucket_high_importance',
-    'PUCKET',
-    description: 'PUCKET oyun bildirimleri',
-    importance: Importance.max,
-    playSound: true,
-    enableVibration: true,
-  );
-
   final plugin = FlutterLocalNotificationsPlugin();
   const androidInit = AndroidInitializationSettings('@drawable/ic_stat_notify');
-  await plugin.initialize(const InitializationSettings(android: androidInit));
-  await plugin
-      .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin>()
-      ?.createNotificationChannel(channel);
+  const iosInit = DarwinInitializationSettings();
+  await plugin.initialize(const InitializationSettings(android: androidInit, iOS: iosInit));
 
-  const androidDetails = AndroidNotificationDetails(
-    'pucket_high_importance',
-    'PUCKET',
-    importance: Importance.max,
-    priority: Priority.high,
-    icon: '@drawable/ic_stat_notify',
-    largeIcon: _androidLargeIcon,
-    color: Color(0xFF7C3AED),
+  const iosDetails = DarwinNotificationDetails();
+  const details = NotificationDetails(
+    android: AndroidNotificationDetails(
+      'pucket_high_importance',
+      'PUCKET',
+      importance: Importance.max,
+      priority: Priority.high,
+      icon: '@drawable/ic_stat_notify',
+      largeIcon: _androidLargeIcon,
+      color: AppColors.brandBlue,
+    ),
+    iOS: iosDetails,
   );
-  await plugin.show(
-    message.hashCode,
-    title,
-    body,
-    const NotificationDetails(android: androidDetails),
-  );
+
+  if (Platform.isAndroid) {
+    const channel = AndroidNotificationChannel(
+      'pucket_high_importance',
+      'PUCKET',
+      description: 'PUCKET oyun bildirimleri',
+      importance: Importance.max,
+      playSound: true,
+      enableVibration: true,
+    );
+    await plugin
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(channel);
+  }
+
+  await plugin.show(message.hashCode, title, body, details);
 }

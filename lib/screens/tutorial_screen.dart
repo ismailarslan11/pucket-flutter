@@ -20,7 +20,7 @@ class TutorialScreen extends StatelessWidget {
           child: Column(
             children: [
               const Text(
-                '🎯 PUCKET REHBERİ',
+                'PUCKET REHBERİ',
                 style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: AppColors.gold),
               ),
               const SizedBox(height: 20),
@@ -108,7 +108,7 @@ class _Step extends StatelessWidget {
               children: [
                 Text(title, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
                 const SizedBox(height: 4),
-                Text(body, style: const TextStyle(color: Color(0xFFAAAAAA), height: 1.45, fontSize: 13)),
+                Text(body, style: const TextStyle(color: AppColors.textMuted, height: 1.45, fontSize: 13)),
               ],
             ),
           ),

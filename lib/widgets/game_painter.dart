@@ -5,7 +5,9 @@ import 'package:flutter/material.dart';
 
 import '../game/game_constants.dart';
 import '../game/game_controller.dart';
+import '../models/cosmetic_catalog.dart';
 import '../models/disc.dart';
+import '../services/disc_image_cache.dart';
 import '../theme/app_theme.dart';
 import '../theme/cosmetics_theme.dart';
 
@@ -13,24 +15,26 @@ class GamePainter extends CustomPainter {
   GamePainter({
     required this.discs,
     required this.mySeat,
-    required this.drag,
+    required this.drags,
     required this.visualGeneration,
     required this.sx,
     required this.sy,
+    this.localDuoMode = false,
     this.myDiscColor = 'green',
     this.boardTheme = 'classic',
   });
 
   final List<Disc> discs;
   final int mySeat;
-  final DragState? drag;
+  final List<DragState> drags;
   final int visualGeneration;
   final double sx;
   final double sy;
+  final bool localDuoMode;
   final String myDiscColor;
   final String boardTheme;
 
-  static const _fieldVersion = 2;
+  static const _fieldVersion = 4;
   static ui.Picture? _fieldPicture;
   static Size? _fieldSize;
   static int? _fieldSeat;
@@ -62,7 +66,7 @@ class GamePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     canvas.save();
-    if (mySeat == 1) {
+    if (mySeat == 1 && !localDuoMode) {
       canvas.translate(size.width, size.height);
       canvas.rotate(math.pi);
     }
@@ -71,8 +75,10 @@ class GamePainter extends CustomPainter {
     for (final d in discs) {
       _drawDisc(canvas, d);
     }
-    if (drag != null && drag!.discIndex < discs.length) {
-      _drawSling(canvas, discs[drag!.discIndex], drag!);
+    for (final drag in drags) {
+      if (drag.discIndex < discs.length) {
+        _drawSling(canvas, discs[drag.discIndex], drag);
+      }
     }
     canvas.restore();
   }
@@ -111,24 +117,9 @@ class GamePainter extends CustomPainter {
       palette.neonSecondary.withValues(alpha: 0.5),
     );
 
-    _drawNeonWall(canvas, Rect.fromLTWH(0, hh - 8, gap.dx - 2, 16), palette);
-    _drawNeonWall(canvas, Rect.fromLTWH(gap.dx + gw + 2, hh - 8, hw - gap.dx - gw - 2, 16), palette);
+    _drawNeonWall(canvas, Rect.fromLTWH(0, gap.dy, gap.dx, gh), palette);
+    _drawNeonWall(canvas, Rect.fromLTWH(gap.dx + gw, gap.dy, hw - gap.dx - gw, gh), palette);
     _drawPortalGoal(canvas, Rect.fromLTWH(gap.dx, gap.dy, gw, gh), palette);
-
-    canvas.save();
-    if (mySeat == 1) {
-      canvas.translate(size.width, size.height);
-      canvas.rotate(math.pi);
-    }
-    _drawFieldLabel(canvas, Offset(size.width / 2, 18), mySeat == 0 ? 'SECTOR α' : 'SECTOR β', palette.neonPrimary);
-    _drawFieldLabel(
-      canvas,
-      Offset(size.width / 2, size.height - 22),
-      mySeat == 0 ? 'SECTOR β' : 'SECTOR α',
-      palette.neonSecondary,
-    );
-    _drawYouBadge(canvas, size, palette);
-    canvas.restore();
   }
 
   void _drawSpaceHalf(Canvas canvas, Rect rect, Color base, Color tint, BoardPalette palette) {
@@ -274,69 +265,51 @@ class GamePainter extends CustomPainter {
     );
   }
 
-  void _drawFieldLabel(Canvas canvas, Offset center, String text, Color color) {
-    final tp = TextPainter(
-      text: TextSpan(
-        text: text,
-        style: TextStyle(
-          color: color.withValues(alpha: 0.85),
-          fontSize: 9,
-          fontWeight: FontWeight.w800,
-          letterSpacing: 3,
-        ),
-      ),
-      textDirection: TextDirection.ltr,
-    )..layout();
-    tp.paint(canvas, Offset(center.dx - tp.width / 2, center.dy - tp.height / 2));
-  }
-
-  void _drawYouBadge(Canvas canvas, Size size, BoardPalette palette) {
-    final teamColor = mySeat == 0 ? AppColors.red : AppColors.blue;
-    final neon = mySeat == 0 ? palette.neonSecondary : palette.neonPrimary;
-    final badgeW = 78.0;
-    final badgeH = 22.0;
-    final left = size.width / 2 - badgeW / 2;
-    final top = size.height / 2 + 10;
-    final rrect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(left, top, badgeW, badgeH),
-      const Radius.circular(11),
-    );
-    canvas.drawRRect(
-      rrect,
-      Paint()
-        ..color = neon.withValues(alpha: 0.2)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
-    );
-    canvas.drawRRect(rrect, Paint()..color = teamColor.withValues(alpha: 0.15));
-    canvas.drawRRect(
-      rrect,
-      Paint()
-        ..color = neon.withValues(alpha: 0.85)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.2,
-    );
-    final tp = TextPainter(
-      text: TextSpan(
-        text: '◆ YOU ◆',
-        style: TextStyle(
-          color: neon,
-          fontSize: 9,
-          fontWeight: FontWeight.w900,
-          letterSpacing: 1.8,
-        ),
-      ),
-      textDirection: TextDirection.ltr,
-    )..layout();
-    tp.paint(canvas, Offset(size.width / 2 - tp.width / 2, top + 5));
-  }
-
   void _drawDisc(Canvas canvas, Disc d) {
     final pos = _s2c(d.vx, d.vy);
     final r = GameConstants.discRadius * sx;
     final moving = d.vvx.abs() + d.vvy.abs() > 0.35;
 
-    final defaultColor = d.owner == 0 ? const Color(0xFFFF3366) : const Color(0xFF00D4FF);
-    final color = d.owner == mySeat ? CosmeticsTheme.discColor(myDiscColor) : defaultColor;
+    final defaultColor = d.owner == 0 ? AppColors.red : AppColors.blue;
+    final isMine = d.owner == mySeat;
+    final usePremium = !localDuoMode && isMine && CosmeticCatalog.isPremiumDisc(myDiscColor);
+    final img = usePremium ? DiscImageCache.imageFor(myDiscColor) : null;
+
+    if (img != null) {
+      if (!moving) {
+        canvas.drawCircle(
+          pos,
+          r + 6,
+          Paint()
+            ..color = Colors.white.withValues(alpha: 0.12)
+            ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8),
+        );
+      }
+      final dst = Rect.fromCircle(center: pos, radius: r);
+      canvas.save();
+      canvas.clipPath(Path()..addOval(dst));
+      paintImage(
+        canvas: canvas,
+        rect: dst,
+        image: img,
+        fit: BoxFit.cover,
+        filterQuality: FilterQuality.medium,
+      );
+      canvas.restore();
+      canvas.drawCircle(
+        pos,
+        r,
+        Paint()
+          ..color = Colors.white.withValues(alpha: moving ? 0.35 : 0.55)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.5,
+      );
+      return;
+    }
+
+    final color = localDuoMode
+        ? defaultColor
+        : (isMine ? CosmeticsTheme.discColor(myDiscColor) : defaultColor);
 
     if (!moving) {
       canvas.drawCircle(
@@ -407,9 +380,9 @@ class GamePainter extends CustomPainter {
     final nx = -ddx / dist;
     final ny = -ddy / dist;
 
-    _neonLine(canvas, discPos, pullPos, const Color(0xFF00F0FF), width: 1.5);
+    _neonLine(canvas, discPos, pullPos, AppColors.fieldBlue, width: 1.5);
 
-    final col = pow > 0.7 ? const Color(0xFFFF3366) : const Color(0xFF00F0FF);
+    final col = pow > 0.7 ? AppColors.brandOrange : AppColors.fieldBlue;
     final tip = Offset(discPos.dx + nx * lim * sx * 0.55, discPos.dy + ny * lim * sy * 0.55);
     _neonLine(canvas, discPos, tip, col, width: 2.5);
 
@@ -442,9 +415,10 @@ class GamePainter extends CustomPainter {
   bool shouldRepaint(covariant GamePainter old) {
     return old.visualGeneration != visualGeneration ||
         old.mySeat != mySeat ||
+        old.localDuoMode != localDuoMode ||
         old.sx != sx ||
         old.sy != sy ||
-        old.drag != drag ||
+        old.drags.length != drags.length ||
         old.myDiscColor != myDiscColor ||
         old.boardTheme != boardTheme;
   }

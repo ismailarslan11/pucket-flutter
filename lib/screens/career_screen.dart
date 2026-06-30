@@ -20,13 +20,7 @@ class CareerScreen extends StatelessWidget {
 
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: RadialGradient(
-            center: Alignment(0, -0.3),
-            radius: 1.3,
-            colors: [Color(0xFF2A1A4A), AppColors.bg],
-          ),
-        ),
+        decoration: const BoxDecoration(gradient: AppGradients.screenBgWarm),
         child: SafeArea(
           child: Column(
             children: [
@@ -73,7 +67,7 @@ class CareerScreen extends StatelessWidget {
                     AppRouter.goMenu(context);
                   }
                 },
-                icon: const Icon(Icons.arrow_back, color: Color(0xFF888888)),
+                icon: const Icon(Icons.arrow_back, color: AppColors.textMuted),
               ),
               Expanded(
                 child: Text(
@@ -91,8 +85,8 @@ class CareerScreen extends StatelessWidget {
             spacing: 12,
             runSpacing: 8,
             children: [
-              _statChip('⭐', '${career.careerPoints}', 'KP'),
-              _statChip('✓', '${career.careerWins}G', '${career.careerLosses}M'),
+              _statChip('KP', '${career.careerPoints}', ''),
+              _statChip('G', '${career.careerWins}G', '${career.careerLosses}M'),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
@@ -101,7 +95,7 @@ class CareerScreen extends StatelessWidget {
                   color: tier.color.withValues(alpha: 0.12),
                 ),
                 child: Text(
-                  '${tier.emoji} $tierLabel',
+                  tierLabel,
                   style: TextStyle(color: tier.color, fontWeight: FontWeight.w800, fontSize: 12),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -121,7 +115,7 @@ class CareerScreen extends StatelessWidget {
             const SizedBox(height: 10),
             Text(
               l10n.nextOpponent(next.name, l10n.tierName(next.league)),
-              style: const TextStyle(color: Color(0xFF777777), fontSize: 11),
+              style: const TextStyle(color: AppColors.textMuted, fontSize: 11),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
@@ -152,7 +146,7 @@ class CareerScreen extends StatelessWidget {
           const SizedBox(width: 4),
           Text(value, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13)),
           const SizedBox(width: 3),
-          Text(label, style: const TextStyle(color: Color(0xFF555555), fontSize: 9)),
+          Text(label, style: const TextStyle(color: AppColors.textDim, fontSize: 9)),
         ],
       ),
     );
@@ -187,12 +181,10 @@ class _LeagueSection extends StatelessWidget {
         children: [
           Row(
             children: [
-              Text(tier.emoji, style: const TextStyle(fontSize: 18)),
-              const SizedBox(width: 8),
               Text(
                 tierLabel.toUpperCase(),
                 style: TextStyle(
-                  color: locked ? const Color(0xFF444444) : tier.color,
+                  color: locked ? AppColors.textFaint : tier.color,
                   fontWeight: FontWeight.w900,
                   letterSpacing: 2,
                   fontSize: 13,
@@ -200,9 +192,9 @@ class _LeagueSection extends StatelessWidget {
               ),
               const Spacer(),
               Text(
-                locked ? '🔒' : '$progress/${opponents.length}',
+                locked ? 'Kilitli' : '$progress/${opponents.length}',
                 style: TextStyle(
-                  color: locked ? const Color(0xFF444444) : const Color(0xFF666666),
+                  color: locked ? AppColors.textFaint : AppColors.textMuted,
                   fontSize: 11,
                 ),
               ),
@@ -280,7 +272,7 @@ class _OpponentCard extends StatelessWidget {
                     ),
                     alignment: Alignment.center,
                     child: Text(
-                      defeated ? '✓' : opponent.name[0],
+                      defeated ? 'OK' : opponent.name[0],
                       style: TextStyle(
                         fontWeight: FontWeight.w900,
                         color: defeated ? AppColors.green : tier.color,
@@ -298,7 +290,7 @@ class _OpponentCard extends StatelessWidget {
                         ),
                         Text(
                           '${l10n.difficultyLabel(opponent.aiLevel.name)} · ${opponent.displayElo} ELO · +${opponent.pointsReward} KP',
-                          style: const TextStyle(color: Color(0xFF666666), fontSize: 10),
+                          style: const TextStyle(color: AppColors.textMuted, fontSize: 10),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -306,11 +298,11 @@ class _OpponentCard extends StatelessWidget {
                     ),
                   ),
                   if (locked)
-                    const Icon(Icons.lock, color: Color(0xFF444444), size: 18)
+                    const Icon(Icons.lock, color: AppColors.textFaint, size: 18)
                   else if (defeated)
-                    Text(l10n.replay, style: const TextStyle(color: Color(0xFF555555), fontSize: 10))
+                    Text(l10n.replay, style: const TextStyle(color: AppColors.textDim, fontSize: 10))
                   else
-                    Icon(Icons.chevron_right, color: isNext ? AppColors.green : const Color(0xFF555555)),
+                    Icon(Icons.chevron_right, color: isNext ? AppColors.green : AppColors.textDim),
                 ],
               ),
             ),

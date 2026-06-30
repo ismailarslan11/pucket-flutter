@@ -1,47 +1,90 @@
 import 'package:flutter/material.dart';
 
-/// Marka renkleri — logo paleti (mor, pembe, mavi, sarı).
+/// PUCKET logo renk paleti + UI semantik renkleri.
 class AppColors {
-  static const purple = Color(0xFF7C3AED);
-  static const purpleLight = Color(0xFFA855F7);
-  static const purpleDark = Color(0xFF5B21B6);
-  static const pink = Color(0xFFEC4899);
-  static const cyan = Color(0xFF38BDF8);
-  static const yellow = Color(0xFFFBBF24);
-  static const navy = Color(0xFF1E1B4B);
-  static const charcoal = Color(0xFF2D3748);
+  // ── Resmi logo paleti ──
+  static const brandBlue = Color(0xFF0088CC);
+  static const brandOrange = Color(0xFFFF6600);
+  static const nightBlue = Color(0xFF004488);
+  static const darkOrange = Color(0xFFCC4400);
+  static const silverWhite = Color(0xFFE0F7FA);
+  static const silver = Color(0xFFC0C0C0);
+  static const fieldBlue = Color(0xFF44AAEE);
+  static const accentYellow = Color(0xFFFFCC00);
 
-  /// UI vurgu — eski `green` kullanan ekranlar otomatik marka rengine geçer.
-  static const green = purple;
-  static const darkGreen = purpleDark;
-  static const gold = yellow;
+  // ── Geriye dönük alias'lar (mevcut kod kırılmasın) ──
+  static const purple = brandBlue;
+  static const purpleLight = fieldBlue;
+  static const purpleDark = nightBlue;
+  static const pink = brandOrange;
+  static const cyan = fieldBlue;
+  static const yellow = accentYellow;
+  static const green = brandBlue;
+  static const darkGreen = nightBlue;
+  static const gold = accentYellow;
+  static const navy = nightBlue;
+  static const charcoal = Color(0xFF1A3355);
 
-  /// Oyun takımları (kırmızı / mavi diskler)
-  static const red = Color(0xFFE83030);
-  static const blue = Color(0xFF3080E8);
+  /// Oyun takımları — logo turuncu / mavi
+  static const red = brandOrange;
+  static const blue = brandBlue;
 
-  static const bg = Color(0xFF0D0D12);
-  static const card = Color(0xFF18181F);
-  static const border = Color(0xFF2A2A38);
+  // ── Yüzeyler ──
+  static const bg = Color(0xFF001A33);
+  static const bgDeep = Color(0xFF000F22);
+  static const card = Color(0xFF002845);
+  static const cardElevated = Color(0xFF003355);
+  static const border = Color(0xFF005588);
+  static const borderSubtle = Color(0xFF003D66);
+
+  // ── Metin ──
+  static const textPrimary = silverWhite;
+  static const textMuted = Color(0xFF99B8CC);
+  static const textDim = Color(0xFF6688AA);
+  static const textFaint = Color(0xFF446688);
 }
 
 class AppGradients {
   static const screenBg = RadialGradient(
-    center: Alignment(0, -0.4),
-    radius: 1.2,
-    colors: [Color(0xFF1A1035), AppColors.bg],
+    center: Alignment(0, -0.35),
+    radius: 1.25,
+    colors: [AppColors.nightBlue, AppColors.bg],
+  );
+
+  static const screenBgWarm = RadialGradient(
+    center: Alignment(0, -0.35),
+    radius: 1.25,
+    colors: [Color(0xFF663300), AppColors.bg],
+  );
+
+  static const boardBg = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [Color(0xFF001F40), AppColors.bgDeep],
   );
 
   static const brand = LinearGradient(
-    colors: [AppColors.purple, AppColors.purpleLight],
+    colors: [AppColors.brandBlue, AppColors.fieldBlue],
   );
 
   static const ranked = LinearGradient(
-    colors: [AppColors.purpleDark, AppColors.purple],
+    colors: [AppColors.nightBlue, AppColors.brandBlue],
   );
 
   static const play = LinearGradient(
-    colors: [AppColors.pink, AppColors.purple],
+    colors: [AppColors.brandOrange, AppColors.darkOrange],
+  );
+
+  static const career = LinearGradient(
+    colors: [AppColors.darkOrange, AppColors.nightBlue],
+  );
+
+  static const accent = LinearGradient(
+    colors: [AppColors.brandBlue, AppColors.nightBlue],
+  );
+
+  static const secondaryBtn = LinearGradient(
+    colors: [AppColors.cardElevated, AppColors.card],
   );
 }
 
@@ -51,10 +94,24 @@ class AppTheme {
         scaffoldBackgroundColor: AppColors.bg,
         fontFamily: 'Roboto',
         colorScheme: const ColorScheme.dark(
-          primary: AppColors.purple,
-          secondary: AppColors.yellow,
-          tertiary: AppColors.pink,
+          primary: AppColors.brandBlue,
+          onPrimary: AppColors.silverWhite,
+          secondary: AppColors.brandOrange,
+          onSecondary: AppColors.silverWhite,
+          tertiary: AppColors.accentYellow,
           surface: AppColors.card,
+          onSurface: AppColors.silverWhite,
+          outline: AppColors.border,
         ),
+        textTheme: const TextTheme(
+          bodyLarge: TextStyle(color: AppColors.textPrimary),
+          bodyMedium: TextStyle(color: AppColors.textPrimary),
+          bodySmall: TextStyle(color: AppColors.textMuted),
+          titleLarge: TextStyle(color: AppColors.silverWhite, fontWeight: FontWeight.w900),
+          labelLarge: TextStyle(color: AppColors.silverWhite, fontWeight: FontWeight.w700),
+        ),
+        iconTheme: const IconThemeData(color: AppColors.textMuted),
+        dividerColor: AppColors.borderSubtle,
+        progressIndicatorTheme: const ProgressIndicatorThemeData(color: AppColors.brandBlue),
       );
 }

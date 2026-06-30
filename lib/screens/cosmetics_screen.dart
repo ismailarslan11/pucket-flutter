@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../config/ad_config.dart';
 import '../l10n/l10n_extension.dart';
+import '../models/cosmetic_catalog.dart';
+import '../services/ad_service.dart';
 import '../services/auth_service.dart';
 import '../services/player_meta_service.dart';
 import '../theme/cosmetics_theme.dart';
@@ -19,10 +22,10 @@ class _CosmeticsScreenState extends State<CosmeticsScreen> {
   String _disc = 'green';
   String _board = 'classic';
   bool _saving = false;
+  bool _watchingAd = false;
 
-  static const discColors = CosmeticsTheme.discColors;
-
-  static const boardThemes = ['classic', 'neon', 'wood'];
+  static const _freeDiscs = CosmeticsTheme.discColors;
+  static const _allBoards = ['classic', 'neon', 'wood'];
 
   @override
   void initState() {
@@ -32,11 +35,78 @@ class _CosmeticsScreenState extends State<CosmeticsScreen> {
     _board = meta?.cosmetics['boardTheme'] ?? 'classic';
   }
 
+  Future<void> _watchAdForTokens() async {
+    if (_watchingAd) return;
+    final auth = context.read<AuthService>();
+    final metaSvc = context.read<PlayerMetaService>();
+    final ads = context.read<AdService>();
+    final l10n = context.l10n;
+
+    if (!AdConfig.supported) {
+      _snack(l10n.tokensAdUnavailable);
+      return;
+    }
+
+    setState(() => _watchingAd = true);
+    var rewarded = false;
+    rewarded = await ads.showRewardedForTokens(onReward: () {});
+    if (!mounted) return;
+
+    if (!rewarded) {
+      setState(() => _watchingAd = false);
+      _snack(l10n.tokensAdNotReady);
+      return;
+    }
+
+    final gain = await metaSvc.rewardAdTokens(auth.getUid());
+    if (!mounted) return;
+    setState(() => _watchingAd = false);
+    if (gain != null) {
+      _snack(l10n.tokensEarned(gain));
+    } else {
+      _snack(metaSvc.lastMessage ?? l10n.tokensAdCooldown);
+    }
+  }
+
+  Future<void> _purchase(String type, String id, int price) async {
+    final auth = context.read<AuthService>();
+    final metaSvc = context.read<PlayerMetaService>();
+    final l10n = context.l10n;
+
+    if (metaSvc.tokens < price) {
+      _snack(l10n.tokensNotEnough);
+      return;
+    }
+
+    final ok = await metaSvc.purchaseCosmetic(
+      auth.getUid(),
+      itemType: type,
+      itemId: id,
+    );
+    if (!mounted) return;
+    if (ok) {
+      _snack(l10n.tokensPurchased);
+      setState(() {
+        if (type == 'disc') _disc = id;
+        if (type == 'board') _board = id;
+      });
+    } else {
+      _snack(metaSvc.lastMessage ?? l10n.tokensNotEnough);
+    }
+  }
+
+  void _snack(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final auth = context.read<AuthService>();
-    final meta = context.read<PlayerMetaService>();
+    final metaSvc = context.watch<PlayerMetaService>();
+    final elo = auth.user?.elo ?? 1000;
+    final winPreview = metaSvc.previewWinTokens(elo);
+    final adPreview = metaSvc.previewAdTokens(elo);
 
     return Scaffold(
       backgroundColor: AppColors.bg,
@@ -47,42 +117,104 @@ class _CosmeticsScreenState extends State<CosmeticsScreen> {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          Text(l10n.cosmeticsDisc, style: const TextStyle(fontWeight: FontWeight.w800)),
+          _TokenHeader(
+            tokens: metaSvc.tokens,
+            winPreview: winPreview,
+            adPreview: adPreview,
+            onWatchAd: _watchingAd ? null : _watchAdForTokens,
+            watchingAd: _watchingAd,
+          ),
+          const SizedBox(height: 24),
+          Text(l10n.cosmeticsDiscFree, style: _sectionStyle),
           const SizedBox(height: 10),
           Wrap(
             spacing: 10,
-            children: discColors.entries.map((e) {
-              final selected = _disc == e.key;
-              return GestureDetector(
+            runSpacing: 10,
+            children: _freeDiscs.entries.map((e) {
+              return _DiscChip(
+                selected: _disc == e.key,
+                locked: false,
+                price: 0,
+                color: e.value,
                 onTap: () => setState(() => _disc = e.key),
-                child: Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: e.value,
-                    border: Border.all(color: selected ? Colors.white : Colors.transparent, width: 3),
-                  ),
-                ),
               );
             }).toList(),
           ),
           const SizedBox(height: 24),
-          Text(l10n.cosmeticsBoard, style: const TextStyle(fontWeight: FontWeight.w800)),
+          Text(l10n.cosmeticsDiscPremium, style: _sectionStyle),
           const SizedBox(height: 10),
-          ...boardThemes.map((t) => ListTile(
-                title: Text(l10n.boardThemeName(t)),
-                trailing: _board == t ? const Icon(Icons.check, color: AppColors.green) : null,
-                onTap: () => setState(() => _board = t),
-              )),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 12,
+              childAspectRatio: 0.82,
+            ),
+            itemCount: CosmeticCatalog.premiumDiscs.length,
+            itemBuilder: (context, i) {
+              final item = CosmeticCatalog.premiumDiscs[i];
+              final unlocked = metaSvc.isDiscUnlocked(item.id);
+              final selected = _disc == item.id;
+              return _PremiumDiscTile(
+                item: item,
+                name: l10n.discName(item.id),
+                selected: selected,
+                unlocked: unlocked,
+                onSelect: unlocked ? () => setState(() => _disc = item.id) : null,
+                onBuy: unlocked ? null : () => _purchase('disc', item.id, item.price),
+              );
+            },
+          ),
+          const SizedBox(height: 24),
+          Text(l10n.cosmeticsBoard, style: _sectionStyle),
+          const SizedBox(height: 10),
+          ..._allBoards.map((t) {
+            final price = CosmeticCatalog.boardPrice(t) ?? 0;
+            final unlocked = metaSvc.isBoardUnlocked(t);
+            final selected = _board == t;
+            return ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(l10n.boardThemeName(t)),
+              subtitle: unlocked
+                  ? null
+                  : Text(
+                      l10n.tokensPrice(price),
+                      style: const TextStyle(color: AppColors.gold, fontSize: 12),
+                    ),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (!unlocked)
+                    TextButton(
+                      onPressed: () => _purchase('board', t, price),
+                      child: Text(l10n.tokensBuy),
+                    ),
+                  if (selected)
+                    const Icon(Icons.check_circle, color: AppColors.green)
+                  else if (unlocked)
+                    IconButton(
+                      icon: const Icon(Icons.circle_outlined, color: AppColors.textMuted),
+                      onPressed: () => setState(() => _board = t),
+                    ),
+                ],
+              ),
+              onTap: unlocked ? () => setState(() => _board = t) : null,
+            );
+          }),
           const SizedBox(height: 20),
           PucketButton(
             label: _saving ? '...' : l10n.save,
             onPressed: _saving
                 ? () {}
                 : () async {
+                    if (!metaSvc.isDiscUnlocked(_disc) || !metaSvc.isBoardUnlocked(_board)) {
+                      _snack(l10n.tokensLocked);
+                      return;
+                    }
                     setState(() => _saving = true);
-                    await meta.setCosmetics(auth.getUid(), {
+                    await metaSvc.setCosmetics(auth.getUid(), {
                       'discColor': _disc,
                       'boardTheme': _board,
                     });
@@ -94,6 +226,205 @@ class _CosmeticsScreenState extends State<CosmeticsScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  TextStyle get _sectionStyle => const TextStyle(fontWeight: FontWeight.w800, fontSize: 15);
+}
+
+class _TokenHeader extends StatelessWidget {
+  const _TokenHeader({
+    required this.tokens,
+    required this.winPreview,
+    required this.adPreview,
+    required this.onWatchAd,
+    required this.watchingAd,
+  });
+
+  final int tokens;
+  final int winPreview;
+  final int adPreview;
+  final VoidCallback? onWatchAd;
+  final bool watchingAd;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: AppGradients.ranked,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.gold.withValues(alpha: 0.4)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.monetization_on, color: AppColors.gold, size: 28),
+              const SizedBox(width: 8),
+              Text(
+                l10n.tokensBalance(tokens),
+                style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 22),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            l10n.tokensEarnHint(winPreview, adPreview),
+            style: const TextStyle(color: AppColors.textMuted, fontSize: 12, height: 1.4),
+          ),
+          const SizedBox(height: 12),
+          if (onWatchAd != null)
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: onWatchAd,
+                icon: watchingAd
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.gold),
+                      )
+                    : const Icon(Icons.play_circle_outline, color: AppColors.gold),
+                label: Text(
+                  watchingAd ? '...' : l10n.tokensWatchAd(adPreview),
+                  style: const TextStyle(color: AppColors.gold, fontWeight: FontWeight.w700),
+                ),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: AppColors.gold),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DiscChip extends StatelessWidget {
+  const _DiscChip({
+    required this.selected,
+    required this.locked,
+    required this.price,
+    required this.onTap,
+    this.color,
+  });
+
+  final bool selected;
+  final bool locked;
+  final int price;
+  final VoidCallback? onTap;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 52,
+        height: 52,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: color,
+          border: Border.all(
+            color: selected ? AppColors.gold : Colors.white24,
+            width: selected ? 3 : 1.5,
+          ),
+        ),
+        child: locked
+            ? Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.black.withValues(alpha: 0.55),
+                ),
+                child: const Icon(Icons.lock, color: Colors.white70, size: 18),
+              )
+            : null,
+      ),
+    );
+  }
+}
+
+class _PremiumDiscTile extends StatelessWidget {
+  const _PremiumDiscTile({
+    required this.item,
+    required this.name,
+    required this.selected,
+    required this.unlocked,
+    required this.onSelect,
+    required this.onBuy,
+  });
+
+  final CosmeticItem item;
+  final String name;
+  final bool selected;
+  final bool unlocked;
+  final VoidCallback? onSelect;
+  final VoidCallback? onBuy;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return Column(
+      children: [
+        GestureDetector(
+          onTap: onSelect ?? onBuy,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  image: DecorationImage(
+                    image: AssetImage(item.asset),
+                    fit: BoxFit.cover,
+                  ),
+                  border: Border.all(
+                    color: selected ? AppColors.gold : Colors.white24,
+                    width: selected ? 3 : 1.5,
+                  ),
+                ),
+              ),
+              if (!unlocked)
+                Container(
+                  width: 72,
+                  height: 72,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.black.withValues(alpha: 0.5),
+                  ),
+                  child: const Icon(Icons.lock, color: Colors.white70),
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          name,
+          textAlign: TextAlign.center,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w600, height: 1.1),
+        ),
+        if (!unlocked)
+          TextButton(
+            onPressed: onBuy,
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: Text(
+              l10n.tokensPrice(item.price),
+              style: const TextStyle(color: AppColors.gold, fontSize: 10, fontWeight: FontWeight.w800),
+            ),
+          ),
+      ],
     );
   }
 }

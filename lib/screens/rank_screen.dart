@@ -72,7 +72,7 @@ class _RankScreenState extends State<RankScreen> {
               child: Row(
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Color(0xFF666666)),
+                    icon: const Icon(Icons.arrow_back, color: AppColors.textMuted),
                     onPressed: () => Navigator.pop(context),
                   ),
                   Expanded(
@@ -92,12 +92,12 @@ class _RankScreenState extends State<RankScreen> {
               child: Row(
                 children: [
                   _filterBtn(l10n.rankAll, null),
-                  _filterBtn('🥉 ${l10n.tierBronze}', 'Bronz', const Color(0xFFCD7F32)),
-                  _filterBtn('🥈 ${l10n.tierSilver}', 'Gümüş', const Color(0xFFAAAAAA)),
-                  _filterBtn('🥇 ${l10n.tierGold}', 'Altın', AppColors.gold),
-                  _filterBtn('💎 ${l10n.tierDiamond}', 'Elmas', const Color(0xFF60D0FF)),
-                  _filterBtn('🏆 ${l10n.tierMaster}', 'Usta', const Color(0xFF9B59B6)),
-                  _filterBtn('👑 ${l10n.tierLegend}', 'Efsane', AppColors.red),
+                  _filterBtn(l10n.tierBronze, 'Bronz', AppColors.darkOrange),
+                  _filterBtn(l10n.tierSilver, 'Gümüş', AppColors.silver),
+                  _filterBtn(l10n.tierGold, 'Altın', AppColors.gold),
+                  _filterBtn(l10n.tierDiamond, 'Elmas', AppColors.fieldBlue),
+                  _filterBtn(l10n.tierMaster, 'Usta', AppColors.brandBlue),
+                  _filterBtn(l10n.tierLegend, 'Efsane', AppColors.red),
                 ],
               ),
             ),
@@ -108,7 +108,7 @@ class _RankScreenState extends State<RankScreen> {
                       ? Center(
                           child: Text(
                             _loadError ?? 'Bu ligde oyuncu yok',
-                            style: const TextStyle(color: Color(0xFF666666)),
+                            style: const TextStyle(color: AppColors.textMuted),
                             textAlign: TextAlign.center,
                           ),
                         )
@@ -126,12 +126,11 @@ class _RankScreenState extends State<RankScreen> {
                                   SizedBox(
                                     width: 26,
                                     child: Text(
-                                      i == 0 ? '🥇' : i == 1 ? '🥈' : i == 2 ? '🥉' : '${i + 1}',
-                                      style: const TextStyle(fontWeight: FontWeight.w900, color: Color(0xFF444444)),
+                                      i == 0 ? '1' : i == 1 ? '2' : i == 2 ? '3' : '${i + 1}',
+                                      style: const TextStyle(fontWeight: FontWeight.w900, color: AppColors.textFaint),
                                       textAlign: TextAlign.center,
                                     ),
                                   ),
-                                  Text(tier.emoji, style: const TextStyle(fontSize: 14)),
                                   const SizedBox(width: 9),
                                   Expanded(
                                     child: Text(
@@ -139,12 +138,12 @@ class _RankScreenState extends State<RankScreen> {
                                       style: TextStyle(
                                         fontWeight: FontWeight.w600,
                                         fontSize: 13,
-                                        color: isMe ? AppColors.green : const Color(0xFFCCCCCC),
+                                        color: isMe ? AppColors.green : AppColors.silver,
                                       ),
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
-                                  Text('${p.wins}G ${p.losses}M', style: const TextStyle(fontSize: 10, color: Color(0xFF444444))),
+                                  Text('${p.wins}G ${p.losses}M', style: const TextStyle(fontSize: 10, color: AppColors.textFaint)),
                                   const SizedBox(width: 10),
                                   Text('${p.elo}', style: TextStyle(fontWeight: FontWeight.w900, color: tier.color, fontSize: 13)),
                                 ],
@@ -168,16 +167,16 @@ class _RankScreenState extends State<RankScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
           decoration: BoxDecoration(
-            color: on ? const Color(0xFF2A2A2A) : const Color(0xFF1A1A1A),
+            color: on ? AppColors.cardElevated : AppColors.card,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: on ? const Color(0xFF444444) : const Color(0xFF2A2A2A)),
+            border: Border.all(color: on ? AppColors.textFaint : AppColors.cardElevated),
           ),
           child: Text(
             label,
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w600,
-              color: color ?? (on ? Colors.white : const Color(0xFF666666)),
+              color: color ?? (on ? Colors.white : AppColors.textMuted),
             ),
           ),
         ),

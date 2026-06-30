@@ -10,6 +10,9 @@ class PlayerMeta {
   final List<String> achievements;
   final Map<String, String> cosmetics;
   final int seasonWins;
+  final int tokens;
+  final List<String> unlockedDiscs;
+  final List<String> unlockedBoards;
 
   PlayerMeta({
     required this.quests,
@@ -17,6 +20,9 @@ class PlayerMeta {
     required this.achievements,
     required this.cosmetics,
     required this.seasonWins,
+    required this.tokens,
+    required this.unlockedDiscs,
+    required this.unlockedBoards,
   });
 
   factory PlayerMeta.fromJson(Map<String, dynamic> j) => PlayerMeta(
@@ -27,6 +33,9 @@ class PlayerMeta {
           (j['cosmetics'] as Map?)?.map((k, v) => MapEntry(k.toString(), v.toString())) ?? {},
         ),
         seasonWins: (j['seasonWins'] as num?)?.toInt() ?? 0,
+        tokens: (j['tokens'] as num?)?.toInt() ?? 0,
+        unlockedDiscs: (j['unlockedDiscs'] as List?)?.map((e) => e.toString()).toList() ?? [],
+        unlockedBoards: (j['unlockedBoards'] as List?)?.map((e) => e.toString()).toList() ?? [],
       );
 
   bool get questsComplete =>
@@ -134,6 +143,81 @@ class MetaApi {
 
   static Future<void> saveCosmetics(String uid, Map<String, String> cosmetics) async {
     await postMeta(uid, {'cosmetics': cosmetics});
+  }
+
+  static Future<({PlayerMeta? meta, int? tokenGain, String? error})> earnWinTokens(String uid) async {
+    try {
+      final res = await http
+          .post(
+            Uri.parse('${apiBaseUrl}/meta/$uid'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'action': 'earn_win'}),
+          )
+          .timeout(const Duration(seconds: 8));
+      final j = jsonDecode(res.body) as Map<String, dynamic>;
+      if (res.statusCode != 200) {
+        return (meta: null, tokenGain: null, error: j['error'] as String? ?? 'Hata');
+      }
+      final meta = j['meta'];
+      return (
+        meta: meta is Map<String, dynamic> ? PlayerMeta.fromJson(meta) : null,
+        tokenGain: (j['tokenGain'] as num?)?.toInt(),
+        error: null,
+      );
+    } catch (_) {
+      return (meta: null, tokenGain: null, error: 'Bağlantı hatası');
+    }
+  }
+
+  static Future<({PlayerMeta? meta, int? tokenGain, String? error})> rewardAdTokens(String uid) async {
+    try {
+      final res = await http
+          .post(
+            Uri.parse('${apiBaseUrl}/meta/$uid'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'action': 'reward_ad'}),
+          )
+          .timeout(const Duration(seconds: 8));
+      final j = jsonDecode(res.body) as Map<String, dynamic>;
+      if (res.statusCode != 200) {
+        return (meta: null, tokenGain: null, error: j['error'] as String? ?? 'Hata');
+      }
+      final meta = j['meta'];
+      return (
+        meta: meta is Map<String, dynamic> ? PlayerMeta.fromJson(meta) : null,
+        tokenGain: (j['tokenGain'] as num?)?.toInt(),
+        error: null,
+      );
+    } catch (_) {
+      return (meta: null, tokenGain: null, error: 'Bağlantı hatası');
+    }
+  }
+
+  static Future<({PlayerMeta? meta, String? error})> purchaseCosmetic(
+    String uid, {
+    required String itemType,
+    required String itemId,
+  }) async {
+    try {
+      final res = await http
+          .post(
+            Uri.parse('${apiBaseUrl}/meta/$uid'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'action': 'purchase', 'itemType': itemType, 'itemId': itemId}),
+          )
+          .timeout(const Duration(seconds: 8));
+      final j = jsonDecode(res.body) as Map<String, dynamic>;
+      if (res.statusCode != 200) {
+        return (meta: null, error: j['error'] as String? ?? 'Satın alınamadı');
+      }
+      final meta = j['meta'];
+      return (
+        meta: meta is Map<String, dynamic> ? PlayerMeta.fromJson(meta) : null,
+        error: null,
+      );
+    } catch (_) {
+      return (meta: null, error: 'Bağlantı hatası');
+    }
   }
 
   static Future<void> saveFcmToken(String uid, String token) async {

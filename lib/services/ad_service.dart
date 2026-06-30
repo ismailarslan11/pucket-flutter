@@ -15,6 +15,8 @@ class AdService extends ChangeNotifier {
 
   InterstitialAd? _interstitial;
   bool _loadingInterstitial = false;
+  RewardedAd? _rewarded;
+  bool _loadingRewarded = false;
   int _initRetries = 0;
 
   static const _minInterval = Duration(minutes: 3);
@@ -48,6 +50,7 @@ class AdService extends ChangeNotifier {
       statusMessage = 'Reklamlar aktif$mode · ${AdConfig.bannerUnitId.split('/').last}';
       _initRetries = 0;
       preloadInterstitial();
+      preloadRewarded();
     } else {
       statusMessage = 'Rıza gerekli — Ayarlar → Reklam gizlilik tercihleri';
       _scheduleRetry();
@@ -158,9 +161,70 @@ class AdService extends ChangeNotifier {
 
   Future<void> showInterstitialOnMenuReturn() async {}
 
+  void preloadRewarded() {
+    if (!AdConfig.supported || !initialized || !canLoadAds) return;
+    if (_loadingRewarded || _rewarded != null) return;
+    final unitId = AdConfig.rewardedUnitId;
+    if (unitId.isEmpty) return;
+
+    _loadingRewarded = true;
+    RewardedAd.load(
+      adUnitId: unitId,
+      request: const AdRequest(),
+      rewardedAdLoadCallback: RewardedAdLoadCallback(
+        onAdLoaded: (ad) {
+          _rewarded = ad;
+          _loadingRewarded = false;
+          ad.fullScreenContentCallback = FullScreenContentCallback(
+            onAdDismissedFullScreenContent: (ad) {
+              ad.dispose();
+              _rewarded = null;
+              preloadRewarded();
+            },
+            onAdFailedToShowFullScreenContent: (ad, _) {
+              ad.dispose();
+              _rewarded = null;
+              preloadRewarded();
+            },
+          );
+        },
+        onAdFailedToLoad: (error) {
+          debugPrint('Rewarded load failed: ${error.message}');
+          _loadingRewarded = false;
+          Future.delayed(const Duration(seconds: 30), preloadRewarded);
+        },
+      ),
+    );
+  }
+
+  /// Ödüllü reklam izlendikten sonra [onReward] çağrılır.
+  Future<bool> showRewardedForTokens({required VoidCallback onReward}) async {
+    if (!AdConfig.supported || !initialized || !canLoadAds) return false;
+
+    final ad = _rewarded;
+    if (ad == null) {
+      preloadRewarded();
+      return false;
+    }
+
+    var rewarded = false;
+    _rewarded = null;
+    await ad.show(
+      onUserEarnedReward: (_, __) {
+        rewarded = true;
+        onReward();
+      },
+    );
+    preloadRewarded();
+    return rewarded;
+  }
+
+  bool get rewardedReady => _rewarded != null;
+
   @override
   void dispose() {
     _interstitial?.dispose();
+    _rewarded?.dispose();
     super.dispose();
   }
 }

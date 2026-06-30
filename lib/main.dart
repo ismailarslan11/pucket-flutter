@@ -25,6 +25,7 @@ import 'services/firebase_init.dart';
 import 'services/settings_service.dart';
 import 'services/deep_link_service.dart';
 import 'services/deep_link_listener.dart';
+import 'services/disc_image_cache.dart';
 import 'services/player_meta_service.dart';
 import 'services/firebase_messaging_background.dart';
 import 'services/push_service.dart';
@@ -41,12 +42,7 @@ void main() async {
   await initFirebaseIfConfigured();
   if (firebaseEnabled) {
     FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-    // Android'de token/topic kurulumu tamamlansın; iOS simülatörde bloklamasın.
-    if (defaultTargetPlatform == TargetPlatform.android) {
-      await PushService.setup();
-    } else if (defaultTargetPlatform == TargetPlatform.iOS) {
-      unawaited(PushService.setup());
-    }
+    await PushService.setup();
   }
 
   final settings = SettingsService();
@@ -67,6 +63,7 @@ void main() async {
     await ConsentService.ensureConsent();
   }
   await ads.init();
+  await DiscImageCache.preload();
 
   runApp(
     MultiProvider(
@@ -214,7 +211,7 @@ class _Splash extends StatelessWidget {
             children: [
               PucketLogo(height: 160, showTagline: true),
               SizedBox(height: 28),
-              CircularProgressIndicator(color: AppColors.purple),
+              CircularProgressIndicator(color: AppColors.brandBlue),
             ],
           ),
         ),

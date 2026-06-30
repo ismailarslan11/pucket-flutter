@@ -23,13 +23,7 @@ class TrainingScreen extends StatelessWidget {
 
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: RadialGradient(
-            center: Alignment(0, -0.4),
-            radius: 1.2,
-            colors: [Color(0xFF1A3A08), AppColors.bg],
-          ),
-        ),
+        decoration: const BoxDecoration(gradient: AppGradients.screenBg),
         child: SafeArea(
           child: Column(
             children: [
@@ -37,7 +31,7 @@ class TrainingScreen extends StatelessWidget {
                 alignment: Alignment.centerLeft,
                 child: IconButton(
                   onPressed: () => _goBack(context),
-                  icon: const Icon(Icons.arrow_back, color: Color(0xFF888888)),
+                  icon: const Icon(Icons.arrow_back, color: AppColors.textMuted),
                 ),
               ),
               Expanded(
@@ -68,7 +62,7 @@ class TrainingScreen extends StatelessWidget {
                                 l10n.trainingDesc,
                                 textAlign: TextAlign.center,
                                 style: const TextStyle(
-                                  color: Color(0xFF888888),
+                                  color: AppColors.textMuted,
                                   fontSize: 13,
                                   height: 1.5,
                                   letterSpacing: 0.5,
@@ -86,8 +80,8 @@ class TrainingScreen extends StatelessWidget {
                             PucketButton(
                               label: l10n.trainingDefense,
                               subtitle: l10n.trainingGoalDefense,
-                              color: const Color(0xFFE67E22),
-                              shadowColor: const Color(0xFFCA6F1E),
+                              color: AppColors.brandOrange,
+                              shadowColor: AppColors.darkOrange,
                               width: 280,
                               onPressed: () => AppRouter.startTraining(context, TrainingType.defense),
                             ),
@@ -95,8 +89,8 @@ class TrainingScreen extends StatelessWidget {
                             PucketButton(
                               label: l10n.trainingFull,
                               subtitle: l10n.trainingGoalFull,
-                              color: const Color(0xFF7D5BA6),
-                              shadowColor: const Color(0xFF5A3F7A),
+                              color: AppColors.nightBlue,
+                              shadowColor: AppColors.bgDeep,
                               width: 280,
                               onPressed: () => AppRouter.startTraining(
                                 context,

@@ -5,6 +5,8 @@ import 'game_constants.dart';
 import 'training_layout.dart';
 
 class PhysicsEngine {
+  static const _solverPasses = 3;
+
   static double clamp(double v, double a, double b) =>
       math.max(a, math.min(b, v));
 
@@ -82,8 +84,6 @@ class PhysicsEngine {
 
   static void stepPhysics(List<Disc> discs) {
     final dr = GameConstants.discRadius;
-    final wallTop = GameConstants.wallTop;
-    final wallBot = GameConstants.wallBottom;
 
     for (final d in discs) {
       d.vx += d.vvx;
@@ -92,117 +92,215 @@ class PhysicsEngine {
       d.vvy *= GameConstants.friction;
       if (d.vvx.abs() < 0.03) d.vvx = 0;
       if (d.vvy.abs() < 0.03) d.vvy = 0;
+    }
 
-      if (d.vx < dr) {
-        d.vx = dr;
-        d.vvx = d.vvx.abs() * GameConstants.restitution;
-      }
-      if (d.vx > GameConstants.vw - dr) {
-        d.vx = GameConstants.vw - dr;
-        d.vvx = -d.vvx.abs() * GameConstants.restitution;
-      }
-      if (d.vy < dr) {
-        d.vy = dr;
-        d.vvy = d.vvy.abs() * GameConstants.restitution;
-      }
-      if (d.vy > GameConstants.vh - dr) {
-        d.vy = GameConstants.vh - dr;
-        d.vvy = -d.vvy.abs() * GameConstants.restitution;
-      }
-
-      if (_blockedByMidWall(d)) {
-        if (d.vvy > 0 && d.vy < GameConstants.vHalf) {
-          d.vy = wallTop - dr;
-          d.vvy = -d.vvy.abs() * GameConstants.restitution;
-        } else if (d.vvy < 0 && d.vy > GameConstants.vHalf) {
-          d.vy = wallBot + dr;
-          d.vvy = d.vvy.abs() * GameConstants.restitution;
-        } else if (d.vvy.abs() < 0.5) {
-          if (d.vy < GameConstants.vHalf) {
-            d.vy = wallTop - dr;
-          } else {
-            d.vy = wallBot + dr;
-          }
+    for (var pass = 0; pass < _solverPasses; pass++) {
+      for (var i = 0; i < discs.length; i++) {
+        for (var j = i + 1; j < discs.length; j++) {
+          _resolveDiscPair(discs[i], discs[j], dr);
         }
+      }
+      for (final d in discs) {
+        _resolveMidWall(d, dr);
+        _resolveOuterBounds(d, dr);
+      }
+    }
+  }
+
+  static void _resolveOuterBounds(Disc d, double dr) {
+    if (d.vx < dr) {
+      d.vx = dr;
+      d.vvx = d.vvx.abs() * GameConstants.restitution;
+    }
+    if (d.vx > GameConstants.vw - dr) {
+      d.vx = GameConstants.vw - dr;
+      d.vvx = -d.vvx.abs() * GameConstants.restitution;
+    }
+    if (d.vy < dr) {
+      d.vy = dr;
+      d.vvy = d.vvy.abs() * GameConstants.restitution;
+    }
+    if (d.vy > GameConstants.vh - dr) {
+      d.vy = GameConstants.vh - dr;
+      d.vvy = -d.vvy.abs() * GameConstants.restitution;
+    }
+  }
+
+  /// Sol/sağ duvar blokları — görsel hitbox ile aynı dikdörtgenler.
+  static void _resolveMidWall(Disc d, double dr) {
+    _resolveCircleWallBar(
+      d,
+      dr,
+      left: 0,
+      top: GameConstants.wallTop,
+      right: GameConstants.gapX,
+      bottom: GameConstants.wallBottom,
+      pushRight: true,
+    );
+    _resolveCircleWallBar(
+      d,
+      dr,
+      left: GameConstants.gapX + GameConstants.gapW,
+      top: GameConstants.wallTop,
+      right: GameConstants.vw,
+      bottom: GameConstants.wallBottom,
+      pushRight: false,
+    );
+  }
+
+  static void _resolveCircleWallBar(
+    Disc d,
+    double r, {
+    required double left,
+    required double top,
+    required double right,
+    required double bottom,
+    required bool pushRight,
+  }) {
+    if (d.vy + r <= top || d.vy - r >= bottom) return;
+
+    final closestX = clamp(d.vx, left, right);
+    final closestY = clamp(d.vy, top, bottom);
+    var dx = d.vx - closestX;
+    var dy = d.vy - closestY;
+    final distSq = dx * dx + dy * dy;
+    final rSq = r * r;
+    if (distSq >= rSq) return;
+
+    double nx;
+    double ny;
+    double penetration;
+
+    if (distSq < 1e-8) {
+      nx = pushRight ? 1 : -1;
+      ny = 0;
+      penetration = pushRight ? (left + (right - left) + r - d.vx) : (d.vx - left + r);
+      if (penetration < 0) penetration = r;
+    } else {
+      final dist = math.sqrt(distSq);
+      nx = dx / dist;
+      ny = dy / dist;
+      penetration = r - dist;
+      if (pushRight && nx < 0) {
+        nx = 1;
+        ny = 0;
+      } else if (!pushRight && nx > 0) {
+        nx = -1;
+        ny = 0;
       }
     }
 
-    for (var i = 0; i < discs.length; i++) {
-      for (var j = i + 1; j < discs.length; j++) {
-        final a = discs[i];
-        final b = discs[j];
-        final dx = b.vx - a.vx;
-        final dy = b.vy - a.vy;
-        final dist = math.sqrt(dx * dx + dy * dy);
-        if (dist < dr * 2 && dist > 0) {
-          final nx = dx / dist;
-          final ny = dy / dist;
-          final overlap = dr * 2 - dist;
-          a.vx -= nx * overlap / 2;
-          a.vy -= ny * overlap / 2;
-          b.vx += nx * overlap / 2;
-          b.vy += ny * overlap / 2;
-          final dot = (b.vvx - a.vvx) * nx + (b.vvy - a.vvy) * ny;
-          if (dot < 0) {
-            a.vvx += dot * GameConstants.restitution * nx;
-            a.vvy += dot * GameConstants.restitution * ny;
-            b.vvx -= dot * GameConstants.restitution * nx;
-            b.vvy -= dot * GameConstants.restitution * ny;
-          }
-        }
-      }
+    d.vx += nx * penetration;
+    d.vy += ny * penetration;
+
+    final vDot = d.vvx * nx + d.vvy * ny;
+    if (vDot < 0) {
+      final bounce = (1 + GameConstants.restitution) * vDot;
+      d.vvx -= bounce * nx;
+      d.vvy -= bounce * ny;
+    }
+  }
+
+  static void _resolveDiscPair(Disc a, Disc b, double dr) {
+    var dx = b.vx - a.vx;
+    var dy = b.vy - a.vy;
+    var dist = math.sqrt(dx * dx + dy * dy);
+    if (dist >= dr * 2) return;
+
+    if (dist < 1e-6) {
+      dx = 0;
+      dy = 1;
+      dist = 1;
+    }
+
+    final nx = dx / dist;
+    final ny = dy / dist;
+    final overlap = dr * 2 - dist;
+    a.vx -= nx * overlap / 2;
+    a.vy -= ny * overlap / 2;
+    b.vx += nx * overlap / 2;
+    b.vy += ny * overlap / 2;
+
+    final dot = (b.vvx - a.vvx) * nx + (b.vvy - a.vvy) * ny;
+    if (dot < 0) {
+      a.vvx += dot * GameConstants.restitution * nx;
+      a.vvy += dot * GameConstants.restitution * ny;
+      b.vvx -= dot * GameConstants.restitution * nx;
+      b.vvy -= dot * GameConstants.restitution * ny;
     }
   }
 
   static const int discsPerPlayer = 5;
 
-  static bool _blockedByMidWall(Disc d) {
+  static bool overlapsLeftWall(Disc d) => _overlapsWallBar(
+        d,
+        left: 0,
+        right: GameConstants.gapX,
+      );
+
+  static bool overlapsRightWall(Disc d) => _overlapsWallBar(
+        d,
+        left: GameConstants.gapX + GameConstants.gapW,
+        right: GameConstants.vw,
+      );
+
+  static bool _overlapsWallBar(
+    Disc d, {
+    required double left,
+    required double right,
+  }) {
+    return _circleOverlapsRect(
+      d.vx,
+      d.vy,
+      GameConstants.discRadius,
+      left,
+      GameConstants.wallTop,
+      right,
+      GameConstants.wallBottom,
+    );
+  }
+
+  static bool discsOverlap(Disc a, Disc b) {
     final dr = GameConstants.discRadius;
-    final wt = GameConstants.wallTop;
-    final wb = GameConstants.wallBottom;
+    final dx = b.vx - a.vx;
+    final dy = b.vy - a.vy;
+    return dx * dx + dy * dy < (dr * 2 - 0.5) * (dr * 2 - 0.5);
+  }
 
-    if (d.vy + dr <= wt || d.vy - dr >= wb) return false;
-
-    final gx0 = GameConstants.gapX;
-    final gx1 = GameConstants.gapX + GameConstants.gapW;
-    final gy0 = GameConstants.gapY;
-    final gy1 = GameConstants.gapY + GameConstants.gapH;
-
-    // Sol / sağ duvar segmentleri
-    if (d.vx + dr <= gx0 || d.vx - dr >= gx1) return true;
-
-    // Kapı sütunu: yalnızca açıklıktan geçerken serbest
-    final centerInGate = d.vx > gx0 && d.vx < gx1 && d.vy > gy0 && d.vy < gy1;
-    if (centerInGate) return false;
-
-    final crossingGate =
-        d.vx > gx0 && d.vx < gx1 && (d.vy - GameConstants.vHalf).abs() < dr;
-    if (crossingGate) return false;
-
-    // Kapının üst/alt kapakları (turuncu işaretli köşeler)
-    return true;
+  static bool _circleOverlapsRect(
+    double cx,
+    double cy,
+    double r,
+    double left,
+    double top,
+    double right,
+    double bottom,
+  ) {
+    final closestX = clamp(cx, left, right);
+    final closestY = clamp(cy, top, bottom);
+    final dx = cx - closestX;
+    final dy = cy - closestY;
+    return dx * dx + dy * dy < r * r;
   }
 
   static bool inGateZone(Disc d) {
+    final dr = GameConstants.discRadius;
     final inGapX = d.vx > GameConstants.gapX && d.vx < GameConstants.gapX + GameConstants.gapW;
-    final nearMid = (d.vy - GameConstants.vHalf).abs() < GameConstants.discRadius + GameConstants.gapH / 2;
-    return inGapX && nearMid;
+    final inGapY = d.vy + dr > GameConstants.gapY && d.vy - dr < GameConstants.gapY + GameConstants.gapH;
+    return inGapX && inGapY;
   }
 
   static bool isStopped(Disc d) =>
       d.vvx.abs() < 0.12 && d.vvy.abs() < 0.12;
 
-  /// Pul üst yarıyı işgal ediyor mu?
   static bool occupiesTop(Disc d) {
     final dr = GameConstants.discRadius;
     if (inGateZone(d)) {
-      // Kapıdan geçerken durmayı bekleme — merkez çizgisine göre yarı ata
       return d.vy <= GameConstants.vHalf;
     }
     return d.vy - dr < GameConstants.vHalf;
   }
 
-  /// Pul alt yarıyı işgal ediyor mu?
   static bool occupiesBottom(Disc d) {
     final dr = GameConstants.discRadius;
     if (inGateZone(d)) {
@@ -214,16 +312,41 @@ class PhysicsEngine {
   static bool allStopped(List<Disc> discs) => discs.every(isStopped);
 
   static void settleGateDiscs(List<Disc> discs) {
-    for (final d in discs) {
-      if (!inGateZone(d) || !isStopped(d)) continue;
-      // Kapıda takılı pulları hafifçe geçir — yarım boş kalabilsin
-      if (d.vy < GameConstants.vHalf) {
-        d.vy = GameConstants.vHalf - GameConstants.discRadius - 2;
-      } else {
-        d.vy = GameConstants.vHalf + GameConstants.discRadius + 2;
+    if (!allStopped(discs)) return;
+
+    final dr = GameConstants.discRadius;
+    final minSep = dr * 2 + 1;
+
+    for (var pass = 0; pass < 4; pass++) {
+      for (var i = 0; i < discs.length; i++) {
+        for (var j = i + 1; j < discs.length; j++) {
+          _resolveDiscPair(discs[i], discs[j], dr);
+        }
       }
+      for (final d in discs) {
+        _resolveMidWall(d, dr);
+      }
+    }
+
+    final gateDiscs = discs.where(inGateZone).toList()
+      ..sort((a, b) => a.vy.compareTo(b.vy));
+
+    for (var i = 1; i < gateDiscs.length; i++) {
+      final prev = gateDiscs[i - 1];
+      final cur = gateDiscs[i];
+      if (cur.vy - prev.vy < minSep) {
+        cur.vy = prev.vy + minSep;
+      }
+    }
+
+    for (final d in gateDiscs) {
+      final target = d.vy < GameConstants.vHalf
+          ? GameConstants.vHalf - dr - 2
+          : GameConstants.vHalf + dr + 2;
+      d.vy += clamp(target - d.vy, -4.0, 4.0);
       d.vvx = 0;
       d.vvy = 0;
+      _resolveMidWall(d, dr);
     }
   }
 
@@ -233,9 +356,7 @@ class PhysicsEngine {
     final topEmpty = !discs.any(occupiesTop);
     final bottomEmpty = !discs.any(occupiesBottom);
 
-    // Alt yarı tamamen boş → kırmızı kazandı
     if (bottomEmpty) return 0;
-    // Üst yarı tamamen boş → mavi kazandı
     if (topEmpty) return 1;
 
     return null;
@@ -246,6 +367,24 @@ class PhysicsEngine {
       final d = discs[i];
       if (mySeat == 0 && d.vy < GameConstants.vHalf) continue;
       if (mySeat == 1 && d.vy >= GameConstants.vHalf) continue;
+      final dx = x - d.vx;
+      final dy = y - d.vy;
+      if (dx * dx + dy * dy < (GameConstants.discRadius + 14) * (GameConstants.discRadius + 14)) {
+        return i;
+      }
+    }
+    return -1;
+  }
+
+  /// 2 kişilik mod: üst yarı mavi, alt yarı kırmızı — aynı anda oynanır.
+  static int findDiscAtLocalDuo(List<Disc> discs, double x, double y) {
+    for (var i = discs.length - 1; i >= 0; i--) {
+      final d = discs[i];
+      if (y < GameConstants.vHalf) {
+        if (d.owner != 1) continue;
+      } else {
+        if (d.owner != 0) continue;
+      }
       final dx = x - d.vx;
       final dy = y - d.vy;
       if (dx * dx + dy * dy < (GameConstants.discRadius + 14) * (GameConstants.discRadius + 14)) {

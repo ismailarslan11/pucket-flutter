@@ -4,9 +4,9 @@ class GameConstants {
   static const double vHalf = vh / 2;
   static const double gapW = 72;
   static const double gapX = (vw - gapW) / 2;
-  static const double gapY = vHalf - 5;
-  static const double gapH = 10;
   static const double wallHalfH = 8;
+  static const double gapY = vHalf - wallHalfH;
+  static const double gapH = wallHalfH * 2;
   static const double wallTop = vHalf - wallHalfH;
   static const double wallBottom = vHalf + wallHalfH;
   static const double discRadius = 22;

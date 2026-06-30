@@ -12,54 +12,51 @@ class PucketLogo extends StatelessWidget {
 
   static const assetPath = 'assets/images/pucket_logo.png';
   static const iconPath = 'assets/images/app_icon.png';
+  static const _logoAspect = 1024 / 558;
 
   final double height;
+  /// Eski marka alt satırı; yeni logo kendi yazısını içerir.
   final bool showTagline;
   /// Küçük ikon (app icon) — duraklatma menüsü vb.
   final bool compact;
 
   @override
   Widget build(BuildContext context) {
-    final useIcon = compact || (!showTagline && height <= 72);
-    final path = useIcon ? iconPath : assetPath;
+    final useIcon = compact || height <= 56;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         DecoratedBox(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(useIcon ? height * 0.22 : 20),
+            borderRadius: BorderRadius.circular(useIcon ? height * 0.22 : 16),
             boxShadow: [
               BoxShadow(
-                color: AppColors.purple.withValues(alpha: 0.25),
-                blurRadius: useIcon ? 12 : 24,
-                offset: Offset(0, useIcon ? 4 : 8),
+                color: AppColors.brandBlue.withValues(alpha: 0.22),
+                blurRadius: useIcon ? 12 : 28,
+                offset: Offset(0, useIcon ? 4 : 10),
               ),
             ],
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(useIcon ? height * 0.22 : 20),
+            borderRadius: BorderRadius.circular(useIcon ? height * 0.22 : 16),
             child: Image.asset(
-              path,
+              useIcon ? iconPath : assetPath,
               height: height,
-              width: useIcon ? height : null,
+              width: useIcon ? height : height * _logoAspect,
               fit: BoxFit.contain,
-              errorBuilder: (context, error, stackTrace) => _fallback(height),
+              errorBuilder: (context, error, stackTrace) => _fallback(height, useIcon),
             ),
           ),
         ),
-        if (showTagline) ...[
-          const SizedBox(height: 10),
-          const _BrandTagline(),
-        ],
       ],
     );
   }
 
-  Widget _fallback(double h) {
+  Widget _fallback(double h, bool square) {
     return Container(
       height: h,
-      width: h,
+      width: square ? h : h * _logoAspect,
       alignment: Alignment.center,
       decoration: BoxDecoration(
         gradient: AppGradients.brand,
@@ -72,24 +69,6 @@ class PucketLogo extends StatelessWidget {
           fontWeight: FontWeight.w900,
           color: Colors.white,
         ),
-      ),
-    );
-  }
-}
-
-class _BrandTagline extends StatelessWidget {
-  const _BrandTagline();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Text.rich(
-      TextSpan(
-        style: TextStyle(fontSize: 11, letterSpacing: 2, fontWeight: FontWeight.w700),
-        children: [
-          TextSpan(text: 'PLAY. ', style: TextStyle(color: AppColors.purple)),
-          TextSpan(text: 'POCKET. ', style: TextStyle(color: AppColors.pink)),
-          TextSpan(text: 'WIN.', style: TextStyle(color: AppColors.cyan)),
-        ],
       ),
     );
   }

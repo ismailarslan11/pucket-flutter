@@ -23,7 +23,7 @@ class AudioService extends ChangeNotifier {
 
   Future<void> playMenuMusic() => _playMusic(MusicTrack.menu, 'sounds/menu.wav');
 
-  Future<void> playGameMusic() => _playMusic(MusicTrack.game, 'sounds/game.wav');
+  Future<void> playGameMusic() => _playMusic(MusicTrack.game, 'sounds/muzik.mp3');
 
   Future<void> _playMusic(MusicTrack track, String asset) async {
     if (!settings.musicOn) return;

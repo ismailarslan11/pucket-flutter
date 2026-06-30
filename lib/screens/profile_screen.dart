@@ -93,10 +93,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(user.name, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
-                            Text('${tier.emoji} ${l10n.tierName(tier)} • ${user.elo} ELO',
+                            Text('${l10n.tierName(tier)} • ${user.elo} ELO',
                                 style: TextStyle(color: tier.color, fontSize: 12)),
                             Text('${user.wins}${l10n.winsLosses} ${user.losses}M • ${user.matches}',
-                                style: const TextStyle(color: Color(0xFF666666), fontSize: 11)),
+                                style: const TextStyle(color: AppColors.textMuted, fontSize: 11)),
                             if (meta.season != null)
                               Text(
                                 '${l10n.seasonLabel(meta.season!.name)} · ${meta.meta?.seasonWins ?? 0} ${l10n.seasonWins}',
@@ -143,7 +143,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(color: AppColors.border),
                     ),
-                    child: Text(l10n.noHistory, style: const TextStyle(color: Color(0xFF666666), height: 1.4)),
+                    child: Text(l10n.noHistory, style: const TextStyle(color: AppColors.textMuted, height: 1.4)),
                   )
                 else
                   ..._history.map((m) => Container(
@@ -156,7 +156,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                         child: Row(
                           children: [
-                            Text(m.won ? '✅' : '❌', style: const TextStyle(fontSize: 18)),
+                            Text(m.won ? 'G' : 'M', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: m.won ? AppColors.green : AppColors.red)),
                             const SizedBox(width: 10),
                             Expanded(
                               child: Column(
@@ -166,7 +166,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
                                   Text(
                                     '${m.ranked ? l10n.rankedLabel : l10n.casualLabel}${m.timestamp > 0 ? ' · ${_formatTime(m.timestamp)}' : ''}',
-                                    style: const TextStyle(color: Color(0xFF555555), fontSize: 10),
+                                    style: const TextStyle(color: AppColors.textDim, fontSize: 10),
                                   ),
                                 ],
                               ),

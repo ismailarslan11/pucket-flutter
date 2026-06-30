@@ -159,13 +159,7 @@ class _QueueScreenState extends State<QueueScreen> {
     return Scaffold(
       body: SizedBox.expand(
         child: Container(
-          decoration: const BoxDecoration(
-            gradient: RadialGradient(
-              center: Alignment(0, -0.3),
-              radius: 1.2,
-              colors: [Color(0xFF1A1035), AppColors.bg],
-            ),
-          ),
+          decoration: const BoxDecoration(gradient: AppGradients.screenBg),
           child: SafeArea(
             child: LayoutBuilder(
               builder: (context, constraints) {
@@ -181,7 +175,7 @@ class _QueueScreenState extends State<QueueScreen> {
                           style: const TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.w900,
-                            color: AppColors.purple,
+                            color: AppColors.brandBlue,
                             letterSpacing: 3,
                           ),
                         ),
@@ -210,7 +204,7 @@ class _QueueScreenState extends State<QueueScreen> {
                                   ),
                                 Text(
                                   l10n.queueYourElo,
-                                  style: const TextStyle(fontSize: 9, color: Color(0xFF555555), letterSpacing: 3),
+                                  style: const TextStyle(fontSize: 9, color: AppColors.textDim, letterSpacing: 3),
                                 ),
                                 Text(
                                   '${user?.elo ?? 1000}',
@@ -224,7 +218,7 @@ class _QueueScreenState extends State<QueueScreen> {
                                     border: Border.all(color: tier.color),
                                   ),
                                   child: Text(
-                                    '${tier.emoji} ${tier.name}',
+                                    tier.name,
                                     style: TextStyle(color: tier.color, fontWeight: FontWeight.w700, fontSize: 11),
                                   ),
                                 ),
@@ -232,7 +226,7 @@ class _QueueScreenState extends State<QueueScreen> {
                                 Text(
                                   _status.isEmpty ? l10n.queueSearching : _status,
                                   textAlign: TextAlign.center,
-                                  style: const TextStyle(color: Color(0xFF666666), fontSize: 12),
+                                  style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
                                 ),
                                 if (_showPreview) ...[
                                   const SizedBox(height: 14),
@@ -273,7 +267,7 @@ class _QueueScreenState extends State<QueueScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFF111111),
+        color: AppColors.bgDeep,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: AppColors.border),
       ),
@@ -282,20 +276,20 @@ class _QueueScreenState extends State<QueueScreen> {
           Expanded(
             child: Column(
               children: [
-                Text(l10n.youLabel, style: const TextStyle(fontSize: 9, color: Color(0xFF555555))),
+                Text(l10n.youLabel, style: const TextStyle(fontSize: 9, color: AppColors.textDim)),
                 Text('$myElo', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: AppColors.red)),
-                Text(myTier.name, style: const TextStyle(fontSize: 10, color: Color(0xFF666666)), maxLines: 1, overflow: TextOverflow.ellipsis),
+                Text(myTier.name, style: const TextStyle(fontSize: 10, color: AppColors.textMuted), maxLines: 1, overflow: TextOverflow.ellipsis),
               ],
             ),
           ),
-          const Text('VS', style: TextStyle(fontWeight: FontWeight.w900, color: Color(0xFF333333))),
+          const Text('VS', style: TextStyle(fontWeight: FontWeight.w900, color: AppColors.borderSubtle)),
           Expanded(
             child: Column(
               children: [
-                Text(l10n.opponent, style: const TextStyle(fontSize: 9, color: Color(0xFF555555))),
-                Text(oppName, style: const TextStyle(fontSize: 10, color: Color(0xFF888888)), textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis),
+                Text(l10n.opponent, style: const TextStyle(fontSize: 9, color: AppColors.textDim)),
+                Text(oppName, style: const TextStyle(fontSize: 10, color: AppColors.textMuted), textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis),
                 Text('$oppElo', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: AppColors.blue)),
-                Text(oppTier.name, style: const TextStyle(fontSize: 10, color: Color(0xFF666666)), maxLines: 1, overflow: TextOverflow.ellipsis),
+                Text(oppTier.name, style: const TextStyle(fontSize: 10, color: AppColors.textMuted), maxLines: 1, overflow: TextOverflow.ellipsis),
               ],
             ),
           ),
