@@ -142,8 +142,10 @@ class _UsernameScreenState extends State<UsernameScreen> {
                     style: const TextStyle(color: Color(0xFF666666), fontSize: 12),
                   ),
                   const SizedBox(height: 24),
-                  Container(
-                    width: 300,
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 340),
+                    child: Container(
+                    width: double.infinity,
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
                       color: AppColors.card,
@@ -231,6 +233,7 @@ class _UsernameScreenState extends State<UsernameScreen> {
                         ),
                       ],
                     ),
+                  ),
                   ),
                 ],
               ),

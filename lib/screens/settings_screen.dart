@@ -107,7 +107,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const SizedBox(height: 16),
                   PucketButton(
                     label: l10n.saveAndBack,
-                    width: 260,
+                    width: double.infinity,
                     onPressed: () {
                       context.read<AudioService>().onSettingsChanged();
                       Navigator.pop(context);

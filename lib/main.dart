@@ -134,7 +134,7 @@ class PucketApp extends StatelessWidget {
                     final h = constraints.maxHeight;
                     // BlueStacks / geniş ekran: içeriği ortala, arka plan tüm alanı kaplasın
                     if (w > h * 0.72) {
-                      final phoneWidth = h * 0.56;
+                      final phoneWidth = (h * 0.56).clamp(280.0, 420.0);
                       return Center(
                         child: SizedBox(
                           width: phoneWidth,

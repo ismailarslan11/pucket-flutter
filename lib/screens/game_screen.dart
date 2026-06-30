@@ -359,50 +359,60 @@ class _GameScreenState extends State<GameScreen> {
       ),
       child: Row(
         children: [
-          Expanded(child: _scoreBox(lbl0, game.roundWins[0], AppColors.red)),
+          Expanded(child: _scoreBox(lbl0, game.roundWins[0], AppColors.red, alignEnd: false)),
           if (game.careerMode || game.isBotFallback || game.trainingMode || (!game.aiMode && game.opponentName.isNotEmpty))
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 6),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    game.trainingMode
-                        ? l10n.trainingMode
-                        : game.isBotFallback
-                            ? l10n.botFallbackLabel
-                            : game.careerMode
-                                ? l10n.careerMode
-                                : (game.isRanked && !game.isBotFallback ? l10n.ranked : l10n.online),
-                    style: TextStyle(
-                      fontSize: 7,
-                      color: game.careerMode ? AppColors.gold : const Color(0xFF555555),
-                      letterSpacing: 1,
-                      fontWeight: game.careerMode ? FontWeight.w800 : FontWeight.normal,
+            Flexible(
+              flex: 0,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      game.trainingMode
+                          ? l10n.trainingMode
+                          : game.isBotFallback
+                              ? l10n.botFallbackLabel
+                              : game.careerMode
+                                  ? l10n.careerMode
+                                  : (game.isRanked && !game.isBotFallback ? l10n.ranked : l10n.online),
+                      style: TextStyle(
+                        fontSize: 7,
+                        color: game.careerMode ? AppColors.gold : const Color(0xFF555555),
+                        letterSpacing: 1,
+                        fontWeight: game.careerMode ? FontWeight.w800 : FontWeight.normal,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
                     ),
-                  ),
-                  Text(
-                    game.trainingMode
-                        ? (game.trainingGoalLabel.isNotEmpty ? game.trainingGoalLabel : l10n.trainingMode)
-                        : game.isBotFallback
-                            ? l10n.botFallbackEloHint
-                            : game.careerMode
-                                ? game.opponentLeague
-                                : '${game.opponentElo}',
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: game.careerMode ? const Color(0xFF888888) : AppColors.gold,
-                      fontWeight: FontWeight.w800,
+                    Text(
+                      game.trainingMode
+                          ? (game.trainingGoalLabel.isNotEmpty ? game.trainingGoalLabel : l10n.trainingMode)
+                          : game.isBotFallback
+                              ? l10n.botFallbackEloHint
+                              : game.careerMode
+                                  ? game.opponentLeague
+                                  : '${game.opponentElo}',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: game.careerMode ? const Color(0xFF888888) : AppColors.gold,
+                        fontWeight: FontWeight.w800,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           Expanded(
             child: Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                _scoreBox(lbl1, game.roundWins[1], AppColors.blue),
+                Expanded(child: _scoreBox(lbl1, game.roundWins[1], AppColors.blue, alignEnd: true)),
                 IconButton(
                   onPressed: game.phase == GamePhase.gameover
                       ? null
@@ -438,54 +448,58 @@ class _GameScreenState extends State<GameScreen> {
           bottom: BorderSide(color: AppColors.purple.withValues(alpha: 0.2)),
         ),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            'ROUND ${game.currentRound}/3',
-            style: TextStyle(
-              fontSize: 9,
-              fontWeight: FontWeight.w900,
-              color: AppColors.cyan.withValues(alpha: 0.45),
-              letterSpacing: 2,
-            ),
-          ),
-          const SizedBox(width: 8),
-          _pip(game.roundWins[0] > 0, AppColors.red),
-          _pip(game.roundWins[0] > 1, AppColors.red),
-          Container(
-            width: 1,
-            height: 12,
-            margin: const EdgeInsets.symmetric(horizontal: 4),
-            color: const Color(0xFF2A2A2A),
-          ),
-          _pip(game.roundWins[1] > 0, AppColors.blue),
-          _pip(game.roundWins[1] > 1, AppColors.blue),
-          const SizedBox(width: 8),
-          Text(timer, style: const TextStyle(color: AppColors.gold, fontWeight: FontWeight.bold, fontSize: 11)),
-          if (!game.aiMode && game.pingMs != null) ...[
-            const SizedBox(width: 6),
-            PingIndicator(pingMs: game.pingMs),
-          ],
-          if (game.roomCode.isNotEmpty) ...[
-            const SizedBox(width: 8),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
             Text(
-              game.careerMode
-                  ? l10n.careerMode
-                  : game.isBotFallback
-                      ? game.roomCode
-                      : game.aiMode
-                          ? l10n.bot
-                          : game.roomCode,
+              'ROUND ${game.currentRound}/3',
               style: TextStyle(
-                color: game.careerMode ? AppColors.gold : const Color(0xFF444444),
                 fontSize: 9,
-                letterSpacing: 1,
-                fontWeight: game.careerMode ? FontWeight.w800 : FontWeight.normal,
+                fontWeight: FontWeight.w900,
+                color: AppColors.cyan.withValues(alpha: 0.45),
+                letterSpacing: 2,
               ),
             ),
+            const SizedBox(width: 8),
+            _pip(game.roundWins[0] > 0, AppColors.red),
+            _pip(game.roundWins[0] > 1, AppColors.red),
+            Container(
+              width: 1,
+              height: 12,
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              color: const Color(0xFF2A2A2A),
+            ),
+            _pip(game.roundWins[1] > 0, AppColors.blue),
+            _pip(game.roundWins[1] > 1, AppColors.blue),
+            const SizedBox(width: 8),
+            Text(timer, style: const TextStyle(color: AppColors.gold, fontWeight: FontWeight.bold, fontSize: 11)),
+            if (!game.aiMode && game.pingMs != null) ...[
+              const SizedBox(width: 6),
+              PingIndicator(pingMs: game.pingMs),
+            ],
+            if (game.roomCode.isNotEmpty) ...[
+              const SizedBox(width: 8),
+              Text(
+                game.careerMode
+                    ? l10n.careerMode
+                    : game.isBotFallback
+                        ? game.roomCode
+                        : game.aiMode
+                            ? l10n.bot
+                            : game.roomCode,
+                style: TextStyle(
+                  color: game.careerMode ? AppColors.gold : const Color(0xFF444444),
+                  fontSize: 9,
+                  letterSpacing: 1,
+                  fontWeight: game.careerMode ? FontWeight.w800 : FontWeight.normal,
+                ),
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
@@ -503,15 +517,18 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
-  Widget _scoreBox(String label, int score, Color color) {
+  Widget _scoreBox(String label, int score, Color color, {bool alignEnd = false}) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: alignEnd ? CrossAxisAlignment.end : CrossAxisAlignment.start,
       children: [
         Text(
           label,
           style: TextStyle(fontSize: 8, letterSpacing: 1, fontWeight: FontWeight.bold, color: color),
+          maxLines: 1,
           overflow: TextOverflow.ellipsis,
+          textAlign: alignEnd ? TextAlign.right : TextAlign.left,
         ),
         Text(
           '$score',
@@ -524,21 +541,25 @@ class _GameScreenState extends State<GameScreen> {
   Widget _bottomBar(GameController game, l10n) {
     return Container(
       height: 44,
+      padding: const EdgeInsets.symmetric(horizontal: 8),
       decoration: BoxDecoration(
         color: const Color(0xFF0C0818),
         border: Border(
           top: BorderSide(color: AppColors.cyan.withValues(alpha: 0.25)),
         ),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text('🔴 ${game.redRemaining()}', style: const TextStyle(color: AppColors.red, fontWeight: FontWeight.w900, fontSize: 15)),
-          const SizedBox(width: 8),
-          Text(l10n.yourHalf, style: TextStyle(color: AppColors.cyan.withValues(alpha: 0.45), fontSize: 10, letterSpacing: 1)),
-          const SizedBox(width: 8),
-          Text(l10n.discsLeft(game.mySideRemaining()), style: const TextStyle(color: AppColors.gold, fontWeight: FontWeight.w900, fontSize: 15)),
-        ],
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('🔴 ${game.redRemaining()}', style: const TextStyle(color: AppColors.red, fontWeight: FontWeight.w900, fontSize: 15)),
+            const SizedBox(width: 8),
+            Text(l10n.yourHalf, style: TextStyle(color: AppColors.cyan.withValues(alpha: 0.45), fontSize: 10, letterSpacing: 1)),
+            const SizedBox(width: 8),
+            Text(l10n.discsLeft(game.mySideRemaining()), style: const TextStyle(color: AppColors.gold, fontWeight: FontWeight.w900, fontSize: 15)),
+          ],
+        ),
       ),
     );
   }

@@ -20,8 +20,9 @@ class TrainingScreen extends StatelessWidget {
       ),
       body: Padding(
         padding: const EdgeInsets.all(24),
-        child: Column(
-          children: [
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
             Text(
               l10n.trainingDesc,
               style: const TextStyle(color: Color(0xFF888888), height: 1.5),
@@ -44,7 +45,8 @@ class TrainingScreen extends StatelessWidget {
               secondary: true,
               onPressed: () => AppRouter.startTraining(context, TrainingType.full, level: AiLevel.easy),
             ),
-          ],
+            ],
+          ),
         ),
       ),
     );

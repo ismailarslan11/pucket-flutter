@@ -167,90 +167,97 @@ class _QueueScreenState extends State<QueueScreen> {
             ),
           ),
           child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              child: Column(
-                children: [
-                  const Spacer(flex: 2),
-                  Text(
-                    l10n.queueRankedTitle,
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w900,
-                      color: AppColors.purple,
-                      letterSpacing: 3,
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  SizedBox(
-                    width: cardWidth,
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(22),
-                      decoration: BoxDecoration(
-                        color: AppColors.card,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: AppColors.border),
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (_spinning)
-                            const Padding(
-                              padding: EdgeInsets.only(bottom: 14),
-                              child: SizedBox(
-                                width: 32,
-                                height: 32,
-                                child: CircularProgressIndicator(strokeWidth: 3, color: AppColors.green),
-                              ),
-                            ),
-                          Text(
-                            l10n.queueYourElo,
-                            style: const TextStyle(fontSize: 9, color: Color(0xFF555555), letterSpacing: 3),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          l10n.queueRankedTitle,
+                          style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w900,
+                            color: AppColors.purple,
+                            letterSpacing: 3,
                           ),
-                          Text(
-                            '${user?.elo ?? 1000}',
-                            style: const TextStyle(fontSize: 44, fontWeight: FontWeight.w900, color: AppColors.gold),
-                          ),
-                          Container(
-                            margin: const EdgeInsets.only(top: 8),
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        ),
+                        const SizedBox(height: 18),
+                        SizedBox(
+                          width: cardWidth,
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(22),
                             decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: tier.color),
+                              color: AppColors.card,
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(color: AppColors.border),
                             ),
-                            child: Text(
-                              '${tier.emoji} ${tier.name}',
-                              style: TextStyle(color: tier.color, fontWeight: FontWeight.w700, fontSize: 11),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (_spinning)
+                                  const Padding(
+                                    padding: EdgeInsets.only(bottom: 14),
+                                    child: SizedBox(
+                                      width: 32,
+                                      height: 32,
+                                      child: CircularProgressIndicator(strokeWidth: 3, color: AppColors.green),
+                                    ),
+                                  ),
+                                Text(
+                                  l10n.queueYourElo,
+                                  style: const TextStyle(fontSize: 9, color: Color(0xFF555555), letterSpacing: 3),
+                                ),
+                                Text(
+                                  '${user?.elo ?? 1000}',
+                                  style: const TextStyle(fontSize: 44, fontWeight: FontWeight.w900, color: AppColors.gold),
+                                ),
+                                Container(
+                                  margin: const EdgeInsets.only(top: 8),
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: tier.color),
+                                  ),
+                                  child: Text(
+                                    '${tier.emoji} ${tier.name}',
+                                    style: TextStyle(color: tier.color, fontWeight: FontWeight.w700, fontSize: 11),
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  _status.isEmpty ? l10n.queueSearching : _status,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(color: Color(0xFF666666), fontSize: 12),
+                                ),
+                                if (_showPreview) ...[
+                                  const SizedBox(height: 14),
+                                  _vsPreview(_myElo ?? 1000, _oppElo ?? 1000, _oppName ?? l10n.opponent),
+                                ],
+                              ],
                             ),
                           ),
-                          const SizedBox(height: 12),
-                          Text(
-                            _status.isEmpty ? l10n.queueSearching : _status,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(color: Color(0xFF666666), fontSize: 12),
-                          ),
-                          if (_showPreview) ...[
-                            const SizedBox(height: 14),
-                            _vsPreview(_myElo ?? 1000, _oppElo ?? 1000, _oppName ?? l10n.opponent),
-                          ],
-                        ],
-                      ),
+                        ),
+                        const SizedBox(height: 32),
+                        PucketButton(
+                          label: l10n.queueLeave,
+                          secondary: true,
+                          width: cardWidth,
+                          onPressed: () {
+                            context.read<GameController>().leaveQueue();
+                            Navigator.pop(context);
+                          },
+                        ),
+                        const SizedBox(height: 8),
+                      ],
                     ),
                   ),
-                  const Spacer(flex: 3),
-                  PucketButton(
-                    label: l10n.queueLeave,
-                    secondary: true,
-                    width: cardWidth,
-                    onPressed: () {
-                      context.read<GameController>().leaveQueue();
-                      Navigator.pop(context);
-                    },
-                  ),
-                  const SizedBox(height: 8),
-                ],
-              ),
+                );
+              },
             ),
           ),
         ),
@@ -277,7 +284,7 @@ class _QueueScreenState extends State<QueueScreen> {
               children: [
                 Text(l10n.youLabel, style: const TextStyle(fontSize: 9, color: Color(0xFF555555))),
                 Text('$myElo', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: AppColors.red)),
-                Text(myTier.name, style: const TextStyle(fontSize: 10, color: Color(0xFF666666))),
+                Text(myTier.name, style: const TextStyle(fontSize: 10, color: Color(0xFF666666)), maxLines: 1, overflow: TextOverflow.ellipsis),
               ],
             ),
           ),
@@ -286,9 +293,9 @@ class _QueueScreenState extends State<QueueScreen> {
             child: Column(
               children: [
                 Text(l10n.opponent, style: const TextStyle(fontSize: 9, color: Color(0xFF555555))),
-                Text(oppName, style: const TextStyle(fontSize: 10, color: Color(0xFF888888)), textAlign: TextAlign.center),
+                Text(oppName, style: const TextStyle(fontSize: 10, color: Color(0xFF888888)), textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis),
                 Text('$oppElo', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: AppColors.blue)),
-                Text(oppTier.name, style: const TextStyle(fontSize: 10, color: Color(0xFF666666))),
+                Text(oppTier.name, style: const TextStyle(fontSize: 10, color: Color(0xFF666666)), maxLines: 1, overflow: TextOverflow.ellipsis),
               ],
             ),
           ),

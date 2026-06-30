@@ -86,13 +86,13 @@ class CareerScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 12,
+            runSpacing: 8,
             children: [
               _statChip('⭐', '${career.careerPoints}', 'KP'),
-              const SizedBox(width: 12),
               _statChip('✓', '${career.careerWins}G', '${career.careerLosses}M'),
-              const SizedBox(width: 12),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
@@ -103,6 +103,8 @@ class CareerScreen extends StatelessWidget {
                 child: Text(
                   '${tier.emoji} $tierLabel',
                   style: TextStyle(color: tier.color, fontWeight: FontWeight.w800, fontSize: 12),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
@@ -120,11 +122,12 @@ class CareerScreen extends StatelessWidget {
             Text(
               l10n.nextOpponent(next.name, l10n.tierName(next.league)),
               style: const TextStyle(color: Color(0xFF777777), fontSize: 11),
+              textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
             PucketButton(
               label: l10n.playWith(next.name),
-              width: 280,
+              width: double.infinity,
               gradient: LinearGradient(colors: [tier.color, AppColors.green]),
               onPressed: () => AppRouter.startCareer(context, next),
             ),
@@ -296,6 +299,8 @@ class _OpponentCard extends StatelessWidget {
                         Text(
                           '${l10n.difficultyLabel(opponent.aiLevel.name)} · ${opponent.displayElo} ELO · +${opponent.pointsReward} KP',
                           style: const TextStyle(color: Color(0xFF666666), fontSize: 10),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ],
                     ),

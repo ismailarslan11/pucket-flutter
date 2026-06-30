@@ -75,6 +75,8 @@ class PucketButton extends StatelessWidget {
                   Text(
                     label,
                     textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: textColor,
                       fontWeight: FontWeight.w900,
@@ -88,6 +90,8 @@ class PucketButton extends StatelessWidget {
                       child: Text(
                         subtitle!,
                         textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: Colors.white.withValues(alpha: 0.7),
                           fontSize: 10,

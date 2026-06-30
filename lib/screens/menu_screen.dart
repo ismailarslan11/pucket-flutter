@@ -85,7 +85,9 @@ class MenuScreen extends StatelessWidget {
                           context,
                           MaterialPageRoute(builder: (_) => const RankScreen()),
                         ),
-                        child: Container(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 110),
+                          child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(12),
@@ -94,7 +96,10 @@ class MenuScreen extends StatelessWidget {
                           child: Text(
                             '${tier.emoji} ${l10n.tierName(tier)}',
                             style: TextStyle(color: tier.color, fontWeight: FontWeight.w700, fontSize: 11),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
+                        ),
                         ),
                       ),
                     ],

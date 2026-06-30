@@ -34,8 +34,10 @@ class AuthScreen extends StatelessWidget {
                     style: const TextStyle(color: AppColors.cyan, letterSpacing: 4, fontSize: 10),
                   ),
                   const SizedBox(height: 28),
-                  Container(
-                    width: 300,
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 340),
+                    child: Container(
+                    width: double.infinity,
                     padding: const EdgeInsets.all(28),
                     decoration: BoxDecoration(
                       color: AppColors.card,
@@ -115,6 +117,7 @@ class AuthScreen extends StatelessWidget {
                         ),
                       ],
                     ),
+                  ),
                   ),
                 ],
               ),
