@@ -10,15 +10,14 @@ class AdService extends ChangeNotifier {
   bool initialized = false;
   bool canLoadAds = false;
   String statusMessage = 'Başlatılıyor…';
+  String lastBannerError = '';
+  String consentDebug = '';
 
   InterstitialAd? _interstitial;
   bool _loadingInterstitial = false;
   int _initRetries = 0;
 
-  /// İki tam ekran reklam arası minimum süre.
   static const _minInterval = Duration(minutes: 3);
-
-  /// Kaç tamamlanan maçta bir reklam gösterilsin.
   static const _matchesPerAd = 2;
 
   DateTime? _lastShownAt;
@@ -41,22 +40,38 @@ class AdService extends ChangeNotifier {
   Future<void> _refreshLoadPermission() async {
     if (!initialized) return;
 
-    canLoadAds = await ConsentService.canRequestAds();
+    consentDebug = await ConsentService.debugSummary();
+    canLoadAds = await ConsentService.shouldRequestAds();
+
     if (canLoadAds) {
-      statusMessage = 'Reklamlar aktif';
+      final mode = AdConfig.useTestAds ? ' (test reklam)' : '';
+      statusMessage = 'Reklamlar aktif$mode · ${AdConfig.bannerUnitId.split('/').last}';
       _initRetries = 0;
       preloadInterstitial();
     } else {
-      statusMessage = 'Reklam rızası bekleniyor (Ayarlar → gizlilik tercihleri)';
+      statusMessage = 'Rıza gerekli — Ayarlar → Reklam gizlilik tercihleri';
       _scheduleRetry();
     }
     notifyListeners();
   }
 
+  void reportBannerError(String message) {
+    lastBannerError = message;
+    statusMessage = 'Banner yüklenemedi: $message';
+    notifyListeners();
+  }
+
+  void reportBannerLoaded() {
+    lastBannerError = '';
+    final mode = AdConfig.useTestAds ? ' (test)' : '';
+    statusMessage = 'Banner görünüyor$mode';
+    notifyListeners();
+  }
+
   void _scheduleRetry() {
-    if (_initRetries >= 8 || !AdConfig.supported) return;
+    if (_initRetries >= 3 || !AdConfig.supported) return;
     _initRetries++;
-    final delay = Duration(seconds: 2 * _initRetries);
+    final delay = Duration(seconds: 15 * _initRetries);
     Future.delayed(delay, () async {
       if (!initialized) {
         await init();
@@ -66,7 +81,6 @@ class AdService extends ChangeNotifier {
     });
   }
 
-  /// Rıza güncellendikten sonra (Ayarlar) tekrar dene.
   Future<void> refreshAfterConsent() async {
     if (!AdConfig.supported) return;
     if (!initialized) {
@@ -118,7 +132,6 @@ class AdService extends ChangeNotifier {
     return DateTime.now().difference(_lastShownAt!) >= _minInterval;
   }
 
-  /// Yalnızca maç bittiğinde; antrenman modunda ve sık aralıklarla değil.
   Future<void> maybeShowInterstitial({
     required bool matchFinished,
     bool skip = false,

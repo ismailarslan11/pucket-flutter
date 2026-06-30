@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import '../l10n/app_localizations.dart';
 import '../l10n/app_language.dart';
 import '../l10n/l10n_extension.dart';
+import '../widgets/ad_banner_widget.dart';
+import '../config/ad_config.dart';
 import '../services/ad_service.dart';
 import '../services/audio_service.dart';
 import '../services/auth_service.dart';
@@ -41,7 +43,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
             SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(24, 52, 24, 24),
+              padding: const EdgeInsets.fromLTRB(24, 52, 24, 40),
               child: Column(
                 children: [
                   Text(
@@ -75,6 +77,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   _sliderRow(l10n.settingsMusicVol, settings.musicVolume, settings.setMusicVolume),
                   _sliderRow(l10n.settingsSfxVol, settings.sfxVolume, settings.setSfxVolume),
+                  _adsSection(),
                   _pushSection(),
                   _row(
                     l10n.settingsVibration,
@@ -99,9 +102,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   TextButton(
                     onPressed: () async {
-                      await ConsentService.showPrivacyOptions();
+                      if (ConsentService.umpUnavailable) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Gizlilik formu AdMob\'da yok — Türkiye için zorunlu değil'),
+                            ),
+                          );
+                        }
+                        return;
+                      }
+                      final ok = await ConsentService.showPrivacyOptions();
                       if (context.mounted) {
                         await context.read<AdService>().refreshAfterConsent();
+                        if (!ok) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Gizlilik formu açılamadı')),
+                          );
+                        }
                       }
                     },
                     child: const Text('Reklam gizlilik tercihleri', style: TextStyle(color: Color(0xFF666666))),
@@ -162,6 +180,79 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 onSelected: (_) => settings.setLanguage(lang),
               );
             }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _adsSection() {
+    final ads = context.watch<AdService>();
+    return Container(
+      constraints: const BoxConstraints(maxWidth: 340),
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: Color(0xFF222222))),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Reklamlar (AdMob)',
+            style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFDDDDDD), fontSize: 13),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            ads.statusMessage,
+            style: TextStyle(
+              color: ads.canLoadAds ? AppColors.green : const Color(0xFF888888),
+              fontSize: 10,
+            ),
+          ),
+          if (ads.consentDebug.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(ads.consentDebug, style: const TextStyle(color: Color(0xFF555555), fontSize: 9)),
+          ],
+          if (ads.lastBannerError.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(ads.lastBannerError, style: const TextStyle(color: AppColors.red, fontSize: 9)),
+          ],
+          const SizedBox(height: 4),
+          Text(
+            'Birim: ${AdConfig.bannerUnitId}\n'
+            'Mod: ${AdConfig.useTestAds ? "Google test reklam" : "Prod (gerçek reklam)"}',
+            style: const TextStyle(color: Color(0xFF444444), fontSize: 9, height: 1.4),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              OutlinedButton(
+                onPressed: () async {
+                  await ads.refreshAfterConsent();
+                  AdBannerController.reload();
+                  if (mounted) setState(() {});
+                },
+                child: const Text('Reklamı yenile', style: TextStyle(fontSize: 11)),
+              ),
+              if (!ConsentService.umpUnavailable)
+                OutlinedButton(
+                  onPressed: () async {
+                    final ok = await ConsentService.showPrivacyOptions();
+                    if (context.mounted) await ads.refreshAfterConsent();
+                    if (context.mounted && !ok) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('AdMob gizlilik formu yapılandırılmamış (TR için gerekli değil)'),
+                        ),
+                      );
+                    }
+                    if (mounted) setState(() {});
+                  },
+                  child: const Text('Gizlilik tercihleri', style: TextStyle(fontSize: 11)),
+                ),
+            ],
           ),
         ],
       ),
@@ -230,11 +321,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 child: const Text('Test bildirimi', style: TextStyle(fontSize: 11)),
               ),
             ],
-          ),
-          const SizedBox(height: 6),
-          Text(
-            context.watch<AdService>().statusMessage,
-            style: const TextStyle(color: Color(0xFF666666), fontSize: 10),
           ),
           const SizedBox(height: 6),
           const Text(

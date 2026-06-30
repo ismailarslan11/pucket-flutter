@@ -333,17 +333,20 @@ class GamePainter extends CustomPainter {
   void _drawDisc(Canvas canvas, Disc d) {
     final pos = _s2c(d.vx, d.vy);
     final r = GameConstants.discRadius * sx;
+    final moving = d.vvx.abs() + d.vvy.abs() > 0.35;
 
     final defaultColor = d.owner == 0 ? const Color(0xFFFF3366) : const Color(0xFF00D4FF);
     final color = d.owner == mySeat ? CosmeticsTheme.discColor(myDiscColor) : defaultColor;
 
-    canvas.drawCircle(
-      pos,
-      r + 6,
-      Paint()
-        ..color = color.withValues(alpha: 0.22)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8),
-    );
+    if (!moving) {
+      canvas.drawCircle(
+        pos,
+        r + 6,
+        Paint()
+          ..color = color.withValues(alpha: 0.22)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8),
+      );
+    }
 
     final discPaint = Paint()
       ..shader = RadialGradient(
@@ -364,6 +367,9 @@ class GamePainter extends CustomPainter {
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.5,
     );
+
+    if (moving) return;
+
     canvas.drawCircle(
       pos,
       r * 0.38,

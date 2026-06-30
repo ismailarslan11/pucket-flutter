@@ -110,6 +110,10 @@ class GameController extends ChangeNotifier {
   int _dragMoveCounter = 0;
   int _lastMovingDiscs = 0;
   int _visualGeneration = 0;
+  double _physicsAccum = 0;
+  double _lastTickWallMs = 0;
+
+  static const _physicsStepMs = 1000 / 60;
 
   int get visualGeneration => _visualGeneration;
 
@@ -150,6 +154,26 @@ class GameController extends ChangeNotifier {
   void tick(double nowMs) {
     if (phase != GamePhase.playing) return;
 
+    if (_lastTickWallMs == 0) _lastTickWallMs = nowMs;
+    _physicsAccum += nowMs - _lastTickWallMs;
+    _lastTickWallMs = nowMs;
+    // FPS düşünce fizik fırlamasın
+    if (_physicsAccum > _physicsStepMs * 3) _physicsAccum = _physicsStepMs * 3;
+
+    var stepped = false;
+    while (_physicsAccum >= _physicsStepMs) {
+      _physicsAccum -= _physicsStepMs;
+      if (_physicsStep()) return;
+      stepped = true;
+    }
+    if (stepped) {
+      _visualGeneration++;
+      notifyListeners();
+    }
+  }
+
+  /// Bir fizik adımı. Round biterse true döner.
+  bool _physicsStep() {
     if (aiMode || isOnlineHost) {
       PhysicsEngine.stepPhysics(discs);
 
@@ -160,40 +184,24 @@ class GameController extends ChangeNotifier {
       _lastMovingDiscs = moving;
 
       _frameCount++;
-      if (aiMode && aiBot.shouldThink(nowMs, aiLevel)) {
+      if (aiMode && aiBot.shouldThink(_frameCount * _physicsStepMs, aiLevel)) {
         if (aiBot.think(discs, aiLevel)) _haptic(25);
       } else if (!aiMode && isOnlineHost) {
-        if (_frameCount % 2 == 0) _sendState();
+        _sendState();
       }
 
       PhysicsEngine.settleGateDiscs(discs);
       final winner = PhysicsEngine.checkWinner(discs);
       if (winner != null) {
         _endRound(winner, broadcast: true);
-        return;
+        return true;
       }
-
-      _visualGeneration++;
-      notifyListeners();
-    } else {
-      _tickClientVisual();
+    } else if (!aiMode) {
+      // İstemci: host state gelene kadar yerel tahmin (takılmayı azaltır)
+      PhysicsEngine.stepPhysics(discs);
+      PhysicsEngine.settleGateDiscs(discs);
     }
-  }
-
-  void _tickClientVisual() {
-    var moved = false;
-    for (final d in discs) {
-      if (d.vvx.abs() < 0.02 && d.vvy.abs() < 0.02) continue;
-      d.vx += d.vvx;
-      d.vy += d.vvy;
-      d.vvx *= GameConstants.friction;
-      d.vvy *= GameConstants.friction;
-      moved = true;
-    }
-    if (moved) {
-      _visualGeneration++;
-      notifyListeners();
-    }
+    return false;
   }
 
   void resetRound() {
@@ -205,6 +213,8 @@ class GameController extends ChangeNotifier {
     drag = null;
     _frameCount = 0;
     _lastMovingDiscs = 0;
+    _physicsAccum = 0;
+    _lastTickWallMs = 0;
     aiBot.reset();
     discs = trainingMode
         ? PhysicsEngine.initTrainingDiscs(trainingLayout)
@@ -706,14 +716,23 @@ class GameController extends ChangeNotifier {
       final nvx = (s[2] as num).toDouble();
       final nvy = (s[3] as num).toDouble();
       final d = discs[i];
-      if ((d.vx - nx).abs() > 0.02 ||
-          (d.vy - ny).abs() > 0.02 ||
-          (d.vvx - nvx).abs() > 0.01 ||
-          (d.vvy - nvy).abs() > 0.01) {
+      final dx = nx - d.vx;
+      final dy = ny - d.vy;
+      final posErr = math.sqrt(dx * dx + dy * dy);
+
+      if (posErr > 14) {
         d.vx = nx;
         d.vy = ny;
-        d.vvx = nvx;
-        d.vvy = nvy;
+        changed = true;
+      } else if (posErr > 0.15) {
+        d.vx += dx * 0.4;
+        d.vy += dy * 0.4;
+        changed = true;
+      }
+
+      if ((d.vvx - nvx).abs() > 0.02 || (d.vvy - nvy).abs() > 0.02) {
+        d.vvx += (nvx - d.vvx) * 0.55;
+        d.vvy += (nvy - d.vvy) * 0.55;
         changed = true;
       }
     }
@@ -897,6 +916,9 @@ class GameController extends ChangeNotifier {
         discs[drag!.discIndex].vvx = vvx;
         discs[drag!.discIndex].vvy = vvy;
       } else {
+        // Anında yerel tepki; host state ile yumuşak düzeltme gelir
+        discs[drag!.discIndex].vvx = vvx;
+        discs[drag!.discIndex].vvy = vvy;
         ws.send({
           'type': 'shot',
           'disc': drag!.discIndex,

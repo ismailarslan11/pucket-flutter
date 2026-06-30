@@ -21,17 +21,30 @@ class _AdBannerWidgetState extends State<AdBannerWidget> {
   bool _loading = false;
   int _failCount = 0;
   Timer? _retryTimer;
+  bool _kicked = false;
+
+  @override
+  void initState() {
+    super.initState();
+    AdBannerController.registerReload(reload);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _kickOnce());
+  }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     _ads ??= context.read<AdService>();
     _ads!.addListener(_onAdsChanged);
-    _maybeLoad();
+  }
+
+  void _kickOnce() {
+    if (_kicked || !mounted) return;
+    _kicked = true;
+    context.read<AdService>().refreshAfterConsent();
   }
 
   void _onAdsChanged() {
-    if (!mounted) return;
+    if (!mounted || _loaded || _loading) return;
     _maybeLoad();
   }
 
@@ -45,9 +58,16 @@ class _AdBannerWidgetState extends State<AdBannerWidget> {
     if (unitId.isEmpty) return;
 
     _loading = true;
-    final width = MediaQuery.sizeOf(context).width.truncate();
-    final adaptive = await AdSize.getLargeAnchoredAdaptiveBannerAdSize(width);
-    final size = adaptive ?? AdSize.banner;
+    AdSize size = AdSize.banner;
+    try {
+      final width = MediaQuery.sizeOf(context).width.truncate();
+      if (width > 0) {
+        final adaptive = await AdSize.getLargeAnchoredAdaptiveBannerAdSize(width);
+        size = adaptive ?? AdSize.banner;
+      }
+    } catch (_) {
+      size = AdSize.banner;
+    }
 
     final banner = BannerAd(
       adUnitId: unitId,
@@ -56,6 +76,7 @@ class _AdBannerWidgetState extends State<AdBannerWidget> {
       listener: BannerAdListener(
         onAdLoaded: (_) {
           if (!mounted) return;
+          ads.reportBannerLoaded();
           setState(() {
             _loaded = true;
             _loading = false;
@@ -63,16 +84,18 @@ class _AdBannerWidgetState extends State<AdBannerWidget> {
           });
         },
         onAdFailedToLoad: (ad, error) {
-          debugPrint('Banner load failed: ${error.message}');
+          final msg = _friendlyError(error);
+          debugPrint('Banner load failed: ${error.code}: ${error.message}');
           ad.dispose();
           if (!mounted) return;
+          ads.reportBannerError(msg);
           setState(() {
             _banner = null;
             _loaded = false;
             _loading = false;
             _failCount++;
           });
-          _scheduleRetry();
+          _scheduleRetry(error.code);
         },
       ),
     );
@@ -82,17 +105,51 @@ class _AdBannerWidgetState extends State<AdBannerWidget> {
     banner.load();
   }
 
-  void _scheduleRetry() {
+  String _friendlyError(LoadAdError error) {
+    switch (error.code) {
+      case 0:
+        return 'Dahili hata — biraz sonra tekrar dene';
+      case 1:
+        return 'Çok sık istek — 2 dk bekle veya uygulamayı yeniden aç';
+      case 2:
+        return 'Ağ hatası — internet bağlantını kontrol et';
+      case 3:
+        return 'Reklam yok (No fill) — AdMob henüz doldurmuyor, normal';
+      default:
+        return '${error.code}: ${error.message}';
+    }
+  }
+
+  void _scheduleRetry(int code) {
     _retryTimer?.cancel();
-    if (_failCount >= 6) return;
-    final delay = Duration(seconds: 5 * _failCount.clamp(1, 6));
-    _retryTimer = Timer(delay, () {
+    if (_failCount >= 5) return;
+
+    // Google rate-limit (kod 1): en az 90 sn bekle
+    final seconds = switch (code) {
+      1 => 90,
+      3 => 45,
+      2 => 20,
+      _ => 30,
+    };
+    _retryTimer = Timer(Duration(seconds: seconds), () {
       if (mounted) _maybeLoad();
     });
   }
 
+  /// Ayarlar → "Reklamı yenile" için dışarıdan çağrılır.
+  void reload() {
+    _retryTimer?.cancel();
+    _banner?.dispose();
+    _banner = null;
+    _loaded = false;
+    _loading = false;
+    _failCount = 0;
+    _maybeLoad();
+  }
+
   @override
   void dispose() {
+    AdBannerController.unregisterReload(reload);
     _retryTimer?.cancel();
     _ads?.removeListener(_onAdsChanged);
     _banner?.dispose();
@@ -101,16 +158,10 @@ class _AdBannerWidgetState extends State<AdBannerWidget> {
 
   @override
   Widget build(BuildContext context) {
-    if (!AdConfig.supported) {
-      return const SizedBox.shrink();
-    }
+    if (!AdConfig.supported) return const SizedBox.shrink();
 
     if (!_loaded || _banner == null) {
-      // Yer tutucu — layout zıplamasın, reklam yüklenince görünsün
-      return const SizedBox(
-        width: double.infinity,
-        height: 50,
-      );
+      return const SizedBox(width: double.infinity, height: 50);
     }
 
     return Container(
@@ -121,4 +172,17 @@ class _AdBannerWidgetState extends State<AdBannerWidget> {
       child: AdWidget(ad: _banner!),
     );
   }
+}
+
+/// Menü banner'ını Ayarlar'dan yenilemek için.
+class AdBannerController {
+  static void Function()? _reload;
+
+  static void registerReload(void Function() reload) => _reload = reload;
+
+  static void unregisterReload(void Function() reload) {
+    if (_reload == reload) _reload = null;
+  }
+
+  static void reload() => _reload?.call();
 }
