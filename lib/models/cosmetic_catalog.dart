@@ -6,7 +6,7 @@ class CosmeticCatalog {
   static const freeBoards = {'classic'};
 
   static const premiumDiscs = [
-    CosmeticItem(id: 'gryphon', price: 50, asset: 'assets/images/discs/gryphon.png'),
+    CosmeticItem(id: 'gryphon', price: 10, asset: 'assets/images/discs/gryphon.png'),
     CosmeticItem(id: 'abyssal_serpent', price: 100, asset: 'assets/images/discs/abyssal_serpent.png'),
     CosmeticItem(id: 'ascended_phoenix', price: 200, asset: 'assets/images/discs/ascended_phoenix.png'),
     CosmeticItem(id: 'world_tree', price: 250, asset: 'assets/images/discs/world_tree.png'),
