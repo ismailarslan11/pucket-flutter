@@ -4,6 +4,7 @@ const crypto = require('crypto');
 
 const { createStore } = require('./store');
 const { handleAdmin } = require('./admin');
+const { privacyHtml, termsHtml } = require('./legal_pages');
 const {
   initFirebaseAuth,
   resolveLoginIdentity,
@@ -591,6 +592,24 @@ const server = http.createServer((req, res) => {
     const pkg = require('./package.json');
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ ok: true, db: dbMode, players: playerCount, version: pkg.version }));
+    return;
+  }
+
+  if (url.pathname === '/privacy') {
+    res.writeHead(200, {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'public, max-age=3600',
+    });
+    res.end(privacyHtml());
+    return;
+  }
+
+  if (url.pathname === '/terms') {
+    res.writeHead(200, {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'public, max-age=3600',
+    });
+    res.end(termsHtml());
     return;
   }
 
