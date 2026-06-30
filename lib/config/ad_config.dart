@@ -11,9 +11,9 @@ class AdConfig {
   static const _bannerFromEnv = String.fromEnvironment('ADMOB_BANNER_ID');
   static const _interstitialFromEnv = String.fromEnvironment('ADMOB_INTERSTITIAL_ID');
 
-  /// PUCKET Android — AdMob Console
-  static const _prodBannerAndroid = 'ca-app-pub-2558408055462441/2240385603';
-  static const _prodInterstitialAndroid = 'ca-app-pub-2558408055462441/3263078842';
+  /// PUCKET Android — com.pucket.pucket_flutter (AdMob Console)
+  static const _prodBannerAndroid = 'ca-app-pub-2558408055462441/2963997268';
+  static const _prodInterstitialAndroid = 'ca-app-pub-2558408055462441/8581331624';
 
   /// Google test banner
   static const _testBannerAndroid = 'ca-app-pub-3940256099942544/6300978111';

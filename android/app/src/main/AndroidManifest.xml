@@ -43,7 +43,7 @@
         <!-- AdMob App ID (PUCKET Android) -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-2558408055462441~6179630619"/>
+            android:value="ca-app-pub-2558408055462441~3458399821"/>
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
             android:value="pucket_high_importance" />
