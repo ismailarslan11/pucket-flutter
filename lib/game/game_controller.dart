@@ -22,6 +22,11 @@ class BoardRepaintNotifier extends ChangeNotifier {
   void bump() => notifyListeners();
 }
 
+/// Sadece süre / pul sayacı gibi hafif HUD güncellemeleri.
+class UiSyncNotifier extends ChangeNotifier {
+  void bump() => notifyListeners();
+}
+
 class DragState {
   final int discIndex;
   final double startVx;
@@ -121,9 +126,11 @@ class GameController extends ChangeNotifier {
   int _visualGeneration = 0;
   double _physicsAccum = 0;
   double _lastTickWallMs = 0;
-  int _uiSyncCounter = 0;
+  int _lastUiDiscSignature = -1;
+  int _lastHitAudioFrame = 0;
 
   final boardRepaint = BoardRepaintNotifier();
+  final uiSync = UiSyncNotifier();
 
   static const _physicsStepMs = 1000 / 60;
 
@@ -168,6 +175,23 @@ class GameController extends ChangeNotifier {
   List<DragState> get activeDrags =>
       localDuoMode ? _duoDrags.values.toList() : (drag != null ? [drag!] : const []);
 
+  void _bumpBoard() {
+    _visualGeneration++;
+    boardRepaint.bump();
+  }
+
+  /// Client: host state paketleri arasında sadece hız ile tahmin (çarpışma yok).
+  void _clientIntegrateDiscs() {
+    for (final d in discs) {
+      d.vx += d.vvx;
+      d.vy += d.vvy;
+      d.vvx *= GameConstants.friction;
+      d.vvy *= GameConstants.friction;
+      if (d.vvx.abs() < 0.03) d.vvx = 0;
+      if (d.vvy.abs() < 0.03) d.vvy = 0;
+    }
+  }
+
   void _cancelPendingMatchStart() {
     _matchStartTimer?.cancel();
     _matchStartTimer = null;
@@ -189,14 +213,18 @@ class GameController extends ChangeNotifier {
       stepped = true;
     }
     if (stepped) {
-      _visualGeneration++;
-      boardRepaint.bump();
-      _uiSyncCounter++;
-      if (_uiSyncCounter >= 6) {
-        _uiSyncCounter = 0;
-        notifyListeners();
-      }
+      _bumpBoard();
+      _syncUiIfDiscCountsChanged();
     }
+  }
+
+  void _syncUiIfDiscCountsChanged() {
+    final sig = localDuoMode
+        ? (redHalfTotal() << 16) | blueHalfTotal()
+        : mySideRemaining();
+    if (sig == _lastUiDiscSignature) return;
+    _lastUiDiscSignature = sig;
+    uiSync.bump();
   }
 
   /// Bir fizik adımı. Round biterse true döner.
@@ -205,11 +233,11 @@ class GameController extends ChangeNotifier {
       PhysicsEngine.stepPhysics(discs);
 
       final moving = discs.where((d) => d.vvx.abs() > 0.05 || d.vvy.abs() > 0.05).length;
-      if (moving > _lastMovingDiscs && moving > 0) {
+      if (moving > _lastMovingDiscs &&
+          moving > 0 &&
+          _frameCount - _lastHitAudioFrame > 6) {
+        _lastHitAudioFrame = _frameCount;
         audio?.playHit();
-      }
-      if (moving == 0 && _lastMovingDiscs > 0) {
-        notifyListeners();
       }
       _lastMovingDiscs = moving;
 
@@ -226,10 +254,9 @@ class GameController extends ChangeNotifier {
         _endRound(winner, broadcast: true);
         return true;
       }
-    } else if (!aiMode) {
-      // İstemci: host state gelene kadar yerel tahmin (takılmayı azaltır)
-      PhysicsEngine.stepPhysics(discs);
-      PhysicsEngine.settleGateDiscs(discs);
+    } else if (!aiMode && !isOnlineHost) {
+      // Online client: tam fizik yok — host state + hafif extrapolasyon
+      _clientIntegrateDiscs();
     }
     return false;
   }
@@ -246,6 +273,7 @@ class GameController extends ChangeNotifier {
     _lastMovingDiscs = 0;
     _physicsAccum = 0;
     _lastTickWallMs = 0;
+    _lastUiDiscSignature = -1;
     aiBot.reset();
     discs = trainingMode
         ? PhysicsEngine.initTrainingDiscs(trainingLayout)
@@ -283,7 +311,7 @@ class GameController extends ChangeNotifier {
         seconds = 0;
         _secTimer = Timer.periodic(const Duration(seconds: 1), (_) {
           seconds++;
-          notifyListeners();
+          uiSync.bump();
         });
         _startAfkTimer();
         notifyListeners();
@@ -419,7 +447,7 @@ class GameController extends ChangeNotifier {
     ws.onPing = (ms) {
       pingMs = ms;
       onPingUpdate?.call(ms);
-      notifyListeners();
+      uiSync.bump();
     };
     ws.onError = () => onToast?.call('Bağlantı hatası');
     ws.onReconnected = () {
@@ -576,6 +604,7 @@ class GameController extends ChangeNotifier {
         if (msg['ranked'] == true) isRanked = true;
         _applyOpponentInfo(msg);
         _restoreSnapshot(msg['snapshot'] as Map<String, dynamic>?);
+        _bumpBoard();
         onReconnected?.call();
         notifyListeners();
         break;
@@ -586,7 +615,7 @@ class GameController extends ChangeNotifier {
         _graceTimer = Timer.periodic(const Duration(seconds: 1), (t) {
           opponentGraceLeft--;
           if (opponentGraceLeft <= 0) t.cancel();
-          notifyListeners();
+          uiSync.bump();
         });
         onOpponentDisconnected?.call();
         notifyListeners();
@@ -599,9 +628,10 @@ class GameController extends ChangeNotifier {
         break;
       case 'state':
         if (aiMode || isOnlineHost) break;
-        var changed = false;
+        var boardChanged = false;
+        var uiChanged = false;
         if (msg['discs'] is List && phase == GamePhase.playing) {
-          changed = _applyDiscStates(msg['discs'] as List);
+          boardChanged = _applyDiscStates(msg['discs'] as List);
         }
         if (msg['roundWins'] is List) {
           final rw = msg['roundWins'] as List;
@@ -610,14 +640,14 @@ class GameController extends ChangeNotifier {
           if (roundWins[0] != r0 || roundWins[1] != r1) {
             roundWins[0] = r0;
             roundWins[1] = r1;
-            changed = true;
+            uiChanged = true;
           }
         }
         if (msg['currentRound'] != null) {
           final cr = (msg['currentRound'] as num).toInt();
           if (currentRound != cr) {
             currentRound = cr;
-            changed = true;
+            uiChanged = true;
           }
         }
         if (msg['phase'] == 'gameover' && msg['lastWinner'] != null) {
@@ -626,9 +656,12 @@ class GameController extends ChangeNotifier {
             'roundWins': roundWins.toList(),
             'currentRound': currentRound,
           });
-        } else if (changed) {
-          _visualGeneration++;
-          notifyListeners();
+        } else {
+          if (boardChanged) {
+            _bumpBoard();
+            _syncUiIfDiscCountsChanged();
+          }
+          if (uiChanged) notifyListeners();
         }
         break;
       case 'shot':
@@ -638,7 +671,7 @@ class GameController extends ChangeNotifier {
             discs[idx].vvx = (msg['vvx'] as num).toDouble();
             discs[idx].vvy = (msg['vvy'] as num).toDouble();
             audio?.playShot();
-            notifyListeners();
+            _bumpBoard();
           }
         }
         break;
@@ -777,20 +810,26 @@ class GameController extends ChangeNotifier {
       final dy = ny - d.vy;
       final posErr = math.sqrt(dx * dx + dy * dy);
 
-      if (posErr > 14) {
+      if (posErr > 24) {
         d.vx = nx;
         d.vy = ny;
+        d.vvx = nvx;
+        d.vvy = nvy;
         changed = true;
-      } else if (posErr > 0.15) {
-        d.vx += dx * 0.4;
-        d.vy += dy * 0.4;
-        changed = true;
-      }
-
-      if ((d.vvx - nvx).abs() > 0.02 || (d.vvy - nvy).abs() > 0.02) {
-        d.vvx += (nvx - d.vvx) * 0.55;
-        d.vvy += (nvy - d.vvy) * 0.55;
-        changed = true;
+      } else {
+        final posBlend = posErr > 8 ? 0.5 : 0.25;
+        if (posErr > 0.08) {
+          d.vx += dx * posBlend;
+          d.vy += dy * posBlend;
+          changed = true;
+        }
+        final dvx = nvx - d.vvx;
+        final dvy = nvy - d.vvy;
+        if (dvx.abs() > 0.012 || dvy.abs() > 0.012) {
+          d.vvx += dvx * 0.7;
+          d.vvy += dvy * 0.7;
+          changed = true;
+        }
       }
     }
     return changed;
@@ -948,9 +987,7 @@ class GameController extends ChangeNotifier {
         currentVx: vx,
         currentVy: vy,
       );
-      _visualGeneration++;
-      boardRepaint.bump();
-      notifyListeners();
+      _bumpBoard();
       return;
     }
 
@@ -964,9 +1001,7 @@ class GameController extends ChangeNotifier {
       currentVx: vx,
       currentVy: vy,
     );
-    _visualGeneration++;
-    boardRepaint.bump();
-    notifyListeners();
+    _bumpBoard();
   }
 
   void onPointerMove(int pointerId, double vx, double vy) {
@@ -977,8 +1012,7 @@ class GameController extends ChangeNotifier {
       d.currentVy = vy;
       _dragMoveCounter++;
       if (_dragMoveCounter.isEven) {
-        _visualGeneration++;
-        boardRepaint.bump();
+        _bumpBoard();
       }
       return;
     }
@@ -988,8 +1022,7 @@ class GameController extends ChangeNotifier {
     drag!.currentVy = vy;
     _dragMoveCounter++;
     if (_dragMoveCounter.isEven) {
-      _visualGeneration++;
-      boardRepaint.bump();
+      _bumpBoard();
     }
   }
 
@@ -1029,8 +1062,7 @@ class GameController extends ChangeNotifier {
       audio?.playShot();
       _haptic(25);
     }
-    _visualGeneration++;
-    notifyListeners();
+    _bumpBoard();
   }
 
   void togglePause() {
@@ -1064,7 +1096,7 @@ class GameController extends ChangeNotifier {
     _secTimer?.cancel();
     _secTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       seconds++;
-      notifyListeners();
+      uiSync.bump();
     });
     _startAfkTimer();
     if (broadcast && ws.isConnected) {

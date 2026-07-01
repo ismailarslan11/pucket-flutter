@@ -41,13 +41,26 @@ class _GameBoardState extends State<GameBoard> with SingleTickerProviderStateMix
   void _refreshCosmetics() {
     final meta = context.read<PlayerMetaService>();
     final auth = context.read<AuthService>();
-    _discColor = meta.discColor(auth.getUid());
-    _boardTheme = meta.boardTheme(auth.getUid());
+    final disc = meta.discColor(auth.getUid());
+    final board = meta.boardTheme(auth.getUid());
+    if (disc != _discColor || board != _boardTheme) {
+      _discColor = disc;
+      _boardTheme = board;
+      if (CosmeticCatalog.isPremiumDisc(_discColor)) {
+        DiscImageCache.ensureLoaded(_discColor).then((_) {
+          if (mounted) _game.boardRepaint.bump();
+        });
+      }
+    }
   }
 
   void _onTick(Duration elapsed) {
     if (!mounted) return;
     final ms = elapsed.inMicroseconds / 1000.0;
+    if (_game.phase != GamePhase.playing) {
+      _lastMs = ms;
+      return;
+    }
     if (ms - _lastMs >= 16) {
       _lastMs = ms;
       _game.tick(ms);
@@ -63,15 +76,6 @@ class _GameBoardState extends State<GameBoard> with SingleTickerProviderStateMix
   @override
   Widget build(BuildContext context) {
     final game = context.read<GameController>();
-    final metaSvc = context.watch<PlayerMetaService>();
-    final auth = context.read<AuthService>();
-    _discColor = metaSvc.discColor(auth.getUid());
-    _boardTheme = metaSvc.boardTheme(auth.getUid());
-    if (CosmeticCatalog.isPremiumDisc(_discColor)) {
-      DiscImageCache.ensureLoaded(_discColor).then((_) {
-        if (mounted) setState(() {});
-      });
-    }
     final palette = CosmeticsTheme.boardPalette(_boardTheme);
 
     return LayoutBuilder(
@@ -88,13 +92,6 @@ class _GameBoardState extends State<GameBoard> with SingleTickerProviderStateMix
           child: DecoratedBox(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: palette.neonPrimary.withValues(alpha: 0.22),
-                  blurRadius: 10,
-                  spreadRadius: 0,
-                ),
-              ],
               border: Border.all(
                 color: palette.neonPrimary.withValues(alpha: 0.7),
                 width: 1.5,
@@ -167,23 +164,25 @@ class _GameBoardState extends State<GameBoard> with SingleTickerProviderStateMix
 
   Widget _buildPaint(double innerW, double innerH, double sx, double sy, GameController game) {
     return ListenableBuilder(
-      listenable: Listenable.merge([game, game.boardRepaint]),
+      listenable: game.boardRepaint,
       builder: (context, _) {
         final g = context.read<GameController>();
-        return CustomPaint(
-          size: Size(innerW, innerH),
-          isComplex: true,
-          willChange: g.phase == GamePhase.playing,
-          painter: GamePainter(
-            discs: g.discs,
-            mySeat: g.mySeat,
-            drags: g.activeDrags,
-            visualGeneration: g.visualGeneration,
-            sx: sx,
-            sy: sy,
-            localDuoMode: g.localDuoMode,
-            myDiscColor: _discColor,
-            boardTheme: _boardTheme,
+        return RepaintBoundary(
+          child: CustomPaint(
+            size: Size(innerW, innerH),
+            isComplex: true,
+            willChange: g.phase == GamePhase.playing,
+            painter: GamePainter(
+              discs: g.discs,
+              mySeat: g.mySeat,
+              drags: g.activeDrags,
+              visualGeneration: g.visualGeneration,
+              sx: sx,
+              sy: sy,
+              localDuoMode: g.localDuoMode,
+              myDiscColor: _discColor,
+              boardTheme: _boardTheme,
+            ),
           ),
         );
       },

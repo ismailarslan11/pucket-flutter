@@ -34,7 +34,7 @@ class GamePainter extends CustomPainter {
   final String myDiscColor;
   final String boardTheme;
 
-  static const _fieldVersion = 4;
+  static const _fieldVersion = 5;
   static ui.Picture? _fieldPicture;
   static Size? _fieldSize;
   static int? _fieldSeat;
@@ -72,8 +72,15 @@ class GamePainter extends CustomPainter {
     }
 
     canvas.drawPicture(_fieldPictureFor(size));
+    var anyMoving = false;
     for (final d in discs) {
-      _drawDisc(canvas, d);
+      if (d.vvx.abs() + d.vvy.abs() > 0.35) {
+        anyMoving = true;
+        break;
+      }
+    }
+    for (final d in discs) {
+      _drawDisc(canvas, d, fast: anyMoving);
     }
     for (final drag in drags) {
       if (drag.discIndex < discs.length) {
@@ -138,7 +145,7 @@ class GamePainter extends CustomPainter {
 
   void _drawStarfield(Canvas canvas, Size size, BoardPalette palette) {
     final rng = math.Random(42);
-    for (var i = 0; i < 55; i++) {
+    for (var i = 0; i < 28; i++) {
       final x = rng.nextDouble() * size.width;
       final y = rng.nextDouble() * size.height;
       final r = rng.nextDouble() * 1.2 + 0.3;
@@ -152,10 +159,11 @@ class GamePainter extends CustomPainter {
   }
 
   void _drawNeonGrid(Canvas canvas, Size size, BoardPalette palette) {
+    if (palette.gridColor.a < 0.05) return;
     final gridPaint = Paint()
       ..color = palette.gridColor
-      ..strokeWidth = 0.6;
-    const step = 24.0;
+      ..strokeWidth = 0.5;
+    const step = 32.0;
     for (var x = 0.0; x <= size.width; x += step) {
       canvas.drawLine(Offset(x, 0), Offset(x, size.height), gridPaint);
     }
@@ -169,9 +177,9 @@ class GamePainter extends CustomPainter {
       a,
       b,
       Paint()
-        ..color = color.withValues(alpha: 0.25)
-        ..strokeWidth = width + 5
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4),
+        ..color = color.withValues(alpha: 0.28)
+        ..strokeWidth = width + 2.5
+        ..strokeCap = StrokeCap.round,
     );
     canvas.drawLine(a, b, Paint()..color = color..strokeWidth = width);
   }
@@ -181,10 +189,9 @@ class GamePainter extends CustomPainter {
       c,
       r,
       Paint()
-        ..color = color.withValues(alpha: 0.2)
+        ..color = color.withValues(alpha: 0.22)
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 4
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3),
+        ..strokeWidth = 3,
     );
     canvas.drawCircle(
       c,
@@ -200,10 +207,9 @@ class GamePainter extends CustomPainter {
     canvas.drawRRect(
       rrect,
       Paint()
-        ..color = color.withValues(alpha: 0.15)
+        ..color = color.withValues(alpha: 0.12)
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 5
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4),
+        ..strokeWidth = 4,
     );
     canvas.drawRRect(
       rrect,
@@ -251,10 +257,9 @@ class GamePainter extends CustomPainter {
     canvas.drawRRect(
       RRect.fromRectAndRadius(rect, const Radius.circular(2)),
       Paint()
-        ..color = palette.gateStroke.withValues(alpha: 0.35)
+        ..color = palette.gateStroke.withValues(alpha: 0.25)
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 4
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5),
+        ..strokeWidth = 3,
     );
     canvas.drawRRect(
       RRect.fromRectAndRadius(rect, const Radius.circular(2)),
@@ -265,7 +270,7 @@ class GamePainter extends CustomPainter {
     );
   }
 
-  void _drawDisc(Canvas canvas, Disc d) {
+  void _drawDisc(Canvas canvas, Disc d, {required bool fast}) {
     final pos = _s2c(d.vx, d.vy);
     final r = GameConstants.discRadius * sx;
     final moving = d.vvx.abs() + d.vvy.abs() > 0.35;
@@ -276,13 +281,6 @@ class GamePainter extends CustomPainter {
     final img = usePremium ? DiscImageCache.imageFor(myDiscColor) : null;
 
     if (img != null) {
-      if (!moving) {
-        canvas.drawCircle(
-          pos,
-          r + 4,
-          Paint()..color = Colors.white.withValues(alpha: 0.1),
-        );
-      }
       final dst = Rect.fromCircle(center: pos, radius: r);
       canvas.save();
       canvas.clipRRect(RRect.fromRectAndRadius(dst, Radius.circular(r)));
@@ -291,17 +289,19 @@ class GamePainter extends CustomPainter {
         rect: dst,
         image: img,
         fit: BoxFit.cover,
-        filterQuality: moving ? FilterQuality.low : FilterQuality.medium,
+        filterQuality: FilterQuality.low,
       );
       canvas.restore();
-      canvas.drawCircle(
-        pos,
-        r,
-        Paint()
-          ..color = Colors.white.withValues(alpha: moving ? 0.35 : 0.55)
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 1.5,
-      );
+      if (!moving) {
+        canvas.drawCircle(
+          pos,
+          r,
+          Paint()
+            ..color = Colors.white.withValues(alpha: 0.45)
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 1.2,
+        );
+      }
       return;
     }
 
@@ -309,11 +309,16 @@ class GamePainter extends CustomPainter {
         ? defaultColor
         : (isMine ? CosmeticsTheme.discColor(myDiscColor) : defaultColor);
 
+    if (fast || moving) {
+      canvas.drawCircle(pos, r, Paint()..color = color);
+      return;
+    }
+
     if (!moving) {
       canvas.drawCircle(
         pos,
-        r + 4,
-        Paint()..color = color.withValues(alpha: 0.15),
+        r + 3,
+        Paint()..color = color.withValues(alpha: 0.12),
       );
     }
 
@@ -336,8 +341,6 @@ class GamePainter extends CustomPainter {
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.5,
     );
-
-    if (moving) return;
 
     canvas.drawCircle(
       pos,
@@ -376,11 +379,11 @@ class GamePainter extends CustomPainter {
     final nx = -ddx / dist;
     final ny = -ddy / dist;
 
-    _neonLine(canvas, discPos, pullPos, AppColors.fieldBlue, width: 1.5);
+    _neonLine(canvas, discPos, pullPos, AppColors.fieldBlue, width: 1.2);
 
     final col = pow > 0.7 ? AppColors.brandOrange : AppColors.fieldBlue;
     final tip = Offset(discPos.dx + nx * lim * sx * 0.55, discPos.dy + ny * lim * sy * 0.55);
-    _neonLine(canvas, discPos, tip, col, width: 2.5);
+    _neonLine(canvas, discPos, tip, col, width: 2);
 
     final r = GameConstants.discRadius * sx;
     canvas.drawArc(
@@ -389,20 +392,9 @@ class GamePainter extends CustomPainter {
       math.pi * 2 * pow,
       false,
       Paint()
-        ..color = col.withValues(alpha: 0.35)
-        ..strokeWidth = 3
+        ..color = col.withValues(alpha: 0.45)
+        ..strokeWidth = 2.5
         ..style = PaintingStyle.stroke,
-    );
-    canvas.drawArc(
-      Rect.fromCircle(center: discPos, radius: r + 5),
-      -math.pi / 2,
-      math.pi * 2 * pow,
-      false,
-      Paint()
-        ..color = col
-        ..strokeWidth = 2
-        ..style = PaintingStyle.stroke
-        ..strokeCap = StrokeCap.round,
     );
   }
 

@@ -290,6 +290,7 @@ class AppLocalizations {
   String get tokensLocked => _t('tokensLocked');
   String get tokensAdUnavailable => _t('tokensAdUnavailable');
   String get tokensAdNotReady => _t('tokensAdNotReady');
+  String get tokensAdLoading => _t('tokensAdLoading');
   String get tokensAdConsentRequired => _t('tokensAdConsentRequired');
   String get tokensAdCooldown => _t('tokensAdCooldown');
   String tokensAdWaitSeconds(int sec) => _t('tokensAdWaitSeconds').replaceAll('{sec}', '$sec');
@@ -553,6 +554,7 @@ const _tr = {
   'tokensLocked': 'Bu kozmetik kilitli',
   'tokensAdUnavailable': 'Reklamlar bu cihazda kullanılamıyor',
   'tokensAdNotReady': 'Reklam henüz hazır değil, tekrar dene',
+  'tokensAdLoading': 'Reklam yükleniyor…',
   'tokensAdConsentRequired': 'Reklam izni gerekli — Ayarlar → Reklam gizlilik tercihleri',
   'tokensAdCooldown': 'Biraz bekle ve tekrar dene',
   'tokensAdWaitSeconds': '{sec} saniye sonra tekrar dene',
@@ -811,6 +813,7 @@ const _en = {
   'tokensLocked': 'This cosmetic is locked',
   'tokensAdUnavailable': 'Ads unavailable on this device',
   'tokensAdNotReady': 'Ad not ready yet, try again',
+  'tokensAdLoading': 'Loading ad…',
   'tokensAdConsentRequired': 'Ad consent required — Settings → Ad privacy preferences',
   'tokensAdCooldown': 'Please wait and try again',
   'tokensAdWaitSeconds': 'Try again in {sec} seconds',
@@ -1069,6 +1072,7 @@ const _de = {
   'tokensLocked': 'Kosmetik gesperrt',
   'tokensAdUnavailable': 'Werbung nicht verfügbar',
   'tokensAdNotReady': 'Werbung noch nicht bereit',
+  'tokensAdLoading': 'Werbung wird geladen…',
   'tokensAdConsentRequired': 'Werbungseinwilligung erforderlich',
   'tokensAdCooldown': 'Bitte warten und erneut versuchen',
   'tokensAdWaitSeconds': 'In {sec} Sekunden erneut versuchen',
@@ -1327,6 +1331,7 @@ const _es = {
   'tokensLocked': 'Cosmético bloqueado',
   'tokensAdUnavailable': 'Anuncios no disponibles',
   'tokensAdNotReady': 'Anuncio no listo, inténtalo de nuevo',
+  'tokensAdLoading': 'Cargando anuncio…',
   'tokensAdConsentRequired': 'Se requiere consentimiento de anuncios',
   'tokensAdCooldown': 'Espera e inténtalo de nuevo',
   'tokensAdWaitSeconds': 'Intenta en {sec} segundos',
@@ -1585,6 +1590,7 @@ const _ar = {
   'tokensLocked': 'مظهر مقفل',
   'tokensAdUnavailable': 'الإعلانات غير متاحة',
   'tokensAdNotReady': 'الإعلان غير جاهز',
+  'tokensAdLoading': 'جاري تحميل الإعلان…',
   'tokensAdConsentRequired': 'مطلوب موافقة الإعلانات',
   'tokensAdCooldown': 'انتظر وحاول مجدداً',
   'tokensAdWaitSeconds': 'حاول بعد {sec} ثانية',
@@ -1843,6 +1849,7 @@ const _fr = {
   'tokensLocked': 'Cosmétique verrouillé',
   'tokensAdUnavailable': 'Pubs indisponibles',
   'tokensAdNotReady': 'Pub pas prête, réessayez',
+  'tokensAdLoading': 'Chargement de la pub…',
   'tokensAdConsentRequired': 'Consentement pub requis',
   'tokensAdCooldown': 'Attendez et réessayez',
   'tokensAdWaitSeconds': 'Réessayez dans {sec} secondes',

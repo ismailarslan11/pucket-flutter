@@ -254,6 +254,7 @@ class _GameScreenState extends State<GameScreen> {
   @override
   Widget build(BuildContext context) {
     final game = context.read<GameController>();
+    final gameHud = Listenable.merge([game, game.uiSync]);
     final l10n = context.l10n;
 
     return Scaffold(
@@ -262,7 +263,7 @@ class _GameScreenState extends State<GameScreen> {
         child: Column(
           children: [
             ListenableBuilder(
-              listenable: game,
+              listenable: gameHud,
               builder: (context, _) {
                 final g = context.read<GameController>();
                 return Column(
@@ -335,7 +336,7 @@ class _GameScreenState extends State<GameScreen> {
               ),
             ),
             ListenableBuilder(
-              listenable: game,
+              listenable: gameHud,
               builder: (context, _) => _bottomBar(context.read<GameController>(), l10n),
             ),
           ],

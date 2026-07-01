@@ -377,53 +377,22 @@ class PhysicsEngine {
   }
 
   /// 2 kişilik mod: üst yarı mavi, alt yarı kırmızı — aynı anda oynanır.
-  /// Kendi rengindeki pullar seçilir; rakip pul üstte olsa bile en yakın kendi pul yardımıyla.
+  /// Dokunulan yarıdaki pullar seçilir: kendi pulların + alanına girmiş rakip pullar.
   static int findDiscAtLocalDuo(List<Disc> discs, double x, double y) {
-    final blueTouch = y < GameConstants.vHalf;
-    final wantOwner = blueTouch ? 1 : 0;
+    final blueTerritory = y < GameConstants.vHalf;
     const pickR = GameConstants.discRadius + 18;
     const pickSq = pickR * pickR;
-    // Rakip pul üzerine dokununca yakındaki kendi pulu seç (müdahale)
-    const assistR = GameConstants.discRadius * 3.2;
-    const assistSq = assistR * assistR;
 
-    bool discInTerritory(Disc d) =>
-        blueTouch ? occupiesTop(d) : occupiesBottom(d);
+    bool inTouchTerritory(Disc d) =>
+        blueTerritory ? occupiesTop(d) : occupiesBottom(d);
 
-    bool hits(Disc d, double maxSq) {
-      final dx = x - d.vx;
-      final dy = y - d.vy;
-      return dx * dx + dy * dy <= maxSq;
-    }
-
-    // Doğrudan kendi puluna dokunma (rakip pul döngüde yok sayılır)
     for (var i = discs.length - 1; i >= 0; i--) {
       final d = discs[i];
-      if (d.owner != wantOwner) continue;
-      if (hits(d, pickSq)) return i;
-    }
-
-    // Rakip pul senin yarındaysa ve parmağın onun üstündeyse — en yakın kendi pul
-    final opponentUnderFinger = discs.any((d) {
-      if (d.owner == wantOwner) return false;
-      if (!discInTerritory(d)) return false;
-      return hits(d, pickSq);
-    });
-    if (!opponentUnderFinger) return -1;
-
-    var bestIdx = -1;
-    var bestDist = assistSq;
-    for (var i = 0; i < discs.length; i++) {
-      final d = discs[i];
-      if (d.owner != wantOwner || !discInTerritory(d)) continue;
+      if (!inTouchTerritory(d)) continue;
       final dx = x - d.vx;
       final dy = y - d.vy;
-      final dist = dx * dx + dy * dy;
-      if (dist < bestDist) {
-        bestDist = dist;
-        bestIdx = i;
-      }
+      if (dx * dx + dy * dy <= pickSq) return i;
     }
-    return bestIdx;
+    return -1;
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'dart:async';
 
 import '../config/ad_config.dart';
 import '../l10n/l10n_extension.dart';
@@ -23,6 +24,7 @@ class _CosmeticsScreenState extends State<CosmeticsScreen> {
   String _board = 'classic';
   bool _saving = false;
   bool _watchingAd = false;
+  Timer? _cooldownTimer;
 
   static const _freeDiscs = CosmeticsTheme.discColors;
   static const _allBoards = ['classic', 'neon', 'wood'];
@@ -40,7 +42,25 @@ class _CosmeticsScreenState extends State<CosmeticsScreen> {
       await metaSvc.load(auth.getUid(), name: auth.getName());
       await ads.refreshAfterConsent();
       ads.preloadRewarded();
+      _startCooldownTicker();
     });
+  }
+
+  void _startCooldownTicker() {
+    _cooldownTimer?.cancel();
+    _cooldownTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      final metaSvc = context.read<PlayerMetaService>();
+      if (metaSvc.adCooldownRemainingMs > 0 || _watchingAd) {
+        setState(() {});
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _cooldownTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _watchAdForTokens() async {
@@ -163,8 +183,12 @@ class _CosmeticsScreenState extends State<CosmeticsScreen> {
             tokens: metaSvc.tokens,
             winPreview: winPreview,
             adPreview: adPreview,
-            onWatchAd: _watchingAd ? null : _watchAdForTokens,
+            showWatchButton: AdConfig.supported,
+            onWatchAd: _watchAdForTokens,
             watchingAd: _watchingAd,
+            cooldownSec: metaSvc.canWatchAdForTokens
+                ? 0
+                : (metaSvc.adCooldownRemainingMs / 1000).ceil(),
           ),
           const SizedBox(height: 24),
           Text(l10n.cosmeticsDiscFree, style: _sectionStyle),
@@ -279,15 +303,19 @@ class _TokenHeader extends StatelessWidget {
     required this.tokens,
     required this.winPreview,
     required this.adPreview,
+    required this.showWatchButton,
     required this.onWatchAd,
     required this.watchingAd,
+    required this.cooldownSec,
   });
 
   final int tokens;
   final int winPreview;
   final int adPreview;
-  final VoidCallback? onWatchAd;
+  final bool showWatchButton;
+  final VoidCallback onWatchAd;
   final bool watchingAd;
+  final int cooldownSec;
 
   @override
   Widget build(BuildContext context) {
@@ -318,11 +346,11 @@ class _TokenHeader extends StatelessWidget {
             style: const TextStyle(color: AppColors.textMuted, fontSize: 12, height: 1.4),
           ),
           const SizedBox(height: 12),
-          if (onWatchAd != null)
+          if (showWatchButton)
             SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(
-                onPressed: onWatchAd,
+                onPressed: watchingAd || cooldownSec > 0 ? null : onWatchAd,
                 icon: watchingAd
                     ? const SizedBox(
                         width: 16,
@@ -331,11 +359,20 @@ class _TokenHeader extends StatelessWidget {
                       )
                     : const Icon(Icons.play_circle_outline, color: AppColors.gold),
                 label: Text(
-                  watchingAd ? '...' : l10n.tokensWatchAd(adPreview),
-                  style: const TextStyle(color: AppColors.gold, fontWeight: FontWeight.w700),
+                  watchingAd
+                      ? l10n.tokensAdLoading
+                      : cooldownSec > 0
+                          ? l10n.tokensAdWaitSeconds(cooldownSec)
+                          : l10n.tokensWatchAd(adPreview),
+                  style: TextStyle(
+                    color: AppColors.gold.withValues(alpha: watchingAd || cooldownSec > 0 ? 0.7 : 1),
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: AppColors.gold),
+                  side: BorderSide(
+                    color: AppColors.gold.withValues(alpha: watchingAd || cooldownSec > 0 ? 0.5 : 1),
+                  ),
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
               ),
