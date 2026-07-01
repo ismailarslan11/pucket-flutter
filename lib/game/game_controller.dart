@@ -17,6 +17,11 @@ import 'training_layout.dart';
 
 enum GamePhase { idle, countdown, playing, paused, gameover }
 
+/// Sadece tahta CustomPaint yenilemesi — üst/alt bar rebuild etmez.
+class BoardRepaintNotifier extends ChangeNotifier {
+  void bump() => notifyListeners();
+}
+
 class DragState {
   final int discIndex;
   final double startVx;
@@ -116,6 +121,9 @@ class GameController extends ChangeNotifier {
   int _visualGeneration = 0;
   double _physicsAccum = 0;
   double _lastTickWallMs = 0;
+  int _uiSyncCounter = 0;
+
+  final boardRepaint = BoardRepaintNotifier();
 
   static const _physicsStepMs = 1000 / 60;
 
@@ -182,7 +190,12 @@ class GameController extends ChangeNotifier {
     }
     if (stepped) {
       _visualGeneration++;
-      notifyListeners();
+      boardRepaint.bump();
+      _uiSyncCounter++;
+      if (_uiSyncCounter >= 6) {
+        _uiSyncCounter = 0;
+        notifyListeners();
+      }
     }
   }
 
@@ -195,12 +208,15 @@ class GameController extends ChangeNotifier {
       if (moving > _lastMovingDiscs && moving > 0) {
         audio?.playHit();
       }
+      if (moving == 0 && _lastMovingDiscs > 0) {
+        notifyListeners();
+      }
       _lastMovingDiscs = moving;
 
       _frameCount++;
       if (aiMode && aiBot.shouldThink(_frameCount * _physicsStepMs, aiLevel)) {
         if (aiBot.think(discs, aiLevel)) _haptic(25);
-      } else if (!aiMode && isOnlineHost) {
+      } else if (!aiMode && isOnlineHost && _frameCount % 3 == 0) {
         _sendState();
       }
 
@@ -933,6 +949,7 @@ class GameController extends ChangeNotifier {
         currentVy: vy,
       );
       _visualGeneration++;
+      boardRepaint.bump();
       notifyListeners();
       return;
     }
@@ -948,6 +965,7 @@ class GameController extends ChangeNotifier {
       currentVy: vy,
     );
     _visualGeneration++;
+    boardRepaint.bump();
     notifyListeners();
   }
 
@@ -960,7 +978,7 @@ class GameController extends ChangeNotifier {
       _dragMoveCounter++;
       if (_dragMoveCounter.isEven) {
         _visualGeneration++;
-        notifyListeners();
+        boardRepaint.bump();
       }
       return;
     }
@@ -971,7 +989,7 @@ class GameController extends ChangeNotifier {
     _dragMoveCounter++;
     if (_dragMoveCounter.isEven) {
       _visualGeneration++;
-      notifyListeners();
+      boardRepaint.bump();
     }
   }
 

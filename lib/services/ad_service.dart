@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
@@ -11,6 +13,7 @@ class AdService extends ChangeNotifier {
   bool canLoadAds = false;
   String statusMessage = 'Başlatılıyor…';
   String lastBannerError = '';
+  String lastRewardedError = '';
   String consentDebug = '';
 
   InterstitialAd? _interstitial;
@@ -189,7 +192,8 @@ class AdService extends ChangeNotifier {
           );
         },
         onAdFailedToLoad: (error) {
-          debugPrint('Rewarded load failed: ${error.message}');
+          lastRewardedError = error.message;
+          debugPrint('Rewarded load failed: ${error.message} (${AdConfig.rewardedUnitId})');
           _loadingRewarded = false;
           Future.delayed(const Duration(seconds: 30), preloadRewarded);
         },
@@ -197,26 +201,68 @@ class AdService extends ChangeNotifier {
     );
   }
 
-  /// Ödüllü reklam izlendikten sonra [onReward] çağrılır.
-  Future<bool> showRewardedForTokens({required VoidCallback onReward}) async {
+  /// Ödüllü reklam hazır olana kadar bekler (en fazla [timeout]).
+  Future<bool> ensureRewardedReady({
+    Duration timeout = const Duration(seconds: 12),
+  }) async {
+    if (!AdConfig.supported || !initialized) return false;
+    if (!canLoadAds) {
+      await refreshAfterConsent();
+      if (!canLoadAds) return false;
+    }
+    if (_rewarded != null) return true;
+
+    preloadRewarded();
+    final deadline = DateTime.now().add(timeout);
+    while (DateTime.now().isBefore(deadline)) {
+      if (_rewarded != null) return true;
+      await Future<void>.delayed(const Duration(milliseconds: 350));
+      if (!_loadingRewarded && _rewarded == null) {
+        preloadRewarded();
+      }
+    }
+    return _rewarded != null;
+  }
+
+  Future<bool> showRewardedForTokens({VoidCallback? onReward}) async {
     if (!AdConfig.supported || !initialized || !canLoadAds) return false;
 
-    final ad = _rewarded;
-    if (ad == null) {
-      preloadRewarded();
+    final ready = await ensureRewardedReady();
+    if (!ready) {
+      lastRewardedError = lastRewardedError.isNotEmpty ? lastRewardedError : 'Reklam yüklenemedi';
       return false;
     }
 
-    var rewarded = false;
+    final ad = _rewarded!;
     _rewarded = null;
-    await ad.show(
-      onUserEarnedReward: (_, __) {
-        rewarded = true;
-        onReward();
+    var earned = false;
+
+    ad.fullScreenContentCallback = FullScreenContentCallback(
+      onAdDismissedFullScreenContent: (ad) {
+        ad.dispose();
+        preloadRewarded();
+      },
+      onAdFailedToShowFullScreenContent: (ad, error) {
+        lastRewardedError = error.message;
+        ad.dispose();
+        preloadRewarded();
       },
     );
-    preloadRewarded();
-    return rewarded;
+
+    try {
+      await ad.show(
+        onUserEarnedReward: (_, _) {
+          earned = true;
+          onReward?.call();
+        },
+      );
+    } catch (e) {
+      lastRewardedError = '$e';
+      ad.dispose();
+      preloadRewarded();
+      return false;
+    }
+    return earned;
   }
 
   bool get rewardedReady => _rewarded != null;

@@ -1,6 +1,3 @@
-import 'dart:async';
-
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -21,6 +18,7 @@ import 'services/api_config.dart';
 import 'services/audio_service.dart';
 import 'services/auth_service.dart';
 import 'services/career_service.dart';
+import 'services/firebase_engagement_service.dart';
 import 'services/firebase_init.dart';
 import 'services/settings_service.dart';
 import 'services/deep_link_service.dart';
@@ -43,6 +41,7 @@ void main() async {
   if (firebaseEnabled) {
     FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
     await PushService.setup();
+    await FirebaseEngagementService.init();
   }
 
   final settings = SettingsService();
@@ -177,6 +176,8 @@ class _AuthenticatedHomeState extends State<_AuthenticatedHome> {
       await meta.load(auth.getUid(), name: auth.getName());
       await career.syncFromCloud(auth.getUid());
       await PushService.initAndRegister(auth.getUid());
+      await FirebaseEngagementService.setUser(auth.getUid());
+      await FirebaseEngagementService.logScreen('menu');
       if (mounted) DeepLinkService.consumePending(context);
       if (!settings.tutorialSeen && mounted) {
         await Navigator.of(context).push(

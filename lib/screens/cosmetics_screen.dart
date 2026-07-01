@@ -33,6 +33,10 @@ class _CosmeticsScreenState extends State<CosmeticsScreen> {
     final meta = context.read<PlayerMetaService>().meta;
     _disc = meta?.cosmetics['discColor'] ?? 'green';
     _board = meta?.cosmetics['boardTheme'] ?? 'classic';
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final ads = context.read<AdService>();
+      ads.refreshAfterConsent().then((_) => ads.preloadRewarded());
+    });
   }
 
   Future<void> _watchAdForTokens() async {
@@ -47,21 +51,30 @@ class _CosmeticsScreenState extends State<CosmeticsScreen> {
       return;
     }
 
+    if (!ads.initialized || !ads.canLoadAds) {
+      await ads.refreshAfterConsent();
+    }
+    if (!ads.canLoadAds) {
+      _snack(l10n.tokensAdConsentRequired);
+      return;
+    }
+
     setState(() => _watchingAd = true);
-    var rewarded = false;
-    rewarded = await ads.showRewardedForTokens(onReward: () {});
+
+    final rewarded = await ads.showRewardedForTokens();
     if (!mounted) return;
 
     if (!rewarded) {
       setState(() => _watchingAd = false);
-      _snack(l10n.tokensAdNotReady);
+      final detail = ads.lastRewardedError;
+      _snack(detail.isNotEmpty ? '${l10n.tokensAdNotReady}\n$detail' : l10n.tokensAdNotReady);
       return;
     }
 
     final gain = await metaSvc.rewardAdTokens(auth.getUid());
     if (!mounted) return;
     setState(() => _watchingAd = false);
-    if (gain != null) {
+    if (gain != null && gain > 0) {
       _snack(l10n.tokensEarned(gain));
     } else {
       _snack(metaSvc.lastMessage ?? l10n.tokensAdCooldown);

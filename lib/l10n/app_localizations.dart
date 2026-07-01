@@ -47,6 +47,8 @@ class AppLocalizations {
   String get settingsSfxVol => _t('settingsSfxVol');
   String get settingsVibration => _t('settingsVibration');
   String get settingsVibrationSub => _t('settingsVibrationSub');
+  String get settingsCopyFid => _t('settingsCopyFid');
+  String get settingsFidCopied => _t('settingsFidCopied');
   String get settingsAds => _t('settingsAds');
   String get settingsAdsSub => _t('settingsAdsSub');
   String get privacyPolicy => _t('privacyPolicy');
@@ -288,6 +290,7 @@ class AppLocalizations {
   String get tokensLocked => _t('tokensLocked');
   String get tokensAdUnavailable => _t('tokensAdUnavailable');
   String get tokensAdNotReady => _t('tokensAdNotReady');
+  String get tokensAdConsentRequired => _t('tokensAdConsentRequired');
   String get tokensAdCooldown => _t('tokensAdCooldown');
 
   String discName(String id) {
@@ -361,6 +364,8 @@ const _tr = {
   'settingsSfxVol': 'Efekt Ses',
   'settingsVibration': 'Titreşim',
   'settingsVibrationSub': 'Atış ve kazanma titreşimi',
+  'settingsCopyFid': 'Firebase test cihaz ID kopyala (In-App Messaging)',
+  'settingsFidCopied': 'Test cihaz ID panoya kopyalandı',
   'settingsAds': 'Reklamlar',
   'settingsAdsSub': 'Banner + maç arası reklamlar',
   'privacyPolicy': 'Gizlilik Politikası',
@@ -545,6 +550,7 @@ const _tr = {
   'tokensLocked': 'Bu kozmetik kilitli',
   'tokensAdUnavailable': 'Reklamlar bu cihazda kullanılamıyor',
   'tokensAdNotReady': 'Reklam henüz hazır değil, tekrar dene',
+  'tokensAdConsentRequired': 'Reklam izni gerekli — Ayarlar → Reklam gizlilik tercihleri',
   'tokensAdCooldown': 'Biraz bekle ve tekrar dene',
   'disc_gryphon': 'Griffon Koruyucu',
   'disc_abyssal_serpent': 'Uçurum Yılanı',
@@ -613,6 +619,8 @@ const _en = {
   'settingsSfxVol': 'SFX Volume',
   'settingsVibration': 'Vibration',
   'settingsVibrationSub': 'Shot and win haptics',
+  'settingsCopyFid': 'Copy Firebase test device ID (In-App Messaging)',
+  'settingsFidCopied': 'Test device ID copied to clipboard',
   'settingsAds': 'Ads',
   'settingsAdsSub': 'Banner + between-match ads',
   'privacyPolicy': 'Privacy Policy',
@@ -797,6 +805,7 @@ const _en = {
   'tokensLocked': 'This cosmetic is locked',
   'tokensAdUnavailable': 'Ads unavailable on this device',
   'tokensAdNotReady': 'Ad not ready yet, try again',
+  'tokensAdConsentRequired': 'Ad consent required — Settings → Ad privacy preferences',
   'tokensAdCooldown': 'Please wait and try again',
   'disc_gryphon': 'Gryphon Guardian',
   'disc_abyssal_serpent': 'Abyssal Serpent',
@@ -865,6 +874,8 @@ const _de = {
   'settingsSfxVol': 'Effektlautstärke',
   'settingsVibration': 'Vibration',
   'settingsVibrationSub': 'Haptik bei Schuss und Sieg',
+  'settingsCopyFid': 'Firebase Test-Geräte-ID kopieren (In-App Messaging)',
+  'settingsFidCopied': 'Test-Geräte-ID in Zwischenablage kopiert',
   'settingsAds': 'Werbung',
   'settingsAdsSub': 'Banner + Werbung zwischen Matches',
   'privacyPolicy': 'Datenschutz',
@@ -1049,6 +1060,7 @@ const _de = {
   'tokensLocked': 'Kosmetik gesperrt',
   'tokensAdUnavailable': 'Werbung nicht verfügbar',
   'tokensAdNotReady': 'Werbung noch nicht bereit',
+  'tokensAdConsentRequired': 'Werbungseinwilligung erforderlich',
   'tokensAdCooldown': 'Bitte warten und erneut versuchen',
   'disc_gryphon': 'Greifen-Wächter',
   'disc_abyssal_serpent': 'Abgrund-Serpent',
@@ -1117,6 +1129,8 @@ const _es = {
   'settingsSfxVol': 'Volumen efectos',
   'settingsVibration': 'Vibración',
   'settingsVibrationSub': 'Vibración al disparar',
+  'settingsCopyFid': 'Copiar ID de prueba Firebase (In-App Messaging)',
+  'settingsFidCopied': 'ID de prueba copiado al portapapeles',
   'settingsAds': 'Anuncios',
   'settingsAdsSub': 'Banner + anuncios entre partidas',
   'privacyPolicy': 'Política de privacidad',
@@ -1301,6 +1315,7 @@ const _es = {
   'tokensLocked': 'Cosmético bloqueado',
   'tokensAdUnavailable': 'Anuncios no disponibles',
   'tokensAdNotReady': 'Anuncio no listo, inténtalo de nuevo',
+  'tokensAdConsentRequired': 'Se requiere consentimiento de anuncios',
   'tokensAdCooldown': 'Espera e inténtalo de nuevo',
   'disc_gryphon': 'Grifo Guardián',
   'disc_abyssal_serpent': 'Serpiente Abisal',
@@ -1369,6 +1384,8 @@ const _ar = {
   'settingsSfxVol': 'صوت المؤثرات',
   'settingsVibration': 'الاهتزاز',
   'settingsVibrationSub': 'اهتزاز عند الرمي والفوز',
+  'settingsCopyFid': 'نسخ معرف جهاز الاختبار Firebase',
+  'settingsFidCopied': 'تم نسخ معرف الجهاز',
   'settingsAds': 'الإعلانات',
   'settingsAdsSub': 'بانر + إعلانات بين المباريات',
   'privacyPolicy': 'سياسة الخصوصية',
@@ -1553,6 +1570,7 @@ const _ar = {
   'tokensLocked': 'مظهر مقفل',
   'tokensAdUnavailable': 'الإعلانات غير متاحة',
   'tokensAdNotReady': 'الإعلان غير جاهز',
+  'tokensAdConsentRequired': 'مطلوب موافقة الإعلانات',
   'tokensAdCooldown': 'انتظر وحاول مجدداً',
   'disc_gryphon': 'حارس الغريفين',
   'disc_abyssal_serpent': 'ثعبان الهاوية',
@@ -1621,6 +1639,8 @@ const _fr = {
   'settingsSfxVol': 'Volume effets',
   'settingsVibration': 'Vibration',
   'settingsVibrationSub': 'Vibration au tir et victoire',
+  'settingsCopyFid': 'Copier l’ID test Firebase (In-App Messaging)',
+  'settingsFidCopied': 'ID test copié dans le presse-papiers',
   'settingsAds': 'Publicités',
   'settingsAdsSub': 'Bannière + pubs entre matchs',
   'privacyPolicy': 'Politique de confidentialité',
@@ -1805,6 +1825,7 @@ const _fr = {
   'tokensLocked': 'Cosmétique verrouillé',
   'tokensAdUnavailable': 'Pubs indisponibles',
   'tokensAdNotReady': 'Pub pas prête, réessayez',
+  'tokensAdConsentRequired': 'Consentement pub requis',
   'tokensAdCooldown': 'Attendez et réessayez',
   'disc_gryphon': 'Griffon Gardien',
   'disc_abyssal_serpent': 'Serpent Abyssal',

@@ -9,17 +9,24 @@ class AdConfig {
 
   static const _bannerFromEnv = String.fromEnvironment('ADMOB_BANNER_ID');
   static const _interstitialFromEnv = String.fromEnvironment('ADMOB_INTERSTITIAL_ID');
+  static const _rewardedFromEnv = String.fromEnvironment('ADMOB_REWARDED_ID');
   static const _bannerIosFromEnv = String.fromEnvironment('ADMOB_IOS_BANNER_ID');
   static const _interstitialIosFromEnv = String.fromEnvironment('ADMOB_IOS_INTERSTITIAL_ID');
+  static const _rewardedIosFromEnv = String.fromEnvironment('ADMOB_IOS_REWARDED_ID');
   static const _useTestAdsFromEnv = bool.fromEnvironment('ADMOB_USE_TEST_ADS');
 
   /// PUCKET Android — com.pucket.pucket_flutter (AdMob Console)
   static const _prodBannerAndroid = 'ca-app-pub-2558408055462441/2963997268';
   static const _prodInterstitialAndroid = 'ca-app-pub-2558408055462441/8581331624';
+  static const _prodRewardedAndroid = 'ca-app-pub-2558408055462441/8574728233';
 
   /// PUCKET iOS — com.pucket.pucketFlutter (AdMob Console)
   static const _prodBannerIos = 'ca-app-pub-2558408055462441/8708525371';
   static const _prodInterstitialIos = 'ca-app-pub-2558408055462441/9043567292';
+  static const _prodRewardedIos = String.fromEnvironment(
+    'ADMOB_REWARDED_IOS',
+    defaultValue: '',
+  );
 
   static const _testBannerAndroid = 'ca-app-pub-3940256099942544/6300978111';
   static const _testBannerIos = 'ca-app-pub-3940256099942544/2934735716';
@@ -60,13 +67,19 @@ class AdConfig {
     return '';
   }
 
+  /// Ödüllü reklam — interstitial birimi KULLANILMAZ.
   static String get rewardedUnitId {
     if (kIsWeb) return '';
     if (defaultTargetPlatform == TargetPlatform.android) {
-      return useTestAds ? _testRewardedAndroid : _prodInterstitialAndroid;
+      if (_rewardedFromEnv.isNotEmpty) return _rewardedFromEnv;
+      if (useTestAds) return _testRewardedAndroid;
+      return _prodRewardedAndroid;
     }
     if (defaultTargetPlatform == TargetPlatform.iOS) {
-      return useTestAds ? _testRewardedIos : _prodInterstitialIos;
+      if (_rewardedIosFromEnv.isNotEmpty) return _rewardedIosFromEnv;
+      if (_prodRewardedIos.isNotEmpty) return _prodRewardedIos;
+      if (useTestAds) return _testRewardedIos;
+      return _testRewardedIos;
     }
     return '';
   }

@@ -279,21 +279,19 @@ class GamePainter extends CustomPainter {
       if (!moving) {
         canvas.drawCircle(
           pos,
-          r + 6,
-          Paint()
-            ..color = Colors.white.withValues(alpha: 0.12)
-            ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8),
+          r + 4,
+          Paint()..color = Colors.white.withValues(alpha: 0.1),
         );
       }
       final dst = Rect.fromCircle(center: pos, radius: r);
       canvas.save();
-      canvas.clipPath(Path()..addOval(dst));
+      canvas.clipRRect(RRect.fromRectAndRadius(dst, Radius.circular(r)));
       paintImage(
         canvas: canvas,
         rect: dst,
         image: img,
         fit: BoxFit.cover,
-        filterQuality: FilterQuality.medium,
+        filterQuality: moving ? FilterQuality.low : FilterQuality.medium,
       );
       canvas.restore();
       canvas.drawCircle(
@@ -314,10 +312,8 @@ class GamePainter extends CustomPainter {
     if (!moving) {
       canvas.drawCircle(
         pos,
-        r + 6,
-        Paint()
-          ..color = color.withValues(alpha: 0.22)
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8),
+        r + 4,
+        Paint()..color = color.withValues(alpha: 0.15),
       );
     }
 
@@ -393,10 +389,9 @@ class GamePainter extends CustomPainter {
       math.pi * 2 * pow,
       false,
       Paint()
-        ..color = col.withValues(alpha: 0.25)
-        ..strokeWidth = 6
-        ..style = PaintingStyle.stroke
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4),
+        ..color = col.withValues(alpha: 0.35)
+        ..strokeWidth = 3
+        ..style = PaintingStyle.stroke,
     );
     canvas.drawArc(
       Rect.fromCircle(center: discPos, radius: r + 5),

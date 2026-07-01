@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../l10n/app_localizations.dart';
 import '../l10n/app_language.dart';
 import '../l10n/l10n_extension.dart';
 import '../services/auth_service.dart';
+import '../services/firebase_engagement_service.dart';
+import '../services/firebase_init.dart';
 import '../services/settings_service.dart';
 import 'legal_screen.dart';
 import '../theme/app_theme.dart';
@@ -67,6 +70,24 @@ class SettingsScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 8),
+                  if (firebaseEnabled)
+                    TextButton(
+                      onPressed: () async {
+                        final fid = await FirebaseEngagementService.refreshInstallationId();
+                        if (fid != null && fid.isNotEmpty) {
+                          await Clipboard.setData(ClipboardData(text: fid));
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(l10n.settingsFidCopied)),
+                            );
+                          }
+                        }
+                      },
+                      child: Text(
+                        l10n.settingsCopyFid,
+                        style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+                      ),
+                    ),
                   TextButton(
                     onPressed: () async {
                       await context.read<AuthService>().signOut();

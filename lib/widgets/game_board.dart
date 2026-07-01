@@ -20,6 +20,8 @@ class _GameBoardState extends State<GameBoard> with SingleTickerProviderStateMix
   late Ticker _ticker;
   late GameController _game;
   double _lastMs = 0;
+  String _discColor = 'green';
+  String _boardTheme = 'classic';
 
   @override
   void initState() {
@@ -31,6 +33,14 @@ class _GameBoardState extends State<GameBoard> with SingleTickerProviderStateMix
   void didChangeDependencies() {
     super.didChangeDependencies();
     _game = context.read<GameController>();
+    _refreshCosmetics();
+  }
+
+  void _refreshCosmetics() {
+    final meta = context.read<PlayerMetaService>();
+    final auth = context.read<AuthService>();
+    _discColor = meta.discColor(auth.getUid());
+    _boardTheme = meta.boardTheme(auth.getUid());
   }
 
   void _onTick(Duration elapsed) {
@@ -51,6 +61,8 @@ class _GameBoardState extends State<GameBoard> with SingleTickerProviderStateMix
   @override
   Widget build(BuildContext context) {
     final game = context.read<GameController>();
+    final palette = CosmeticsTheme.boardPalette(_boardTheme);
+
     return LayoutBuilder(
       builder: (context, constraints) {
         const outerPad = 8.0;
@@ -62,116 +74,95 @@ class _GameBoardState extends State<GameBoard> with SingleTickerProviderStateMix
 
         return Padding(
           padding: const EdgeInsets.all(outerPad),
-          child: ListenableBuilder(
-            listenable: context.read<PlayerMetaService>(),
-            builder: (context, _) {
-              final meta = context.read<PlayerMetaService>();
-              final auth = context.read<AuthService>();
-              final palette = CosmeticsTheme.boardPalette(meta.boardTheme(auth.getUid()));
-
-              return DecoratedBox(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: palette.neonPrimary.withValues(alpha: 0.35),
-                      blurRadius: 20,
-                      spreadRadius: 1,
-                    ),
-                    BoxShadow(
-                      color: palette.neonSecondary.withValues(alpha: 0.2),
-                      blurRadius: 32,
-                      spreadRadius: 0,
-                    ),
-                  ],
-                  border: Border.all(
-                    color: palette.neonPrimary.withValues(alpha: 0.7),
-                    width: 1.5,
-                  ),
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      palette.frameInner,
-                      Color.lerp(palette.frameInner, palette.neonPrimary, 0.08)!,
-                    ],
-                  ),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: palette.neonPrimary.withValues(alpha: 0.22),
+                  blurRadius: 10,
+                  spreadRadius: 0,
                 ),
-                child: Padding(
-                  padding: const EdgeInsets.all(frameWidth),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(13),
-                    child: game.localDuoMode
-                        ? Listener(
-                            behavior: HitTestBehavior.opaque,
-                            onPointerDown: (e) {
-                              if (game.phase != GamePhase.playing) return;
-                              game.onPointerDown(
-                                e.pointer,
-                                e.localPosition.dx / sx,
-                                e.localPosition.dy / sy,
-                              );
-                            },
-                            onPointerMove: (e) {
-                              game.onPointerMove(
-                                e.pointer,
-                                e.localPosition.dx / sx,
-                                e.localPosition.dy / sy,
-                              );
-                            },
-                            onPointerUp: (e) => game.onPointerUp(e.pointer),
-                            onPointerCancel: (e) => game.onPointerUp(e.pointer),
-                            child: _buildPaint(innerW, innerH, sx, sy, game, meta, auth),
-                          )
-                        : GestureDetector(
-                            onPanDown: (d) {
-                              var vx = d.localPosition.dx / sx;
-                              var vy = d.localPosition.dy / sy;
-                              if (game.mySeat == 1) {
-                                vx = GameConstants.vw - vx;
-                                vy = GameConstants.vh - vy;
-                              }
-                              game.onPointerDown(0, vx, vy);
-                            },
-                            onPanUpdate: (d) {
-                              var vx = d.localPosition.dx / sx;
-                              var vy = d.localPosition.dy / sy;
-                              if (game.mySeat == 1) {
-                                vx = GameConstants.vw - vx;
-                                vy = GameConstants.vh - vy;
-                              }
-                              game.onPointerMove(0, vx, vy);
-                            },
-                            onPanEnd: (_) => game.onPointerUp(0),
-                            onPanCancel: () => game.onPointerUp(0),
-                            child: _buildPaint(innerW, innerH, sx, sy, game, meta, auth),
-                          ),
-                  ),
-                ),
-              );
-            },
+              ],
+              border: Border.all(
+                color: palette.neonPrimary.withValues(alpha: 0.7),
+                width: 1.5,
+              ),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  palette.frameInner,
+                  Color.lerp(palette.frameInner, palette.neonPrimary, 0.08)!,
+                ],
+              ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(frameWidth),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(13),
+                child: game.localDuoMode
+                    ? Listener(
+                        behavior: HitTestBehavior.opaque,
+                        onPointerDown: (e) {
+                          if (game.phase != GamePhase.playing) return;
+                          game.onPointerDown(
+                            e.pointer,
+                            e.localPosition.dx / sx,
+                            e.localPosition.dy / sy,
+                          );
+                        },
+                        onPointerMove: (e) {
+                          game.onPointerMove(
+                            e.pointer,
+                            e.localPosition.dx / sx,
+                            e.localPosition.dy / sy,
+                          );
+                        },
+                        onPointerUp: (e) => game.onPointerUp(e.pointer),
+                        onPointerCancel: (e) => game.onPointerUp(e.pointer),
+                        child: _buildPaint(innerW, innerH, sx, sy, game),
+                      )
+                    : GestureDetector(
+                        onPanDown: (d) {
+                          var vx = d.localPosition.dx / sx;
+                          var vy = d.localPosition.dy / sy;
+                          if (game.mySeat == 1) {
+                            vx = GameConstants.vw - vx;
+                            vy = GameConstants.vh - vy;
+                          }
+                          game.onPointerDown(0, vx, vy);
+                        },
+                        onPanUpdate: (d) {
+                          var vx = d.localPosition.dx / sx;
+                          var vy = d.localPosition.dy / sy;
+                          if (game.mySeat == 1) {
+                            vx = GameConstants.vw - vx;
+                            vy = GameConstants.vh - vy;
+                          }
+                          game.onPointerMove(0, vx, vy);
+                        },
+                        onPanEnd: (_) => game.onPointerUp(0),
+                        onPanCancel: () => game.onPointerUp(0),
+                        child: _buildPaint(innerW, innerH, sx, sy, game),
+                      ),
+              ),
+            ),
           ),
         );
       },
     );
   }
 
-  Widget _buildPaint(
-    double innerW,
-    double innerH,
-    double sx,
-    double sy,
-    GameController game,
-    PlayerMetaService meta,
-    AuthService auth,
-  ) {
+  Widget _buildPaint(double innerW, double innerH, double sx, double sy, GameController game) {
     return ListenableBuilder(
-      listenable: Listenable.merge([game, meta]),
+      listenable: Listenable.merge([game, game.boardRepaint]),
       builder: (context, _) {
         final g = context.read<GameController>();
-        final uid = auth.getUid();
         return CustomPaint(
           size: Size(innerW, innerH),
+          isComplex: true,
+          willChange: g.phase == GamePhase.playing,
           painter: GamePainter(
             discs: g.discs,
             mySeat: g.mySeat,
@@ -180,8 +171,8 @@ class _GameBoardState extends State<GameBoard> with SingleTickerProviderStateMix
             sx: sx,
             sy: sy,
             localDuoMode: g.localDuoMode,
-            myDiscColor: meta.discColor(uid),
-            boardTheme: meta.boardTheme(uid),
+            myDiscColor: _discColor,
+            boardTheme: _boardTheme,
           ),
         );
       },
