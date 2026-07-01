@@ -22,7 +22,13 @@ class SettingsService extends ChangeNotifier {
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
     tutorialSeen = prefs.getBool(_tutorialKey) ?? false;
-    language = AppLanguage.fromCode(prefs.getString(_langKey));
+    final savedLang = prefs.getString(_langKey);
+    if (savedLang != null) {
+      language = AppLanguage.fromCode(savedLang);
+    } else {
+      language = AppLanguage.fromDeviceLocale();
+      await prefs.setString(_langKey, language.code);
+    }
     final json = prefs.getString(_key);
     if (json == null) {
       notifyListeners();
