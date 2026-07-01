@@ -33,9 +33,13 @@ class _CosmeticsScreenState extends State<CosmeticsScreen> {
     final meta = context.read<PlayerMetaService>().meta;
     _disc = meta?.cosmetics['discColor'] ?? 'green';
     _board = meta?.cosmetics['boardTheme'] ?? 'classic';
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       final ads = context.read<AdService>();
-      ads.refreshAfterConsent().then((_) => ads.preloadRewarded());
+      final auth = context.read<AuthService>();
+      final metaSvc = context.read<PlayerMetaService>();
+      await metaSvc.load(auth.getUid(), name: auth.getName());
+      await ads.refreshAfterConsent();
+      ads.preloadRewarded();
     });
   }
 
@@ -51,6 +55,12 @@ class _CosmeticsScreenState extends State<CosmeticsScreen> {
       return;
     }
 
+    if (!metaSvc.canWatchAdForTokens) {
+      final sec = (metaSvc.adCooldownRemainingMs / 1000).ceil();
+      _snack(l10n.tokensAdWaitSeconds(sec));
+      return;
+    }
+
     if (!ads.initialized || !ads.canLoadAds) {
       await ads.refreshAfterConsent();
     }
@@ -61,13 +71,25 @@ class _CosmeticsScreenState extends State<CosmeticsScreen> {
 
     setState(() => _watchingAd = true);
 
-    final rewarded = await ads.showRewardedForTokens();
+    final outcome = await ads.showRewardedForTokens();
     if (!mounted) return;
 
-    if (!rewarded) {
+    if (outcome == RewardedAdOutcome.notReady) {
       setState(() => _watchingAd = false);
       final detail = ads.lastRewardedError;
       _snack(detail.isNotEmpty ? '${l10n.tokensAdNotReady}\n$detail' : l10n.tokensAdNotReady);
+      return;
+    }
+
+    if (outcome == RewardedAdOutcome.dismissedEarly) {
+      setState(() => _watchingAd = false);
+      _snack(l10n.tokensAdWatchFull);
+      return;
+    }
+
+    if (outcome == RewardedAdOutcome.showFailed) {
+      setState(() => _watchingAd = false);
+      _snack(ads.lastRewardedError.isNotEmpty ? ads.lastRewardedError : l10n.tokensAdNotReady);
       return;
     }
 
@@ -77,7 +99,7 @@ class _CosmeticsScreenState extends State<CosmeticsScreen> {
     if (gain != null && gain > 0) {
       _snack(l10n.tokensEarned(gain));
     } else {
-      _snack(metaSvc.lastMessage ?? l10n.tokensAdCooldown);
+      _snack(metaSvc.lastMessage ?? l10n.tokensAdServerError);
     }
   }
 
@@ -98,11 +120,18 @@ class _CosmeticsScreenState extends State<CosmeticsScreen> {
     );
     if (!mounted) return;
     if (ok) {
-      _snack(l10n.tokensPurchased);
+      final newDisc = type == 'disc' ? id : _disc;
+      final newBoard = type == 'board' ? id : _board;
       setState(() {
-        if (type == 'disc') _disc = id;
-        if (type == 'board') _board = id;
+        _disc = newDisc;
+        _board = newBoard;
       });
+      await metaSvc.setCosmetics(auth.getUid(), {
+        'discColor': newDisc,
+        'boardTheme': newBoard,
+      });
+      if (!mounted) return;
+      _snack(l10n.tokensPurchased);
     } else {
       _snack(metaSvc.lastMessage ?? l10n.tokensNotEnough);
     }

@@ -292,6 +292,9 @@ class AppLocalizations {
   String get tokensAdNotReady => _t('tokensAdNotReady');
   String get tokensAdConsentRequired => _t('tokensAdConsentRequired');
   String get tokensAdCooldown => _t('tokensAdCooldown');
+  String tokensAdWaitSeconds(int sec) => _t('tokensAdWaitSeconds').replaceAll('{sec}', '$sec');
+  String get tokensAdWatchFull => _t('tokensAdWatchFull');
+  String get tokensAdServerError => _t('tokensAdServerError');
 
   String discName(String id) {
     final key = 'disc_$id';
@@ -552,6 +555,9 @@ const _tr = {
   'tokensAdNotReady': 'Reklam henüz hazır değil, tekrar dene',
   'tokensAdConsentRequired': 'Reklam izni gerekli — Ayarlar → Reklam gizlilik tercihleri',
   'tokensAdCooldown': 'Biraz bekle ve tekrar dene',
+  'tokensAdWaitSeconds': '{sec} saniye sonra tekrar dene',
+  'tokensAdWatchFull': 'Jeton için reklamı sonuna kadar izle',
+  'tokensAdServerError': 'Reklam izlendi ama jeton sunucuya yazılamadı',
   'disc_gryphon': 'Griffon Koruyucu',
   'disc_abyssal_serpent': 'Uçurum Yılanı',
   'disc_ascended_phoenix': 'Yükselen Anka',
@@ -807,6 +813,9 @@ const _en = {
   'tokensAdNotReady': 'Ad not ready yet, try again',
   'tokensAdConsentRequired': 'Ad consent required — Settings → Ad privacy preferences',
   'tokensAdCooldown': 'Please wait and try again',
+  'tokensAdWaitSeconds': 'Try again in {sec} seconds',
+  'tokensAdWatchFull': 'Watch the full ad to earn tokens',
+  'tokensAdServerError': 'Ad watched but tokens could not be saved',
   'disc_gryphon': 'Gryphon Guardian',
   'disc_abyssal_serpent': 'Abyssal Serpent',
   'disc_ascended_phoenix': 'Ascended Phoenix',
@@ -1062,6 +1071,9 @@ const _de = {
   'tokensAdNotReady': 'Werbung noch nicht bereit',
   'tokensAdConsentRequired': 'Werbungseinwilligung erforderlich',
   'tokensAdCooldown': 'Bitte warten und erneut versuchen',
+  'tokensAdWaitSeconds': 'In {sec} Sekunden erneut versuchen',
+  'tokensAdWatchFull': 'Werbung vollständig ansehen für Jetons',
+  'tokensAdServerError': 'Werbung gesehen, Jetons konnten nicht gespeichert werden',
   'disc_gryphon': 'Greifen-Wächter',
   'disc_abyssal_serpent': 'Abgrund-Serpent',
   'disc_ascended_phoenix': 'Aufgestiegener Phönix',
@@ -1317,6 +1329,9 @@ const _es = {
   'tokensAdNotReady': 'Anuncio no listo, inténtalo de nuevo',
   'tokensAdConsentRequired': 'Se requiere consentimiento de anuncios',
   'tokensAdCooldown': 'Espera e inténtalo de nuevo',
+  'tokensAdWaitSeconds': 'Intenta en {sec} segundos',
+  'tokensAdWatchFull': 'Mira el anuncio completo para ganar fichas',
+  'tokensAdServerError': 'Anuncio visto pero no se pudieron guardar las fichas',
   'disc_gryphon': 'Grifo Guardián',
   'disc_abyssal_serpent': 'Serpiente Abisal',
   'disc_ascended_phoenix': 'Fénix Ascendido',
@@ -1572,6 +1587,9 @@ const _ar = {
   'tokensAdNotReady': 'الإعلان غير جاهز',
   'tokensAdConsentRequired': 'مطلوب موافقة الإعلانات',
   'tokensAdCooldown': 'انتظر وحاول مجدداً',
+  'tokensAdWaitSeconds': 'حاول بعد {sec} ثانية',
+  'tokensAdWatchFull': 'شاهد الإعلان كاملاً لربح العملات',
+  'tokensAdServerError': 'شُوهد الإعلان لكن لم تُحفظ العملات',
   'disc_gryphon': 'حارس الغريفين',
   'disc_abyssal_serpent': 'ثعبان الهاوية',
   'disc_ascended_phoenix': 'عنقاء متصاعد',
@@ -1827,6 +1845,9 @@ const _fr = {
   'tokensAdNotReady': 'Pub pas prête, réessayez',
   'tokensAdConsentRequired': 'Consentement pub requis',
   'tokensAdCooldown': 'Attendez et réessayez',
+  'tokensAdWaitSeconds': 'Réessayez dans {sec} secondes',
+  'tokensAdWatchFull': 'Regardez la pub en entier pour gagner des jetons',
+  'tokensAdServerError': 'Pub vue mais jetons non enregistrés',
   'disc_gryphon': 'Griffon Gardien',
   'disc_abyssal_serpent': 'Serpent Abyssal',
   'disc_ascended_phoenix': 'Phénix Ascendant',

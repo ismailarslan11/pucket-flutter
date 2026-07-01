@@ -119,4 +119,15 @@ class PlayerMetaService extends ChangeNotifier {
 
   int previewWinTokens(int elo) => CosmeticCatalog.winTokenReward(elo);
   int previewAdTokens(int elo) => CosmeticCatalog.adTokenReward(elo);
+
+  static const adCooldownMs = 30000;
+
+  int get adCooldownRemainingMs {
+    final last = meta?.lastAdReward ?? 0;
+    if (last <= 0) return 0;
+    final left = adCooldownMs - (DateTime.now().millisecondsSinceEpoch - last);
+    return left > 0 ? left : 0;
+  }
+
+  bool get canWatchAdForTokens => adCooldownRemainingMs <= 0;
 }

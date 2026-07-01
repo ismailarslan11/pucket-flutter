@@ -809,9 +809,9 @@ const server = http.createServer((req, res) => {
           if (data.action === 'reward_ad') {
             ensureTokenFields(meta);
             const now = Date.now();
-            if (now - (meta.lastAdReward || 0) < 45000) {
+            if (now - (meta.lastAdReward || 0) < 30000) {
               res.writeHead(429, cors);
-              res.end(JSON.stringify({ ok: false, error: 'Çok sık' }));
+              res.end(JSON.stringify({ ok: false, error: '30 saniye bekle' }));
               return;
             }
             const p = upsertPlayer(uid);
@@ -853,8 +853,10 @@ const server = http.createServer((req, res) => {
               }
               meta.tokens -= price;
               meta.unlockedDiscs.push(itemId);
+              const cosmetics = { ...(meta.cosmetics || {}), discColor: itemId };
               db.set(`playerMeta.${uid}.tokens`, meta.tokens).write();
               db.set(`playerMeta.${uid}.unlockedDiscs`, meta.unlockedDiscs).write();
+              db.set(`playerMeta.${uid}.cosmetics`, cosmetics).write();
             } else if (type === 'board') {
               if (FREE_BOARDS.has(itemId)) {
                 res.writeHead(400, cors);
@@ -879,8 +881,10 @@ const server = http.createServer((req, res) => {
               }
               meta.tokens -= price;
               meta.unlockedBoards.push(itemId);
+              const cosmetics = { ...(meta.cosmetics || {}), boardTheme: itemId };
               db.set(`playerMeta.${uid}.tokens`, meta.tokens).write();
               db.set(`playerMeta.${uid}.unlockedBoards`, meta.unlockedBoards).write();
+              db.set(`playerMeta.${uid}.cosmetics`, cosmetics).write();
             } else {
               res.writeHead(400, cors);
               res.end(JSON.stringify({ ok: false, error: 'Geçersiz tip' }));

@@ -6,6 +6,13 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../config/ad_config.dart';
 import 'consent_service.dart';
 
+enum RewardedAdOutcome {
+  notReady,
+  dismissedEarly,
+  earned,
+  showFailed,
+}
+
 class AdService extends ChangeNotifier {
   AdService();
 
@@ -178,18 +185,7 @@ class AdService extends ChangeNotifier {
         onAdLoaded: (ad) {
           _rewarded = ad;
           _loadingRewarded = false;
-          ad.fullScreenContentCallback = FullScreenContentCallback(
-            onAdDismissedFullScreenContent: (ad) {
-              ad.dispose();
-              _rewarded = null;
-              preloadRewarded();
-            },
-            onAdFailedToShowFullScreenContent: (ad, _) {
-              ad.dispose();
-              _rewarded = null;
-              preloadRewarded();
-            },
-          );
+          debugPrint('Rewarded ad loaded: ${AdConfig.rewardedUnitId}');
         },
         onAdFailedToLoad: (error) {
           lastRewardedError = error.message;
@@ -201,9 +197,8 @@ class AdService extends ChangeNotifier {
     );
   }
 
-  /// Ödüllü reklam hazır olana kadar bekler (en fazla [timeout]).
   Future<bool> ensureRewardedReady({
-    Duration timeout = const Duration(seconds: 12),
+    Duration timeout = const Duration(seconds: 15),
   }) async {
     if (!AdConfig.supported || !initialized) return false;
     if (!canLoadAds) {
@@ -224,45 +219,62 @@ class AdService extends ChangeNotifier {
     return _rewarded != null;
   }
 
-  Future<bool> showRewardedForTokens({VoidCallback? onReward}) async {
-    if (!AdConfig.supported || !initialized || !canLoadAds) return false;
+  /// Ödüllü reklam sonucu. [earned] = kullanıcı ödülü hak etti.
+  Future<RewardedAdOutcome> showRewardedForTokens() async {
+    if (!AdConfig.supported || !initialized || !canLoadAds) {
+      return RewardedAdOutcome.notReady;
+    }
 
     final ready = await ensureRewardedReady();
     if (!ready) {
       lastRewardedError = lastRewardedError.isNotEmpty ? lastRewardedError : 'Reklam yüklenemedi';
-      return false;
+      return RewardedAdOutcome.notReady;
     }
 
     final ad = _rewarded!;
     _rewarded = null;
+
+    final completer = Completer<RewardedAdOutcome>();
     var earned = false;
 
     ad.fullScreenContentCallback = FullScreenContentCallback(
       onAdDismissedFullScreenContent: (ad) {
         ad.dispose();
         preloadRewarded();
+        // Android'de callback bazen dismiss'ten sonra gelir — kısa bekle.
+        Future<void>.delayed(const Duration(milliseconds: 600), () {
+          if (completer.isCompleted) return;
+          completer.complete(earned ? RewardedAdOutcome.earned : RewardedAdOutcome.dismissedEarly);
+        });
       },
       onAdFailedToShowFullScreenContent: (ad, error) {
         lastRewardedError = error.message;
         ad.dispose();
         preloadRewarded();
+        if (!completer.isCompleted) {
+          completer.complete(RewardedAdOutcome.showFailed);
+        }
       },
     );
 
     try {
-      await ad.show(
-        onUserEarnedReward: (_, _) {
+      ad.show(
+        onUserEarnedReward: (ad, reward) {
           earned = true;
-          onReward?.call();
+          debugPrint('Reward earned: ${reward.amount} ${reward.type}');
         },
       );
     } catch (e) {
       lastRewardedError = '$e';
       ad.dispose();
       preloadRewarded();
-      return false;
+      return RewardedAdOutcome.showFailed;
     }
-    return earned;
+
+    return completer.future.timeout(
+      const Duration(minutes: 3),
+      onTimeout: () => earned ? RewardedAdOutcome.earned : RewardedAdOutcome.dismissedEarly,
+    );
   }
 
   bool get rewardedReady => _rewarded != null;

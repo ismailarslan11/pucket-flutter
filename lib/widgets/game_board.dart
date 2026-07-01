@@ -4,7 +4,9 @@ import 'package:provider/provider.dart';
 
 import '../game/game_constants.dart';
 import '../game/game_controller.dart';
+import '../models/cosmetic_catalog.dart';
 import '../services/auth_service.dart';
+import '../services/disc_image_cache.dart';
 import '../services/player_meta_service.dart';
 import '../theme/cosmetics_theme.dart';
 import 'game_painter.dart';
@@ -61,6 +63,15 @@ class _GameBoardState extends State<GameBoard> with SingleTickerProviderStateMix
   @override
   Widget build(BuildContext context) {
     final game = context.read<GameController>();
+    final metaSvc = context.watch<PlayerMetaService>();
+    final auth = context.read<AuthService>();
+    _discColor = metaSvc.discColor(auth.getUid());
+    _boardTheme = metaSvc.boardTheme(auth.getUid());
+    if (CosmeticCatalog.isPremiumDisc(_discColor)) {
+      DiscImageCache.ensureLoaded(_discColor).then((_) {
+        if (mounted) setState(() {});
+      });
+    }
     final palette = CosmeticsTheme.boardPalette(_boardTheme);
 
     return LayoutBuilder(

@@ -13,6 +13,7 @@ class PlayerMeta {
   final int tokens;
   final List<String> unlockedDiscs;
   final List<String> unlockedBoards;
+  final int lastAdReward;
 
   PlayerMeta({
     required this.quests,
@@ -23,6 +24,7 @@ class PlayerMeta {
     required this.tokens,
     required this.unlockedDiscs,
     required this.unlockedBoards,
+    required this.lastAdReward,
   });
 
   factory PlayerMeta.fromJson(Map<String, dynamic> j) => PlayerMeta(
@@ -36,6 +38,7 @@ class PlayerMeta {
         tokens: (j['tokens'] as num?)?.toInt() ?? 0,
         unlockedDiscs: (j['unlockedDiscs'] as List?)?.map((e) => e.toString()).toList() ?? [],
         unlockedBoards: (j['unlockedBoards'] as List?)?.map((e) => e.toString()).toList() ?? [],
+        lastAdReward: (j['lastAdReward'] as num?)?.toInt() ?? 0,
       );
 
   bool get questsComplete =>

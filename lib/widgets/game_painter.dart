@@ -272,7 +272,7 @@ class GamePainter extends CustomPainter {
 
     final defaultColor = d.owner == 0 ? AppColors.red : AppColors.blue;
     final isMine = d.owner == mySeat;
-    final usePremium = !localDuoMode && isMine && CosmeticCatalog.isPremiumDisc(myDiscColor);
+    final usePremium = isMine && CosmeticCatalog.isPremiumDisc(myDiscColor);
     final img = usePremium ? DiscImageCache.imageFor(myDiscColor) : null;
 
     if (img != null) {

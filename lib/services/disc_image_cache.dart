@@ -1,5 +1,6 @@
 import 'dart:ui' as ui;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 import '../models/cosmetic_catalog.dart';
@@ -20,9 +21,25 @@ class DiscImageCache {
         final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
         final frame = await codec.getNextFrame();
         _cache[item.id] = frame.image;
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('DiscImageCache: failed ${item.id}: $e');
+      }
     }
     _loaded = true;
+  }
+
+  static Future<void> ensureLoaded(String discId) async {
+    if (_cache.containsKey(discId)) return;
+    final item = CosmeticCatalog.premiumDiscs.where((d) => d.id == discId).firstOrNull;
+    if (item == null || item.asset.isEmpty) return;
+    try {
+      final data = await rootBundle.load(item.asset);
+      final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
+      final frame = await codec.getNextFrame();
+      _cache[item.id] = frame.image;
+    } catch (e) {
+      debugPrint('DiscImageCache: ensureLoaded failed $discId: $e');
+    }
   }
 
   static ui.Image? imageFor(String discId) => _cache[discId];
