@@ -5,7 +5,7 @@ import 'game_constants.dart';
 import 'training_layout.dart';
 
 class PhysicsEngine {
-  static const _solverPasses = 3;
+  static const _solverPasses = 2;
 
   static double clamp(double v, double a, double b) =>
       math.max(a, math.min(b, v));
@@ -310,6 +310,14 @@ class PhysicsEngine {
   }
 
   static bool allStopped(List<Disc> discs) => discs.every(isStopped);
+
+  static int countMoving(List<Disc> discs, {double threshold = 0.05}) {
+    var n = 0;
+    for (final d in discs) {
+      if (d.vvx.abs() > threshold || d.vvy.abs() > threshold) n++;
+    }
+    return n;
+  }
 
   static void settleGateDiscs(List<Disc> discs) {
     if (!allStopped(discs)) return;

@@ -11,39 +11,47 @@ import '../services/disc_image_cache.dart';
 import '../theme/app_theme.dart';
 import '../theme/cosmetics_theme.dart';
 
+/// Tahta çizimi — [repaint] ile widget rebuild olmadan yenilenir.
 class GamePainter extends CustomPainter {
   GamePainter({
-    required this.discs,
-    required this.mySeat,
-    required this.drags,
-    required this.visualGeneration,
+    required this.game,
     required this.sx,
     required this.sy,
-    this.localDuoMode = false,
-    this.myDiscColor = 'green',
-    this.boardTheme = 'classic',
-  });
+    required this.discColor,
+    required this.boardTheme,
+  }) : super(repaint: game.boardRepaint);
 
-  final List<Disc> discs;
-  final int mySeat;
-  final List<DragState> drags;
-  final int visualGeneration;
+  final GameController game;
   final double sx;
   final double sy;
-  final bool localDuoMode;
-  final String myDiscColor;
+  final String discColor;
   final String boardTheme;
 
-  static const _fieldVersion = 5;
+  static const _fieldVersion = 6;
   static ui.Picture? _fieldPicture;
   static Size? _fieldSize;
   static int? _fieldSeat;
   static String? _fieldBoardTheme;
   static int? _fieldVersionCached;
 
+  static final _redFill = Paint()..color = AppColors.red;
+  static final _blueFill = Paint()..color = AppColors.blue;
+  static final _premiumPaint = Paint()..filterQuality = FilterQuality.none;
+  static final _slingLow = Paint()
+    ..color = AppColors.fieldBlue
+    ..strokeWidth = 2
+    ..strokeCap = StrokeCap.round;
+  static final _slingHigh = Paint()
+    ..color = AppColors.brandOrange
+    ..strokeWidth = 2.5
+    ..strokeCap = StrokeCap.round;
+  static final _slingArc = Paint()
+    ..strokeWidth = 2
+    ..style = PaintingStyle.stroke;
+
   Offset _s2c(double vx, double vy) => Offset(vx * sx, vy * sy);
 
-  ui.Picture _fieldPictureFor(Size size) {
+  ui.Picture _fieldPictureFor(Size size, int mySeat) {
     if (_fieldPicture != null &&
         _fieldSize == size &&
         _fieldSeat == mySeat &&
@@ -54,7 +62,7 @@ class GamePainter extends CustomPainter {
 
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder);
-    _drawFieldStatic(canvas, size);
+    _drawFieldStatic(canvas, size, mySeat);
     _fieldPicture = recorder.endRecording();
     _fieldSize = size;
     _fieldSeat = mySeat;
@@ -65,22 +73,22 @@ class GamePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    final mySeat = game.mySeat;
+    final localDuo = game.localDuoMode;
+    final discs = game.discs;
+    final drags = game.activeDrags;
+    final fastDraw = game.phase == GamePhase.playing;
+
     canvas.save();
-    if (mySeat == 1 && !localDuoMode) {
+    if (mySeat == 1 && !localDuo) {
       canvas.translate(size.width, size.height);
       canvas.rotate(math.pi);
     }
 
-    canvas.drawPicture(_fieldPictureFor(size));
-    var anyMoving = false;
+    canvas.drawPicture(_fieldPictureFor(size, mySeat));
+
     for (final d in discs) {
-      if (d.vvx.abs() + d.vvy.abs() > 0.35) {
-        anyMoving = true;
-        break;
-      }
-    }
-    for (final d in discs) {
-      _drawDisc(canvas, d, fast: anyMoving);
+      _drawDisc(canvas, d, mySeat: mySeat, localDuo: localDuo, fast: fastDraw);
     }
     for (final drag in drags) {
       if (drag.discIndex < discs.length) {
@@ -90,20 +98,23 @@ class GamePainter extends CustomPainter {
     canvas.restore();
   }
 
-  void _drawFieldStatic(Canvas canvas, Size size) {
+  void _drawFieldStatic(Canvas canvas, Size size, int mySeat) {
     final palette = CosmeticsTheme.boardPalette(boardTheme);
     final gap = _s2c(GameConstants.gapX, GameConstants.gapY);
     final gw = GameConstants.gapW * sx;
     final gh = GameConstants.gapH * sy;
     final hw = size.width;
     final hh = size.height / 2;
+    final isClassic = boardTheme == 'classic';
 
-    _drawSpaceHalf(canvas, Rect.fromLTWH(0, 0, hw, hh), palette.topGrass, palette.topTint, palette);
-    _drawSpaceHalf(canvas, Rect.fromLTWH(0, hh, hw, hh), palette.bottomGrass, palette.bottomTint, palette);
-    _drawStarfield(canvas, size, palette);
-    _drawNeonGrid(canvas, size, palette);
+    _drawSpaceHalf(canvas, Rect.fromLTWH(0, 0, hw, hh), palette.topGrass, palette.topTint);
+    _drawSpaceHalf(canvas, Rect.fromLTWH(0, hh, hw, hh), palette.bottomGrass, palette.bottomTint);
+    if (!isClassic) {
+      _drawStarfield(canvas, size);
+      _drawNeonGrid(canvas, size, palette);
+    }
 
-    _neonLine(canvas, Offset(0, hh), Offset(hw, hh), palette.neonPrimary, width: 1.5);
+    _neonLine(canvas, Offset(0, hh), Offset(hw, hh), palette.neonPrimary);
     _neonCircle(canvas, Offset(hw / 2, hh / 2), hw * 0.11, palette.neonPrimary);
     _neonCircle(canvas, Offset(hw / 2, hh + hh / 2), hw * 0.11, palette.neonSecondary);
 
@@ -129,31 +140,20 @@ class GamePainter extends CustomPainter {
     _drawPortalGoal(canvas, Rect.fromLTWH(gap.dx, gap.dy, gw, gh), palette);
   }
 
-  void _drawSpaceHalf(Canvas canvas, Rect rect, Color base, Color tint, BoardPalette palette) {
-    final mid = Color.lerp(base, palette.neonPrimary, 0.08)!;
-    canvas.drawRect(
-      rect,
-      Paint()
-        ..shader = LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color.lerp(base, Colors.white, 0.04)!, mid, base],
-        ).createShader(rect),
-    );
+  void _drawSpaceHalf(Canvas canvas, Rect rect, Color base, Color tint) {
+    canvas.drawRect(rect, Paint()..color = base);
     if (tint.a > 0) canvas.drawRect(rect, Paint()..color = tint);
   }
 
-  void _drawStarfield(Canvas canvas, Size size, BoardPalette palette) {
+  void _drawStarfield(Canvas canvas, Size size) {
     final rng = math.Random(42);
-    for (var i = 0; i < 28; i++) {
+    for (var i = 0; i < 14; i++) {
       final x = rng.nextDouble() * size.width;
       final y = rng.nextDouble() * size.height;
-      final r = rng.nextDouble() * 1.2 + 0.3;
-      final alpha = rng.nextDouble() * 0.35 + 0.08;
       canvas.drawCircle(
         Offset(x, y),
-        r,
-        Paint()..color = Colors.white.withValues(alpha: alpha),
+        rng.nextDouble() * 0.9 + 0.4,
+        Paint()..color = Colors.white.withValues(alpha: rng.nextDouble() * 0.25 + 0.08),
       );
     }
   }
@@ -163,7 +163,7 @@ class GamePainter extends CustomPainter {
     final gridPaint = Paint()
       ..color = palette.gridColor
       ..strokeWidth = 0.5;
-    const step = 32.0;
+    const step = 40.0;
     for (var x = 0.0; x <= size.width; x += step) {
       canvas.drawLine(Offset(x, 0), Offset(x, size.height), gridPaint);
     }
@@ -172,16 +172,8 @@ class GamePainter extends CustomPainter {
     }
   }
 
-  void _neonLine(Canvas canvas, Offset a, Offset b, Color color, {double width = 1.5}) {
-    canvas.drawLine(
-      a,
-      b,
-      Paint()
-        ..color = color.withValues(alpha: 0.28)
-        ..strokeWidth = width + 2.5
-        ..strokeCap = StrokeCap.round,
-    );
-    canvas.drawLine(a, b, Paint()..color = color..strokeWidth = width);
+  void _neonLine(Canvas canvas, Offset a, Offset b, Color color) {
+    canvas.drawLine(a, b, Paint()..color = color..strokeWidth = 1.2);
   }
 
   void _neonCircle(Canvas canvas, Offset c, double r, Color color) {
@@ -189,28 +181,13 @@ class GamePainter extends CustomPainter {
       c,
       r,
       Paint()
-        ..color = color.withValues(alpha: 0.22)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 3,
-    );
-    canvas.drawCircle(
-      c,
-      r,
-      Paint()
-        ..color = color.withValues(alpha: 0.75)
+        ..color = color.withValues(alpha: 0.7)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.2,
     );
   }
 
   void _neonRect(Canvas canvas, RRect rrect, Color color) {
-    canvas.drawRRect(
-      rrect,
-      Paint()
-        ..color = color.withValues(alpha: 0.12)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 4,
-    );
     canvas.drawRRect(
       rrect,
       Paint()
@@ -223,19 +200,12 @@ class GamePainter extends CustomPainter {
   void _drawNeonWall(Canvas canvas, Rect rect, BoardPalette palette) {
     canvas.drawRRect(
       RRect.fromRectAndRadius(rect, const Radius.circular(3)),
-      Paint()
-        ..shader = LinearGradient(
-          colors: [
-            palette.wall,
-            Color.lerp(palette.wall, palette.neonPrimary, 0.35)!,
-            palette.wall,
-          ],
-        ).createShader(rect),
+      Paint()..color = palette.wall,
     );
     canvas.drawRRect(
       RRect.fromRectAndRadius(rect, const Radius.circular(3)),
       Paint()
-        ..color = palette.neonPrimary.withValues(alpha: 0.6)
+        ..color = palette.neonPrimary.withValues(alpha: 0.5)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1,
     );
@@ -244,22 +214,7 @@ class GamePainter extends CustomPainter {
   void _drawPortalGoal(Canvas canvas, Rect rect, BoardPalette palette) {
     canvas.drawRRect(
       RRect.fromRectAndRadius(rect, const Radius.circular(2)),
-      Paint()
-        ..shader = LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            palette.gateFill,
-            palette.neonSecondary.withValues(alpha: 0.35),
-          ],
-        ).createShader(rect),
-    );
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(rect, const Radius.circular(2)),
-      Paint()
-        ..color = palette.gateStroke.withValues(alpha: 0.25)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 3,
+      Paint()..color = palette.gateFill,
     );
     canvas.drawRRect(
       RRect.fromRectAndRadius(rect, const Radius.circular(2)),
@@ -270,100 +225,43 @@ class GamePainter extends CustomPainter {
     );
   }
 
-  void _drawDisc(Canvas canvas, Disc d, {required bool fast}) {
+  void _drawDisc(Canvas canvas, Disc d, {required int mySeat, required bool localDuo, required bool fast}) {
     final pos = _s2c(d.vx, d.vy);
     final r = GameConstants.discRadius * sx;
-    final moving = d.vvx.abs() + d.vvy.abs() > 0.35;
-
-    final defaultColor = d.owner == 0 ? AppColors.red : AppColors.blue;
     final isMine = d.owner == mySeat;
-    final usePremium = isMine && CosmeticCatalog.isPremiumDisc(myDiscColor);
-    final img = usePremium ? DiscImageCache.imageFor(myDiscColor) : null;
+    final usePremium = isMine && CosmeticCatalog.isPremiumDisc(discColor);
+    final img = usePremium ? DiscImageCache.imageFor(discColor) : null;
 
     if (img != null) {
       final dst = Rect.fromCircle(center: pos, radius: r);
-      canvas.save();
-      canvas.clipRRect(RRect.fromRectAndRadius(dst, Radius.circular(r)));
-      paintImage(
-        canvas: canvas,
-        rect: dst,
-        image: img,
-        fit: BoxFit.cover,
-        filterQuality: FilterQuality.low,
+      canvas.drawImageRect(
+        img,
+        Rect.fromLTWH(0, 0, img.width.toDouble(), img.height.toDouble()),
+        dst,
+        _premiumPaint,
       );
-      canvas.restore();
-      if (!moving) {
-        canvas.drawCircle(
-          pos,
-          r,
-          Paint()
-            ..color = Colors.white.withValues(alpha: 0.45)
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = 1.2,
-        );
-      }
       return;
     }
 
-    final color = localDuoMode
+    if (fast) {
+      canvas.drawCircle(pos, r, d.owner == 0 ? _redFill : _blueFill);
+      return;
+    }
+
+    final defaultColor = d.owner == 0 ? AppColors.red : AppColors.blue;
+    final color = localDuo
         ? defaultColor
-        : (isMine ? CosmeticsTheme.discColor(myDiscColor) : defaultColor);
+        : (isMine ? CosmeticsTheme.discColor(discColor) : defaultColor);
 
-    if (fast || moving) {
-      canvas.drawCircle(pos, r, Paint()..color = color);
-      return;
-    }
-
-    if (!moving) {
-      canvas.drawCircle(
-        pos,
-        r + 3,
-        Paint()..color = color.withValues(alpha: 0.12),
-      );
-    }
-
-    final discPaint = Paint()
-      ..shader = RadialGradient(
-        center: const Alignment(-0.3, -0.3),
-        colors: [
-          Color.lerp(color, Colors.white, 0.5)!,
-          color,
-          Color.lerp(color, Colors.black, 0.35)!,
-        ],
-      ).createShader(Rect.fromCircle(center: pos, radius: r));
-    canvas.drawCircle(pos, r, discPaint);
-
+    canvas.drawCircle(pos, r, Paint()..color = color);
     canvas.drawCircle(
       pos,
       r,
       Paint()
-        ..color = color.withValues(alpha: 0.9)
+        ..color = Colors.white.withValues(alpha: 0.35)
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.5,
+        ..strokeWidth = 1.2,
     );
-
-    canvas.drawCircle(
-      pos,
-      r * 0.38,
-      Paint()
-        ..color = Colors.white.withValues(alpha: 0.5)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 0.8,
-    );
-
-    final spokePaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.55)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 0.8;
-    for (var k = 0; k < 5; k++) {
-      final a = (k / 5) * math.pi * 2 - math.pi / 2;
-      canvas.drawLine(
-        Offset(pos.dx + math.cos(a) * r * 0.38, pos.dy + math.sin(a) * r * 0.38),
-        Offset(pos.dx + math.cos(a) * r * 0.88, pos.dy + math.sin(a) * r * 0.88),
-        spokePaint,
-      );
-    }
-    canvas.drawCircle(pos, 2.5, Paint()..color = Colors.white);
   }
 
   void _drawSling(Canvas canvas, Disc d, DragState drag) {
@@ -371,42 +269,38 @@ class GamePainter extends CustomPainter {
     final pullPos = _s2c(drag.currentVx, drag.currentVy);
     final ddx = drag.currentVx - drag.startVx;
     final ddy = drag.currentVy - drag.startVy;
-    final dist = math.sqrt(ddx * ddx + ddy * ddy);
-    if (dist < 3) return;
+    final distSq = ddx * ddx + ddy * ddy;
+    if (distSq < 9) return;
 
+    final dist = math.sqrt(distSq);
     final lim = math.min(dist, GameConstants.slingMax);
     final pow = lim / GameConstants.slingMax;
     final nx = -ddx / dist;
     final ny = -ddy / dist;
 
-    _neonLine(canvas, discPos, pullPos, AppColors.fieldBlue, width: 1.2);
+    canvas.drawLine(discPos, pullPos, _slingLow);
 
-    final col = pow > 0.7 ? AppColors.brandOrange : AppColors.fieldBlue;
+    final col = pow > 0.7 ? _slingHigh : _slingLow;
     final tip = Offset(discPos.dx + nx * lim * sx * 0.55, discPos.dy + ny * lim * sy * 0.55);
-    _neonLine(canvas, discPos, tip, col, width: 2);
+    canvas.drawLine(discPos, tip, col);
 
-    final r = GameConstants.discRadius * sx;
+    _slingArc.color = (pow > 0.7 ? AppColors.brandOrange : AppColors.fieldBlue).withValues(alpha: 0.5);
     canvas.drawArc(
-      Rect.fromCircle(center: discPos, radius: r + 5),
+      Rect.fromCircle(center: discPos, radius: GameConstants.discRadius * sx + 4),
       -math.pi / 2,
       math.pi * 2 * pow,
       false,
-      Paint()
-        ..color = col.withValues(alpha: 0.45)
-        ..strokeWidth = 2.5
-        ..style = PaintingStyle.stroke,
+      _slingArc,
     );
   }
 
   @override
   bool shouldRepaint(covariant GamePainter old) {
-    return old.visualGeneration != visualGeneration ||
-        old.mySeat != mySeat ||
-        old.localDuoMode != localDuoMode ||
-        old.sx != sx ||
+    return old.sx != sx ||
         old.sy != sy ||
-        old.drags.length != drags.length ||
-        old.myDiscColor != myDiscColor ||
-        old.boardTheme != boardTheme;
+        old.discColor != discColor ||
+        old.boardTheme != boardTheme ||
+        old.game.mySeat != game.mySeat ||
+        old.game.localDuoMode != game.localDuoMode;
   }
 }

@@ -1031,21 +1031,26 @@ wss.on('connection', (ws) => {
     switch (msg.type) {
       case 'login': {
         (async () => {
-          const identity = await resolveLoginIdentity(msg);
-          let uid = identity.uid || msg.uid || `guest_${makeCode()}`;
-          const name = msg.name || 'Oyuncu';
-          ws.uid = uid;
-          ws.isAnonymous = identity.isAnonymous;
-          ws.rankedEligible = canPlayRanked(ws, uid);
-          const player = upsertPlayer(uid, name);
-          ws.send(
-            JSON.stringify({
-              type: 'profile',
-              player: { ...player, isAnonymous: ws.isAnonymous },
-              leagues: LEAGUES,
-              league: getLeague(player.elo),
-            }),
-          );
+          try {
+            const identity = await resolveLoginIdentity(msg);
+            let uid = identity.uid || msg.uid || `guest_${makeCode()}`;
+            const name = msg.name || 'Oyuncu';
+            ws.uid = uid;
+            ws.isAnonymous = identity.isAnonymous;
+            ws.rankedEligible = canPlayRanked(ws, uid);
+            const player = upsertPlayer(uid, name);
+            ws.send(
+              JSON.stringify({
+                type: 'profile',
+                player: { ...player, isAnonymous: ws.isAnonymous },
+                leagues: LEAGUES,
+                league: getLeague(player.elo),
+              }),
+            );
+          } catch (e) {
+            console.error('login error', e);
+            ws.send(JSON.stringify({ type: 'error', msg: 'Giriş hatası' }));
+          }
         })();
         break;
       }
@@ -1216,11 +1221,13 @@ wss.on('connection', (ws) => {
       }
 
       case 'matchEnd': {
-        const room = rooms.get(ws.roomId);
-        if (!room || !room.ranked) {
-          room?.broadcast(msg, ws);
+        const room = ws.roomId ? rooms.get(ws.roomId) : null;
+        if (!room) break;
+        if (!room.ranked) {
+          room.broadcast(msg, ws);
           break;
         }
+        if (ws.seat !== 0) break;
         const winnerSeat = msg.winner;
         if (settleRankedMatch(room, winnerSeat)) {
           room.broadcast(msg, ws);

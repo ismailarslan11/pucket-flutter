@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -75,33 +77,48 @@ class AuthService extends ChangeNotifier {
   }
 
   Future<void> initFirebase() async {
+    _applyCachedAuthState();
+
     if (_isMacOS) {
       _firebaseReady = GoogleAuthConfig.hasIosClientId;
-      await _finishInitWithoutFirebase();
+      if (authState == AuthState.loading) await _finishInitWithoutFirebase();
       return;
     }
 
     if (!firebaseEnabled || Firebase.apps.isEmpty) {
       _firebaseReady = false;
-      await _finishInitWithoutFirebase();
+      if (authState == AuthState.loading) await _finishInitWithoutFirebase();
       return;
     }
 
     try {
       _auth = FirebaseAuth.instance;
       _db = FirebaseFirestore.instance;
-      try {
-        await _initGoogleSignIn();
-      } catch (_) {
-        // Web'de Firebase popup kullanılır; GoogleSignIn plugin init şart değil
-      }
+      unawaited(() async {
+        try {
+          await _initGoogleSignIn();
+        } catch (_) {}
+      }());
       _auth!.authStateChanges().listen(_onAuthChanged);
       _firebaseReady = true;
-      await _syncAuthFromFirebaseUser(_auth!.currentUser);
+      final fbUser = _auth!.currentUser;
+      if (user != null) {
+        notifyListeners();
+        unawaited(_syncAuthFromFirebaseUser(fbUser));
+      } else {
+        await _syncAuthFromFirebaseUser(fbUser);
+      }
     } catch (_) {
       _firebaseReady = false;
-      await _finishInitWithoutFirebase();
+      if (authState == AuthState.loading) await _finishInitWithoutFirebase();
     }
+  }
+
+  void _applyCachedAuthState() {
+    if (user == null || authState != AuthState.loading) return;
+    authState = _needsUsernamePick() ? AuthState.needsUsername : AuthState.authenticated;
+    loading = false;
+    notifyListeners();
   }
 
   Future<void> _syncAuthFromFirebaseUser(User? fbUser) async {

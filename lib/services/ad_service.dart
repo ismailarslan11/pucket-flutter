@@ -96,6 +96,9 @@ class AdService extends ChangeNotifier {
 
   Future<void> refreshAfterConsent() async {
     if (!AdConfig.supported) return;
+    if (!ConsentService.updateFinished) {
+      await ConsentService.ensureConsent();
+    }
     if (!initialized) {
       await init();
       return;
@@ -241,8 +244,9 @@ class AdService extends ChangeNotifier {
       onAdDismissedFullScreenContent: (ad) {
         ad.dispose();
         preloadRewarded();
-        // Android'de callback bazen dismiss'ten sonra gelir — kısa bekle.
-        Future<void>.delayed(const Duration(milliseconds: 600), () {
+        if (completer.isCompleted) return;
+        // Android'de earned callback bazen dismiss'ten sonra gelir — kısa bekle.
+        Future<void>.delayed(const Duration(milliseconds: 800), () {
           if (completer.isCompleted) return;
           completer.complete(earned ? RewardedAdOutcome.earned : RewardedAdOutcome.dismissedEarly);
         });
@@ -262,6 +266,9 @@ class AdService extends ChangeNotifier {
         onUserEarnedReward: (ad, reward) {
           earned = true;
           debugPrint('Reward earned: ${reward.amount} ${reward.type}');
+          if (!completer.isCompleted) {
+            completer.complete(RewardedAdOutcome.earned);
+          }
         },
       );
     } catch (e) {

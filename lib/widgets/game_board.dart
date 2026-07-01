@@ -20,22 +20,42 @@ class GameBoard extends StatefulWidget {
 
 class _GameBoardState extends State<GameBoard> with SingleTickerProviderStateMixin {
   late Ticker _ticker;
-  late GameController _game;
+  GameController? _game;
   double _lastMs = 0;
   String _discColor = 'green';
   String _boardTheme = 'classic';
+  double _innerW = 0;
+  double _innerH = 0;
+  double _sx = 1;
+  double _sy = 1;
 
   @override
   void initState() {
     super.initState();
-    _ticker = createTicker(_onTick)..start();
+    _ticker = createTicker(_onTick);
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _game = context.read<GameController>();
+    final game = context.read<GameController>();
+    if (_game != game) {
+      _game?.removeListener(_syncTicker);
+      _game = game;
+      _game!.addListener(_syncTicker);
+    }
     _refreshCosmetics();
+    _syncTicker();
+  }
+
+  void _syncTicker() {
+    final game = _game;
+    if (game == null) return;
+    if (game.phase == GamePhase.playing) {
+      if (!_ticker.isActive) _ticker.start();
+    } else if (_ticker.isActive) {
+      _ticker.stop();
+    }
   }
 
   void _refreshCosmetics() {
@@ -44,11 +64,13 @@ class _GameBoardState extends State<GameBoard> with SingleTickerProviderStateMix
     final disc = meta.discColor(auth.getUid());
     final board = meta.boardTheme(auth.getUid());
     if (disc != _discColor || board != _boardTheme) {
-      _discColor = disc;
-      _boardTheme = board;
+      setState(() {
+        _discColor = disc;
+        _boardTheme = board;
+      });
       if (CosmeticCatalog.isPremiumDisc(_discColor)) {
         DiscImageCache.ensureLoaded(_discColor).then((_) {
-          if (mounted) _game.boardRepaint.bump();
+          if (mounted) _game?.boardRepaint.bump();
         });
       }
     }
@@ -56,19 +78,21 @@ class _GameBoardState extends State<GameBoard> with SingleTickerProviderStateMix
 
   void _onTick(Duration elapsed) {
     if (!mounted) return;
-    final ms = elapsed.inMicroseconds / 1000.0;
-    if (_game.phase != GamePhase.playing) {
-      _lastMs = ms;
+    final game = _game;
+    if (game == null || game.phase != GamePhase.playing) {
+      _lastMs = elapsed.inMicroseconds / 1000.0;
       return;
     }
-    if (ms - _lastMs >= 16) {
+    final ms = elapsed.inMicroseconds / 1000.0;
+    if (ms - _lastMs >= 15) {
       _lastMs = ms;
-      _game.tick(ms);
+      game.tick(ms);
     }
   }
 
   @override
   void dispose() {
+    _game?.removeListener(_syncTicker);
     _ticker.dispose();
     super.dispose();
   }
@@ -86,6 +110,10 @@ class _GameBoardState extends State<GameBoard> with SingleTickerProviderStateMix
         final innerH = constraints.maxHeight - outerPad * 2;
         final sx = innerW / GameConstants.vw;
         final sy = innerH / GameConstants.vh;
+        _innerW = innerW;
+        _innerH = innerH;
+        _sx = sx;
+        _sy = sy;
 
         return Padding(
           padding: const EdgeInsets.all(outerPad),
@@ -96,14 +124,7 @@ class _GameBoardState extends State<GameBoard> with SingleTickerProviderStateMix
                 color: palette.neonPrimary.withValues(alpha: 0.7),
                 width: 1.5,
               ),
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  palette.frameInner,
-                  Color.lerp(palette.frameInner, palette.neonPrimary, 0.08)!,
-                ],
-              ),
+              color: palette.frameInner,
             ),
             child: Padding(
               padding: const EdgeInsets.all(frameWidth),
@@ -129,7 +150,7 @@ class _GameBoardState extends State<GameBoard> with SingleTickerProviderStateMix
                         },
                         onPointerUp: (e) => game.onPointerUp(e.pointer),
                         onPointerCancel: (e) => game.onPointerUp(e.pointer),
-                        child: _buildPaint(innerW, innerH, sx, sy, game),
+                        child: _canvas(game),
                       )
                     : GestureDetector(
                         onPanDown: (d) {
@@ -152,7 +173,7 @@ class _GameBoardState extends State<GameBoard> with SingleTickerProviderStateMix
                         },
                         onPanEnd: (_) => game.onPointerUp(0),
                         onPanCancel: () => game.onPointerUp(0),
-                        child: _buildPaint(innerW, innerH, sx, sy, game),
+                        child: _canvas(game),
                       ),
               ),
             ),
@@ -162,30 +183,18 @@ class _GameBoardState extends State<GameBoard> with SingleTickerProviderStateMix
     );
   }
 
-  Widget _buildPaint(double innerW, double innerH, double sx, double sy, GameController game) {
-    return ListenableBuilder(
-      listenable: game.boardRepaint,
-      builder: (context, _) {
-        final g = context.read<GameController>();
-        return RepaintBoundary(
-          child: CustomPaint(
-            size: Size(innerW, innerH),
-            isComplex: true,
-            willChange: g.phase == GamePhase.playing,
-            painter: GamePainter(
-              discs: g.discs,
-              mySeat: g.mySeat,
-              drags: g.activeDrags,
-              visualGeneration: g.visualGeneration,
-              sx: sx,
-              sy: sy,
-              localDuoMode: g.localDuoMode,
-              myDiscColor: _discColor,
-              boardTheme: _boardTheme,
-            ),
-          ),
-        );
-      },
+  Widget _canvas(GameController game) {
+    return RepaintBoundary(
+      child: CustomPaint(
+        size: Size(_innerW, _innerH),
+        painter: GamePainter(
+          game: game,
+          sx: _sx,
+          sy: _sy,
+          discColor: _discColor,
+          boardTheme: _boardTheme,
+        ),
+      ),
     );
   }
 }

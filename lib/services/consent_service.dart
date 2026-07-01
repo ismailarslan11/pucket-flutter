@@ -87,7 +87,7 @@ class ConsentService {
       },
     );
 
-    await completer.future.timeout(const Duration(seconds: 15), onTimeout: finish);
+    await completer.future.timeout(const Duration(seconds: 5), onTimeout: finish);
   }
 
   static Future<bool> canRequestAds() async {

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -32,37 +34,33 @@ import 'widgets/pucket_logo.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await SystemChrome.setPreferredOrientations([
+  unawaited(SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
+  ]));
+
+  // Hızlı: yerel ayarlar + önbellek oturum
+  final settings = SettingsService();
+  final auth = AuthService();
+  final career = CareerService();
+  await Future.wait([
+    settings.load(),
+    auth.loadLocalCache(),
+    career.load(),
   ]);
 
   await initFirebaseIfConfigured();
   if (firebaseEnabled) {
     FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-    await PushService.setup();
-    await FirebaseEngagementService.init();
+    unawaited(PushService.setup());
+    unawaited(FirebaseEngagementService.init());
   }
 
-  final settings = SettingsService();
-  await settings.load();
-
-  final auth = AuthService();
-  await auth.loadLocalCache();
   await auth.initFirebase();
 
-  final career = CareerService();
-  await career.load();
-
   final playerMeta = PlayerMetaService();
-
   final audio = AudioService(settings);
   final ads = AdService();
-  if (AdConfig.supported) {
-    await ConsentService.ensureConsent();
-  }
-  await ads.init();
-  await DiscImageCache.preload();
 
   runApp(
     MultiProvider(
@@ -85,6 +83,18 @@ void main() async {
       child: const PucketApp(),
     ),
   );
+
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    unawaited(_warmUpDeferred(ads));
+  });
+}
+
+Future<void> _warmUpDeferred(AdService ads) async {
+  if (AdConfig.supported) {
+    await ConsentService.ensureConsent();
+    await ads.init();
+  }
+  unawaited(DiscImageCache.preload());
 }
 
 class PucketApp extends StatelessWidget {
@@ -166,26 +176,35 @@ class _AuthenticatedHomeState extends State<_AuthenticatedHome> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final settings = context.read<SettingsService>();
-      final auth = context.read<AuthService>();
-      final career = context.read<CareerService>();
-      final meta = context.read<PlayerMetaService>();
-      final audio = context.read<AudioService>();
-      await audio.playMenuMusic();
-      await meta.load(auth.getUid(), name: auth.getName());
-      await career.syncFromCloud(auth.getUid());
-      await PushService.initAndRegister(auth.getUid());
-      await FirebaseEngagementService.setUser(auth.getUid());
-      await FirebaseEngagementService.logScreen('menu');
-      if (mounted) DeepLinkService.consumePending(context);
-      if (!settings.tutorialSeen && mounted) {
-        await Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const TutorialScreen()),
-        );
-      }
-      if (mounted) setState(() => _tutorialChecked = true);
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _bootAuthenticated());
+  }
+
+  Future<void> _bootAuthenticated() async {
+    if (!mounted) return;
+
+    // Menüyü hemen göster — ağ istekleri arkada
+    setState(() => _tutorialChecked = true);
+
+    final settings = context.read<SettingsService>();
+    final auth = context.read<AuthService>();
+    final career = context.read<CareerService>();
+    final meta = context.read<PlayerMetaService>();
+    final audio = context.read<AudioService>();
+
+    unawaited(audio.playMenuMusic());
+    unawaited(meta.load(auth.getUid(), name: auth.getName()));
+    unawaited(career.syncFromCloud(auth.getUid()));
+    unawaited(PushService.initAndRegister(auth.getUid()));
+    unawaited(FirebaseEngagementService.setUser(auth.getUid()));
+    unawaited(FirebaseEngagementService.logScreen('menu'));
+
+    if (mounted) DeepLinkService.consumePending(context);
+
+    if (!settings.tutorialSeen && mounted) {
+      await Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const TutorialScreen()),
+      );
+    }
   }
 
   @override

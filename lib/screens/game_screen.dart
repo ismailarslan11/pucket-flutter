@@ -212,7 +212,9 @@ class _GameScreenState extends State<GameScreen> {
 
   void _maybeAwardWinTokens(GameController game) {
     if (!game.matchFinished || game.lastWinner != game.mySeat) return;
-    if (game.trainingMode || game.localDuoMode) return;
+    if (game.trainingMode || game.localDuoMode || game.aiMode || game.isBotFallback || game.careerMode) {
+      return;
+    }
     final key = game.visualGeneration;
     if (_lastWinTokenKey == key) return;
     _lastWinTokenKey = key;
@@ -308,7 +310,7 @@ class _GameScreenState extends State<GameScreen> {
                 children: [
                   const RepaintBoundary(child: GameBoard()),
                   ListenableBuilder(
-                    listenable: game,
+                    listenable: gameHud,
                     builder: (context, _) {
                       final g = context.read<GameController>();
                       final phaseOverlay = _phaseOverlay(g, l10n);

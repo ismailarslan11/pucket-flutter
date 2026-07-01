@@ -30,6 +30,8 @@ class WebSocketService {
 
   int? lastPingMs;
 
+  bool _reconnectScheduled = false;
+
   bool get isConnected => _channel != null;
   bool get isReconnecting => _reconnecting;
   String? get sessionToken => _sessionToken;
@@ -99,6 +101,7 @@ class WebSocketService {
       return;
     }
     if (_roomCode != null && _uid != null && _sessionToken != null) {
+      if (_reconnectScheduled) return;
       _tryReconnect();
       return;
     }
@@ -119,11 +122,15 @@ class WebSocketService {
       return;
     }
 
+    if (_reconnectScheduled) return;
+
     _reconnecting = true;
     _reconnectAttempts++;
     final delay = Duration(seconds: _reconnectAttempts.clamp(1, 5));
     _reconnectTimer?.cancel();
+    _reconnectScheduled = true;
     _reconnectTimer = Timer(delay, () async {
+      _reconnectScheduled = false;
       final ok = await _open(_lastUrl!);
       if (ok) {
         send({
@@ -150,6 +157,7 @@ class WebSocketService {
   void disconnect() {
     _intentionalDisconnect = true;
     _reconnectTimer?.cancel();
+    _reconnectScheduled = false;
     _pingTimer?.cancel();
     _cleanupChannel();
     _reconnecting = false;

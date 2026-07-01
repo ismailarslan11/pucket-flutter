@@ -121,7 +121,6 @@ class GameController extends ChangeNotifier {
   Timer? _matchStartTimer;
   int _onlineSession = 0;
   int _frameCount = 0;
-  int _dragMoveCounter = 0;
   int _lastMovingDiscs = 0;
   int _visualGeneration = 0;
   double _physicsAccum = 0;
@@ -172,12 +171,22 @@ class GameController extends ChangeNotifier {
 
   String localPlayerName(int seat) => seat == 0 ? localPlayerRed : localPlayerBlue;
 
-  List<DragState> get activeDrags =>
-      localDuoMode ? _duoDrags.values.toList() : (drag != null ? [drag!] : const []);
+  List<DragState> _cachedActiveDrags = const [];
+
+  List<DragState> get activeDrags => _cachedActiveDrags;
+
+  void _refreshActiveDrags() {
+    _cachedActiveDrags = localDuoMode
+        ? _duoDrags.values.toList(growable: false)
+        : (drag != null ? [drag!] : const []);
+  }
 
   void _bumpBoard() {
-    _visualGeneration++;
     boardRepaint.bump();
+  }
+
+  void _markVisualGeneration() {
+    _visualGeneration++;
   }
 
   /// Client: host state paketleri arasında sadece hız ile tahmin (çarpışma yok).
@@ -200,11 +209,21 @@ class GameController extends ChangeNotifier {
   void tick(double nowMs) {
     if (phase != GamePhase.playing) return;
 
+    final dragging = drag != null || _duoDrags.isNotEmpty;
+    final movingCount = PhysicsEngine.countMoving(discs);
+    final isClient = !aiMode && !isOnlineHost && !localDuoMode;
+
+    if (!dragging && movingCount == 0) {
+      if (!isClient) return;
+      final clientDrifting = discs.any((d) => d.vvx.abs() > 0.02 || d.vvy.abs() > 0.02);
+      if (!clientDrifting) return;
+    }
+
     if (_lastTickWallMs == 0) _lastTickWallMs = nowMs;
     _physicsAccum += nowMs - _lastTickWallMs;
     _lastTickWallMs = nowMs;
     // FPS düşünce fizik fırlamasın
-    if (_physicsAccum > _physicsStepMs * 3) _physicsAccum = _physicsStepMs * 3;
+    if (_physicsAccum > _physicsStepMs * 2) _physicsAccum = _physicsStepMs * 2;
 
     var stepped = false;
     while (_physicsAccum >= _physicsStepMs) {
@@ -213,8 +232,10 @@ class GameController extends ChangeNotifier {
       stepped = true;
     }
     if (stepped) {
-      _bumpBoard();
       _syncUiIfDiscCountsChanged();
+      _bumpBoard();
+    } else if (dragging) {
+      _bumpBoard();
     }
   }
 
@@ -232,10 +253,10 @@ class GameController extends ChangeNotifier {
     if (aiMode || isOnlineHost || localDuoMode) {
       PhysicsEngine.stepPhysics(discs);
 
-      final moving = discs.where((d) => d.vvx.abs() > 0.05 || d.vvy.abs() > 0.05).length;
+      final moving = PhysicsEngine.countMoving(discs);
       if (moving > _lastMovingDiscs &&
           moving > 0 &&
-          _frameCount - _lastHitAudioFrame > 6) {
+          _frameCount - _lastHitAudioFrame > 10) {
         _lastHitAudioFrame = _frameCount;
         audio?.playHit();
       }
@@ -244,11 +265,14 @@ class GameController extends ChangeNotifier {
       _frameCount++;
       if (aiMode && aiBot.shouldThink(_frameCount * _physicsStepMs, aiLevel)) {
         if (aiBot.think(discs, aiLevel)) _haptic(25);
-      } else if (!aiMode && isOnlineHost && _frameCount % 3 == 0) {
+      } else if (!aiMode && isOnlineHost && _frameCount % 4 == 0) {
         _sendState();
       }
 
-      PhysicsEngine.settleGateDiscs(discs);
+      if (moving == 0 && _lastMovingDiscs > 0) {
+        PhysicsEngine.settleGateDiscs(discs);
+        if (isOnlineHost && !aiMode) _sendState(force: true);
+      }
       final winner = PhysicsEngine.checkWinner(discs);
       if (winner != null) {
         _endRound(winner, broadcast: true);
@@ -269,6 +293,7 @@ class GameController extends ChangeNotifier {
     seconds = 0;
     drag = null;
     _duoDrags.clear();
+    _refreshActiveDrags();
     _frameCount = 0;
     _lastMovingDiscs = 0;
     _physicsAccum = 0;
@@ -283,7 +308,7 @@ class GameController extends ChangeNotifier {
     myRematchPending = false;
     opponentRematchRequested = false;
     if (localDuoMode) _setSeat(0);
-    _visualGeneration++;
+    _markVisualGeneration();
     notifyListeners();
   }
 
@@ -303,7 +328,7 @@ class GameController extends ChangeNotifier {
     _cdTimer?.cancel();
     _cdTimer = Timer.periodic(const Duration(seconds: 1), (t) {
       countdown--;
-      notifyListeners();
+      uiSync.bump();
       if (countdown <= 0) {
         t.cancel();
         phase = GamePhase.playing;
@@ -785,14 +810,7 @@ class GameController extends ChangeNotifier {
       audio?.playLose();
     }
 
-    if (matchFinished && isRanked && !isOnlineHost) {
-      ws.send({
-        'type': 'matchEnd',
-        'winner': winner,
-        'ranked': true,
-      });
-    }
-    _visualGeneration++;
+    _markVisualGeneration();
     onRoundEnd?.call();
     notifyListeners();
   }
@@ -808,17 +826,18 @@ class GameController extends ChangeNotifier {
       final d = discs[i];
       final dx = nx - d.vx;
       final dy = ny - d.vy;
-      final posErr = math.sqrt(dx * dx + dy * dy);
+      final posErrSq = dx * dx + dy * dy;
 
-      if (posErr > 24) {
+      if (posErrSq > 24 * 24) {
         d.vx = nx;
         d.vy = ny;
         d.vvx = nvx;
         d.vvy = nvy;
         changed = true;
       } else {
-        final posBlend = posErr > 8 ? 0.5 : 0.25;
-        if (posErr > 0.08) {
+        final posErr = math.sqrt(posErrSq);
+        final posBlend = posErr > 8 ? 0.45 : 0.22;
+        if (posErrSq > 0.08 * 0.08) {
           d.vx += dx * posBlend;
           d.vy += dy * posBlend;
           changed = true;
@@ -835,10 +854,12 @@ class GameController extends ChangeNotifier {
     return changed;
   }
 
-  void _sendState() {
+  void _sendState({bool force = false}) {
     if (aiMode || !isOnlineHost) return;
-    final anyMoving = discs.any((d) => d.vvx.abs() > 0.01 || d.vvy.abs() > 0.01);
-    if (!anyMoving) return;
+    if (!force) {
+      final anyMoving = discs.any((d) => d.vvx.abs() > 0.01 || d.vvy.abs() > 0.01);
+      if (!anyMoving) return;
+    }
     ws.send({
       'type': 'state',
       'discs': discs
@@ -912,7 +933,7 @@ class GameController extends ChangeNotifier {
       }
     }
 
-    _visualGeneration++;
+    _markVisualGeneration();
     onRoundEnd?.call();
     notifyListeners();
   }
@@ -987,6 +1008,7 @@ class GameController extends ChangeNotifier {
         currentVx: vx,
         currentVy: vy,
       );
+      _refreshActiveDrags();
       _bumpBoard();
       return;
     }
@@ -1001,6 +1023,7 @@ class GameController extends ChangeNotifier {
       currentVx: vx,
       currentVy: vy,
     );
+    _refreshActiveDrags();
     _bumpBoard();
   }
 
@@ -1010,32 +1033,30 @@ class GameController extends ChangeNotifier {
       if (d == null) return;
       d.currentVx = vx;
       d.currentVy = vy;
-      _dragMoveCounter++;
-      if (_dragMoveCounter.isEven) {
-        _bumpBoard();
-      }
+      _refreshActiveDrags();
+      _bumpBoard();
       return;
     }
 
     if (drag == null) return;
     drag!.currentVx = vx;
     drag!.currentVy = vy;
-    _dragMoveCounter++;
-    if (_dragMoveCounter.isEven) {
-      _bumpBoard();
-    }
+    _refreshActiveDrags();
+    _bumpBoard();
   }
 
   void onPointerUp(int pointerId) {
     if (localDuoMode) {
       final d = _duoDrags.remove(pointerId);
       if (d != null) _releaseDrag(d);
+      _refreshActiveDrags();
       return;
     }
 
     if (drag == null) return;
     _releaseDrag(drag!);
     drag = null;
+    _refreshActiveDrags();
   }
 
   void _releaseDrag(DragState dragState) {
@@ -1116,7 +1137,7 @@ class GameController extends ChangeNotifier {
           _resumeFromPause(broadcast: !aiMode && !localDuoMode);
         }
       }
-      notifyListeners();
+      uiSync.bump();
     });
   }
 

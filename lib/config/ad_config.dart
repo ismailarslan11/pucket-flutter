@@ -79,7 +79,7 @@ class AdConfig {
       if (_rewardedIosFromEnv.isNotEmpty) return _rewardedIosFromEnv;
       if (_prodRewardedIos.isNotEmpty) return _prodRewardedIos;
       if (useTestAds) return _testRewardedIos;
-      return _testRewardedIos;
+      return '';
     }
     return '';
   }

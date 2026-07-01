@@ -76,6 +76,17 @@ class TournamentEntry {
 }
 
 class MetaApi {
+  static Future<T?> _retry<T>(Future<T?> Function() fn, {int attempts = 3}) async {
+    for (var i = 0; i < attempts; i++) {
+      final result = await fn();
+      if (result != null) return result;
+      if (i < attempts - 1) {
+        await Future<void>.delayed(Duration(milliseconds: 600 * (1 << i)));
+      }
+    }
+    return null;
+  }
+
   static Future<bool> registerPlayer(String uid, String name) async {
     try {
       final res = await http
@@ -92,16 +103,18 @@ class MetaApi {
   }
 
   static Future<PlayerMeta?> fetchMeta(String uid, {String name = ''}) async {
-    try {
-      final q = name.isNotEmpty ? '?name=${Uri.encodeComponent(name)}' : '';
-      final res = await http
-          .get(Uri.parse('${apiBaseUrl}/meta/$uid$q'))
-          .timeout(const Duration(seconds: 8));
-      if (res.statusCode != 200) return null;
-      return PlayerMeta.fromJson(jsonDecode(res.body) as Map<String, dynamic>);
-    } catch (_) {
-      return null;
-    }
+    return _retry(() async {
+      try {
+        final q = name.isNotEmpty ? '?name=${Uri.encodeComponent(name)}' : '';
+        final res = await http
+            .get(Uri.parse('${apiBaseUrl}/meta/$uid$q'))
+            .timeout(const Duration(seconds: 8));
+        if (res.statusCode != 200) return null;
+        return PlayerMeta.fromJson(jsonDecode(res.body) as Map<String, dynamic>);
+      } catch (_) {
+        return null;
+      }
+    });
   }
 
   static Future<PlayerMeta?> postMeta(String uid, Map<String, dynamic> body) async {

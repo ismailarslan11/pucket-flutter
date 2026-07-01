@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../config/ad_config.dart';
 import '../l10n/app_localizations.dart';
 import '../l10n/app_language.dart';
 import '../l10n/l10n_extension.dart';
+import '../services/ad_service.dart';
 import '../services/auth_service.dart';
+import '../services/consent_service.dart';
 import '../services/firebase_engagement_service.dart';
 import '../services/firebase_init.dart';
 import '../services/settings_service.dart';
@@ -70,6 +73,33 @@ class SettingsScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 8),
+                  if (AdConfig.supported)
+                    _row(
+                      l10n.settingsAds,
+                      l10n.settingsAdsSub,
+                      TextButton(
+                        onPressed: () async {
+                          final ok = await ConsentService.showPrivacyOptions();
+                          if (!context.mounted) return;
+                          if (!ok) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(l10n.settingsAdPrivacyUnavailable)),
+                            );
+                            return;
+                          }
+                          await context.read<AdService>().refreshAfterConsent();
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(l10n.settingsAdPrivacySaved)),
+                            );
+                          }
+                        },
+                        child: Text(
+                          l10n.settingsAdPrivacy,
+                          style: const TextStyle(color: AppColors.green, fontSize: 13),
+                        ),
+                      ),
+                    ),
                   if (firebaseEnabled)
                     TextButton(
                       onPressed: () async {

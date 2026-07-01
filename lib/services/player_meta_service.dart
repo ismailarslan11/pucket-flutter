@@ -58,16 +58,22 @@ class PlayerMetaService extends ChangeNotifier {
   }
 
   Future<int?> rewardAdTokens(String uid) async {
-    final r = await MetaApi.rewardAdTokens(uid);
-    if (r.meta != null) {
-      meta = r.meta;
-      if (r.tokenGain != null) {
-        lastMessage = '+${r.tokenGain} jeton';
+    for (var attempt = 0; attempt < 3; attempt++) {
+      final r = await MetaApi.rewardAdTokens(uid);
+      if (r.meta != null) {
+        meta = r.meta;
+        if (r.tokenGain != null) {
+          lastMessage = '+${r.tokenGain} jeton';
+        }
+        notifyListeners();
+        return r.tokenGain;
       }
-      notifyListeners();
-      return r.tokenGain;
+      if (attempt < 2) {
+        await Future<void>.delayed(Duration(seconds: 1 + attempt));
+      } else {
+        lastMessage = r.error;
+      }
     }
-    lastMessage = r.error;
     notifyListeners();
     return null;
   }

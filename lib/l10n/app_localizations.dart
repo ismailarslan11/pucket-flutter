@@ -51,6 +51,9 @@ class AppLocalizations {
   String get settingsFidCopied => _t('settingsFidCopied');
   String get settingsAds => _t('settingsAds');
   String get settingsAdsSub => _t('settingsAdsSub');
+  String get settingsAdPrivacy => _t('settingsAdPrivacy');
+  String get settingsAdPrivacyUnavailable => _t('settingsAdPrivacyUnavailable');
+  String get settingsAdPrivacySaved => _t('settingsAdPrivacySaved');
   String get privacyPolicy => _t('privacyPolicy');
   String get termsOfUse => _t('termsOfUse');
   String get botDifficulty => _t('botDifficulty');
@@ -372,6 +375,9 @@ const _tr = {
   'settingsFidCopied': 'Test cihaz ID panoya kopyalandı',
   'settingsAds': 'Reklamlar',
   'settingsAdsSub': 'Banner + maç arası reklamlar',
+  'settingsAdPrivacy': 'Reklam gizlilik tercihleri',
+  'settingsAdPrivacyUnavailable': 'Reklam tercihleri bu cihazda kullanılamıyor',
+  'settingsAdPrivacySaved': 'Reklam tercihleri güncellendi',
   'privacyPolicy': 'Gizlilik Politikası',
   'termsOfUse': 'Kullanım Şartları',
   'botDifficulty': 'Bot Zorluğu',
@@ -631,6 +637,9 @@ const _en = {
   'settingsFidCopied': 'Test device ID copied to clipboard',
   'settingsAds': 'Ads',
   'settingsAdsSub': 'Banner + between-match ads',
+  'settingsAdPrivacy': 'Ad privacy preferences',
+  'settingsAdPrivacyUnavailable': 'Ad preferences are not available on this device',
+  'settingsAdPrivacySaved': 'Ad preferences updated',
   'privacyPolicy': 'Privacy Policy',
   'termsOfUse': 'Terms of Use',
   'botDifficulty': 'Bot Difficulty',
@@ -890,6 +899,9 @@ const _de = {
   'settingsFidCopied': 'Test-Geräte-ID in Zwischenablage kopiert',
   'settingsAds': 'Werbung',
   'settingsAdsSub': 'Banner + Werbung zwischen Matches',
+  'settingsAdPrivacy': 'Werbungs-Datenschutz',
+  'settingsAdPrivacyUnavailable': 'Werbungseinstellungen auf diesem Gerät nicht verfügbar',
+  'settingsAdPrivacySaved': 'Werbungseinstellungen aktualisiert',
   'privacyPolicy': 'Datenschutz',
   'termsOfUse': 'Nutzungsbedingungen',
   'botDifficulty': 'Bot-Schwierigkeit',
@@ -1149,6 +1161,9 @@ const _es = {
   'settingsFidCopied': 'ID de prueba copiado al portapapeles',
   'settingsAds': 'Anuncios',
   'settingsAdsSub': 'Banner + anuncios entre partidas',
+  'settingsAdPrivacy': 'Preferencias de privacidad de anuncios',
+  'settingsAdPrivacyUnavailable': 'Las preferencias de anuncios no están disponibles en este dispositivo',
+  'settingsAdPrivacySaved': 'Preferencias de anuncios actualizadas',
   'privacyPolicy': 'Política de privacidad',
   'termsOfUse': 'Términos de uso',
   'botDifficulty': 'Dificultad del bot',
@@ -1408,6 +1423,9 @@ const _ar = {
   'settingsFidCopied': 'تم نسخ معرف الجهاز',
   'settingsAds': 'الإعلانات',
   'settingsAdsSub': 'بانر + إعلانات بين المباريات',
+  'settingsAdPrivacy': 'تفضيلات خصوصية الإعلانات',
+  'settingsAdPrivacyUnavailable': 'تفضيلات الإعلانات غير متاحة على هذا الجهاز',
+  'settingsAdPrivacySaved': 'تم تحديث تفضيلات الإعلانات',
   'privacyPolicy': 'سياسة الخصوصية',
   'termsOfUse': 'شروط الاستخدام',
   'botDifficulty': 'صعوبة البوت',
@@ -1667,6 +1685,9 @@ const _fr = {
   'settingsFidCopied': 'ID test copié dans le presse-papiers',
   'settingsAds': 'Publicités',
   'settingsAdsSub': 'Bannière + pubs entre matchs',
+  'settingsAdPrivacy': 'Préférences de confidentialité des pubs',
+  'settingsAdPrivacyUnavailable': 'Préférences pub indisponibles sur cet appareil',
+  'settingsAdPrivacySaved': 'Préférences pub mises à jour',
   'privacyPolicy': 'Politique de confidentialité',
   'termsOfUse': 'Conditions d\'utilisation',
   'botDifficulty': 'Difficulté du bot',
