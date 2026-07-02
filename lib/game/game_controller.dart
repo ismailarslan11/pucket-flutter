@@ -309,6 +309,7 @@ class GameController extends ChangeNotifier {
     opponentRematchRequested = false;
     if (localDuoMode) _setSeat(0);
     _markVisualGeneration();
+    _bumpBoard();
     notifyListeners();
   }
 
@@ -324,11 +325,12 @@ class GameController extends ChangeNotifier {
   void startCountdown() {
     phase = GamePhase.countdown;
     countdown = 3;
+    _bumpBoard();
     notifyListeners();
     _cdTimer?.cancel();
     _cdTimer = Timer.periodic(const Duration(seconds: 1), (t) {
       countdown--;
-      uiSync.bump();
+      notifyListeners();
       if (countdown <= 0) {
         t.cancel();
         phase = GamePhase.playing;
@@ -339,6 +341,7 @@ class GameController extends ChangeNotifier {
           uiSync.bump();
         });
         _startAfkTimer();
+        _bumpBoard();
         notifyListeners();
       }
     });
@@ -676,11 +679,13 @@ class GameController extends ChangeNotifier {
           }
         }
         if (msg['phase'] == 'gameover' && msg['lastWinner'] != null) {
-          _applyRoundEndFromNetwork({
-            'winner': msg['lastWinner'],
-            'roundWins': roundWins.toList(),
-            'currentRound': currentRound,
-          });
+          if (phase != GamePhase.countdown && phase != GamePhase.playing) {
+            _applyRoundEndFromNetwork({
+              'winner': msg['lastWinner'],
+              'roundWins': roundWins.toList(),
+              'currentRound': currentRound,
+            });
+          }
         } else {
           if (boardChanged) {
             _bumpBoard();
@@ -701,7 +706,9 @@ class GameController extends ChangeNotifier {
         }
         break;
       case 'roundEnd':
-        _applyRoundEndFromNetwork(msg);
+        if (phase != GamePhase.countdown && phase != GamePhase.playing) {
+          _applyRoundEndFromNetwork(msg);
+        }
         break;
       case 'matchEnd':
         if (!isOnlineHost) {

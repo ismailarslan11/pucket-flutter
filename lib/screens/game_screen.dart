@@ -197,6 +197,9 @@ class _GameScreenState extends State<GameScreen> {
       setState(() => _showPause = true);
     } else if (game.phase == GamePhase.playing && _lastPhase == GamePhase.paused) {
       setState(() => _showPause = false);
+    } else if (_lastPhase == GamePhase.gameover &&
+        (game.phase == GamePhase.countdown || game.phase == GamePhase.playing)) {
+      setState(() => _showOverlay = false);
     }
 
     // Yedek: roundEnd kaçırılsa bile reklam / yan etkiler
@@ -709,10 +712,8 @@ class _GameScreenState extends State<GameScreen> {
                   label: primaryLabel,
                   width: 260,
                   onPressed: () {
-                    if (game.phase != GamePhase.gameover) {
-                      setState(() => _showOverlay = false);
-                    }
                     onPrimary();
+                    if (mounted) setState(() => _showOverlay = false);
                     if (!game.aiMode &&
                         !game.trainingMode &&
                         game.matchFinished &&

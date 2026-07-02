@@ -51,7 +51,8 @@ class _GameBoardState extends State<GameBoard> with SingleTickerProviderStateMix
   void _syncTicker() {
     final game = _game;
     if (game == null) return;
-    if (game.phase == GamePhase.playing) {
+    final active = game.phase == GamePhase.playing || game.phase == GamePhase.countdown;
+    if (active) {
       if (!_ticker.isActive) _ticker.start();
     } else if (_ticker.isActive) {
       _ticker.stop();
