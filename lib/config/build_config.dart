@@ -1,2 +1,2 @@
-/// Otomatik oluşturulur — `tool/setup_firebase.sh` ile güncellenir.
+/// Otomatik oluşturulur — `tool/setup_firebase_fresh.sh` ile güncellenir.
 const bool kFirebaseNativeReady = true;

@@ -1,5 +1,0 @@
-package com.pucket.pucket_flutter
-
-import io.flutter.embedding.android.FlutterActivity
-
-class MainActivity : FlutterActivity()

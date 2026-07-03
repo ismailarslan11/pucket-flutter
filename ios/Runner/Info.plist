@@ -29,34 +29,22 @@
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>pucket</string>
-			</array>
-		</dict>
-		<dict>
-			<key>CFBundleTypeRole</key>
-			<string>Editor</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>com.googleusercontent.apps.623091701096-d8djgirimlovmk8dt1t7bbbrug3cmpv1</string>
+				<string>com.googleusercontent.apps.834928081370-8joaucc5tjldsrd7e080ck7sufh0d6so</string>
 			</array>
 		</dict>
 	</array>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
-	<key>GIDClientID</key>
-	<string>623091701096-d8djgirimlovmk8dt1t7bbbrug3cmpv1.apps.googleusercontent.com</string>
-	<key>GIDServerClientID</key>
-	<string>623091701096-rhfs1o4hop8f3q2ul2q89n4aivml8qtd.apps.googleusercontent.com</string>
-	<key>NSAppleSignInUsageDescription</key>
-	<string>Ranked maçlara katılmak ve ilerlemenizi kaydetmek için Apple ile giriş yapın.</string>
 	<key>GADApplicationIdentifier</key>
 	<string>ca-app-pub-2558408055462441~7988103551</string>
+	<key>GIDClientID</key>
+	<string>834928081370-8joaucc5tjldsrd7e080ck7sufh0d6so.apps.googleusercontent.com</string>
+	<key>GIDServerClientID</key>
+	<string>834928081370-4j3p8vp1dll89i7qvcpb0alvahu7ao1f.apps.googleusercontent.com</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
-	<key>UIBackgroundModes</key>
-	<array>
-		<string>remote-notification</string>
-	</array>
+	<key>NSAppleSignInUsageDescription</key>
+	<string>Ranked maçlara katılmak ve ilerlemenizi kaydetmek için Apple ile giriş yapın.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -80,6 +68,10 @@
 	</dict>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>

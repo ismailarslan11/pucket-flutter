@@ -15,7 +15,7 @@ class AdConfig {
   static const _rewardedIosFromEnv = String.fromEnvironment('ADMOB_IOS_REWARDED_ID');
   static const _useTestAdsFromEnv = bool.fromEnvironment('ADMOB_USE_TEST_ADS');
 
-  /// PUCKET Android — com.pucket.pucket_flutter (AdMob Console)
+  /// PUCKET Android — com.yesastudio.pucket (AdMob Console'da yeni uygulama ekleyin)
   static const _prodBannerAndroid = 'ca-app-pub-2558408055462441/2963997268';
   static const _prodInterstitialAndroid = 'ca-app-pub-2558408055462441/8581331624';
   static const _prodRewardedAndroid = 'ca-app-pub-2558408055462441/8574728233';

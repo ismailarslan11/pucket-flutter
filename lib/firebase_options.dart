@@ -44,39 +44,37 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyB85Lpn18zeZlimF-wRRmF7LHBzsX43S3M',
-    appId: '1:623091701096:web:2804fc87663de03988b2dd',
-    messagingSenderId: '623091701096',
-    projectId: 'pucket-9413c',
-    authDomain: 'pucket-9413c.firebaseapp.com',
-    storageBucket: 'pucket-9413c.firebasestorage.app',
+    apiKey: 'AIzaSyAy114yEHnrXeZ5rQrQ1uCALFGJEk_z-Yo',
+    appId: '1:834928081370:web:c5029e9b0f9c4cedf268e3',
+    messagingSenderId: '834928081370',
+    projectId: 'pucket-202607',
+    authDomain: 'pucket-202607.firebaseapp.com',
+    storageBucket: 'pucket-202607.firebasestorage.app',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyDSHTrlvhGpwrxKll_omD7qMeOnkM4QaEM',
-    appId: '1:623091701096:android:aa9ef8b47d701aeb88b2dd',
-    messagingSenderId: '623091701096',
-    projectId: 'pucket-9413c',
-    storageBucket: 'pucket-9413c.firebasestorage.app',
+    apiKey: 'AIzaSyDcWg-m_KT59ubc5nHT0ovVOu2R897JF-E',
+    appId: '1:834928081370:android:89b888b55f744e4af268e3',
+    messagingSenderId: '834928081370',
+    projectId: 'pucket-202607',
+    storageBucket: 'pucket-202607.firebasestorage.app',
   );
-
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyDhq2QiE-Nl8M92S5KysOk-HAuFMhJiDsQ',
-    appId: '1:623091701096:ios:1e9c202dea0be1e688b2dd',
-    messagingSenderId: '623091701096',
-    projectId: 'pucket-9413c',
-    storageBucket: 'pucket-9413c.firebasestorage.app',
-    iosClientId: '623091701096-d8djgirimlovmk8dt1t7bbbrug3cmpv1.apps.googleusercontent.com',
+    apiKey: 'AIzaSyCAIV2Ub_puscY3Ea1nRv5UGthI_uPyEgw',
+    appId: '1:834928081370:ios:e8ede0dab3b63da0f268e3',
+    messagingSenderId: '834928081370',
+    projectId: 'pucket-202607',
+    storageBucket: 'pucket-202607.firebasestorage.app',
+    iosClientId: '834928081370-8joaucc5tjldsrd7e080ck7sufh0d6so.apps.googleusercontent.com',
     iosBundleId: 'com.pucket.pucketFlutter',
   );
-
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyDhq2QiE-Nl8M92S5KysOk-HAuFMhJiDsQ',
-    appId: '1:623091701096:ios:1e9c202dea0be1e688b2dd',
-    messagingSenderId: '623091701096',
-    projectId: 'pucket-9413c',
-    storageBucket: 'pucket-9413c.firebasestorage.app',
-    iosClientId: '623091701096-d8djgirimlovmk8dt1t7bbbrug3cmpv1.apps.googleusercontent.com',
+    apiKey: 'AIzaSyCAIV2Ub_puscY3Ea1nRv5UGthI_uPyEgw',
+    appId: '1:834928081370:ios:e8ede0dab3b63da0f268e3',
+    messagingSenderId: '834928081370',
+    projectId: 'pucket-202607',
+    storageBucket: 'pucket-202607.firebasestorage.app',
+    iosClientId: '834928081370-8joaucc5tjldsrd7e080ck7sufh0d6so.apps.googleusercontent.com',
     iosBundleId: 'com.pucket.pucketFlutter',
   );
 }

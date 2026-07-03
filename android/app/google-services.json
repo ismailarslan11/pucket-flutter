@@ -1,53 +1,53 @@
 {
   "project_info": {
-    "project_number": "623091701096",
-    "project_id": "pucket-9413c",
-    "storage_bucket": "pucket-9413c.firebasestorage.app"
+    "project_number": "834928081370",
+    "project_id": "pucket-202607",
+    "storage_bucket": "pucket-202607.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:623091701096:android:aa9ef8b47d701aeb88b2dd",
+        "mobilesdk_app_id": "1:834928081370:android:89b888b55f744e4af268e3",
         "android_client_info": {
-          "package_name": "com.pucket.pucket_flutter"
+          "package_name": "com.yesastudio.pucket"
         }
       },
       "oauth_client": [
         {
-          "client_id": "623091701096-anqd48esonsuisjrspht8iohqrn3v48h.apps.googleusercontent.com",
+          "client_id": "834928081370-72f7778jqlpofg5u587itmjmbk4kgfet.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.pucket.pucket_flutter",
+            "package_name": "com.yesastudio.pucket",
             "certificate_hash": "0d297ee119cc19a0817b0f21d5f186f1a80ea38f"
           }
         },
         {
-          "client_id": "623091701096-no1bh66u469mhsein79d0ghu7gse36pr.apps.googleusercontent.com",
+          "client_id": "834928081370-cb5uu9sd574vj6qe3fbdrisellb4lgj0.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.pucket.pucket_flutter",
+            "package_name": "com.yesastudio.pucket",
             "certificate_hash": "62f4414cf8d06b7e3942ee2bf9d5c716a1d79e44"
           }
         },
         {
-          "client_id": "623091701096-rhfs1o4hop8f3q2ul2q89n4aivml8qtd.apps.googleusercontent.com",
+          "client_id": "834928081370-4j3p8vp1dll89i7qvcpb0alvahu7ao1f.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyDSHTrlvhGpwrxKll_omD7qMeOnkM4QaEM"
+          "current_key": "AIzaSyDcWg-m_KT59ubc5nHT0ovVOu2R897JF-E"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "623091701096-rhfs1o4hop8f3q2ul2q89n4aivml8qtd.apps.googleusercontent.com",
+              "client_id": "834928081370-4j3p8vp1dll89i7qvcpb0alvahu7ao1f.apps.googleusercontent.com",
               "client_type": 3
             },
             {
-              "client_id": "623091701096-d8djgirimlovmk8dt1t7bbbrug3cmpv1.apps.googleusercontent.com",
+              "client_id": "834928081370-8joaucc5tjldsrd7e080ck7sufh0d6so.apps.googleusercontent.com",
               "client_type": 2,
               "ios_info": {
                 "bundle_id": "com.pucket.pucketFlutter"

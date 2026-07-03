@@ -7,14 +7,25 @@ ANDROID_DIR="$ROOT/android"
 KEYSTORE="$ANDROID_DIR/pucket-release.jks"
 KEY_PROPS="$ANDROID_DIR/key.properties"
 KEY_PROPS_EXAMPLE="$ANDROID_DIR/key.properties.example"
-ANDROID_APP_ID="1:623091701096:android:aa9ef8b47d701aeb88b2dd"
-FIREBASE_PROJECT="pucket-9413c"
+ENV_FILE="$ROOT/tool/firebase_project.env"
 ALIAS="pucket"
+
+if [[ -f "$ENV_FILE" ]]; then
+  # shellcheck disable=SC1090
+  source "$ENV_FILE"
+fi
+
+ANDROID_APP_ID="${ANDROID_APP_ID:-}"
+FIREBASE_PROJECT="${FIREBASE_PROJECT_ID:-}"
 
 find_keytool() {
   local kt="${JAVA_HOME:-}/bin/keytool"
   if [[ -x "$kt" ]]; then
     echo "$kt"
+    return
+  fi
+  if [[ -x "/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home/bin/keytool" ]]; then
+    echo "/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home/bin/keytool"
     return
   fi
   if [[ -x "/Applications/Android Studio.app/Contents/jbr/Contents/Home/bin/keytool" ]]; then
@@ -44,7 +55,7 @@ if [[ ! -f "$KEYSTORE" ]]; then
     -validity 10000 \
     -storepass "$STORE_PASS" \
     -keypass "$KEY_PASS" \
-    -dname "CN=PUCKET, OU=Mobile, O=Pucket, L=Istanbul, ST=Istanbul, C=TR"
+    -dname "CN=PUCKET, OU=Mobile, O=Yesa Studio, L=Istanbul, ST=Istanbul, C=TR"
 
   cat > "$KEY_PROPS" <<EOF
 storePassword=$STORE_PASS
@@ -68,7 +79,6 @@ else
   fi
 fi
 
-# key.properties oku
 STORE_PASS=$(grep '^storePassword=' "$KEY_PROPS" | cut -d= -f2-)
 KEY_PASS=$(grep '^keyPassword=' "$KEY_PROPS" | cut -d= -f2-)
 ALIAS_FROM_PROPS=$(grep '^keyAlias=' "$KEY_PROPS" | cut -d= -f2-)
@@ -95,10 +105,17 @@ SHA256=$("$KEYTOOL" -list -v \
 echo "  SHA-1:   ${SHA1:-bulunamadı}"
 echo "  SHA-256: ${SHA256:-bulunamadı}"
 
+if [[ -z "$ANDROID_APP_ID" || -z "$FIREBASE_PROJECT" ]]; then
+  echo ""
+  echo "UYARI: tool/firebase_project.env yok — önce ./tool/setup_firebase_fresh.sh çalıştırın."
+  echo "SHA'ları Firebase Console'dan elle ekleyin."
+  exit 0
+fi
+
 if [[ -f "$ROOT/package.json" ]]; then
   export PATH="$ROOT/node_modules/.bin:$PATH"
   if firebase --version >/dev/null 2>&1; then
-    echo "==> Firebase'e release SHA kaydediliyor"
+    echo "==> Firebase'e release SHA kaydediliyor ($FIREBASE_PROJECT)"
     if [[ -n "${SHA1:-}" ]]; then
       firebase apps:android:sha:create "$ANDROID_APP_ID" "$SHA1" --project="$FIREBASE_PROJECT" 2>/dev/null || true
     fi
@@ -107,18 +124,12 @@ if [[ -f "$ROOT/package.json" ]]; then
     fi
     echo "==> google-services.json güncelleniyor"
     firebase apps:sdkconfig ANDROID "$ANDROID_APP_ID" --project="$FIREBASE_PROJECT" \
-      > "$ANDROID_DIR/app/google-services.json"
+      --out "$ANDROID_DIR/app/google-services.json"
     echo "  ✓ android/app/google-services.json güncellendi"
-  else
-    echo "UYARI: Firebase CLI yok — SHA'ları Console'dan elle ekleyin:"
-    echo "  https://console.firebase.google.com/project/$FIREBASE_PROJECT/settings/general"
   fi
 fi
 
 echo ""
-echo "==> Release build komutları"
-echo "  cd $ROOT"
-echo "  flutter build appbundle --release    # Play Store (AAB)"
-echo "  flutter build apk --release          # Test APK"
-echo ""
-echo "Bölüm 1 tamam: release imza + Firebase SHA hazır."
+echo "==> Release build"
+echo "  export JAVA_HOME=/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home"
+echo "  flutter build apk --release"

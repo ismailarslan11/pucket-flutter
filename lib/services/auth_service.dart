@@ -61,9 +61,11 @@ class AuthService extends ChangeNotifier {
   }
 
   bool get _isMacOS => !kIsWeb && defaultTargetPlatform == TargetPlatform.macOS;
+  bool _googleSignInReady = false;
 
   Future<void> _initGoogleSignIn() async {
     if (_isMacOS || kIsWeb) return;
+    if (!GoogleAuthConfig.hasWebClientId) return;
     final googleSignIn = GoogleSignIn.instance;
     // Android: clientId google-services.json'dan gelir; iOS client ID vermeyin.
     final iosOnlyClientId = !kIsWeb &&
@@ -71,9 +73,47 @@ class AuthService extends ChangeNotifier {
         GoogleAuthConfig.hasIosClientId;
     await googleSignIn.initialize(
       clientId: iosOnlyClientId ? GoogleAuthConfig.iosClientId : null,
-      serverClientId:
-          GoogleAuthConfig.hasWebClientId ? GoogleAuthConfig.webClientId : null,
+      serverClientId: GoogleAuthConfig.webClientId,
     );
+    _googleSignInReady = true;
+  }
+
+  Future<void> _ensureGoogleSignInReady() async {
+    if (_googleSignInReady) return;
+    await _initGoogleSignIn();
+  }
+
+  /// Android: önce Firebase OAuth (Credential Manager SHA sorunlarını atlar),
+  /// olmazsa native Google Sign-In dener. İptalde true döner.
+  Future<bool> _signInWithGoogleOnAndroid() async {
+    final provider = GoogleAuthProvider();
+    try {
+      await _auth!.signInWithProvider(provider);
+      return false;
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'web-context-canceled' || e.code == 'cancelled-popup-request') {
+        return true;
+      }
+    }
+    await _signInWithGoogleNative();
+    return false;
+  }
+
+  Future<void> _signInWithGoogleNative() async {
+    await _ensureGoogleSignInReady();
+    final googleSignIn = GoogleSignIn.instance;
+    final googleUser = await googleSignIn.authenticate();
+    final googleAuth = googleUser.authentication;
+    if (googleAuth.idToken == null) {
+      lastError = 'Google kimlik doğrulaması alınamadı';
+      loading = false;
+      notifyListeners();
+      return;
+    }
+    final credential = GoogleAuthProvider.credential(
+      idToken: googleAuth.idToken,
+    );
+    await _auth!.signInWithCredential(credential);
   }
 
   Future<void> initFirebase() async {
@@ -94,11 +134,9 @@ class AuthService extends ChangeNotifier {
     try {
       _auth = FirebaseAuth.instance;
       _db = FirebaseFirestore.instance;
-      unawaited(() async {
-        try {
-          await _initGoogleSignIn();
-        } catch (_) {}
-      }());
+      try {
+        await _initGoogleSignIn();
+      } catch (_) {}
       _auth!.authStateChanges().listen(_onAuthChanged);
       _firebaseReady = true;
       final fbUser = _auth!.currentUser;
@@ -230,26 +268,28 @@ class AuthService extends ChangeNotifier {
         return;
       }
 
-      final googleSignIn = GoogleSignIn.instance;
-      final googleUser = await googleSignIn.authenticate();
-      final googleAuth = googleUser.authentication;
-      if (googleAuth.idToken == null) {
-        lastError = 'Google kimlik doğrulaması alınamadı';
+      if (!GoogleAuthConfig.hasWebClientId) {
+        lastError = 'Google yapılandırması eksik — Firebase web client ID yok';
         loading = false;
         notifyListeners();
         return;
       }
-      final credential = GoogleAuthProvider.credential(
-        idToken: googleAuth.idToken,
-      );
-      await _auth!.signInWithCredential(credential);
+      if (defaultTargetPlatform == TargetPlatform.android) {
+        if (await _signInWithGoogleOnAndroid()) {
+          loading = false;
+          notifyListeners();
+          return;
+        }
+      } else {
+        await _signInWithGoogleNative();
+      }
     } on GoogleSignInException catch (e) {
       if (e.code != GoogleSignInExceptionCode.canceled) {
         lastError = switch (e.code) {
           GoogleSignInExceptionCode.clientConfigurationError =>
             'Google giriş yapılandırması eksik — tool/setup_firebase.sh çalıştırın',
           GoogleSignInExceptionCode.providerConfigurationError =>
-            'Google SDK yapılandırması hatalı',
+            'Google OAuth yapılandırması eksik — Firebase\'de Android SHA-1 ve OAuth istemcisi gerekli',
           _ => e.description ?? 'Google girişi başarısız (${e.code.name})',
         };
       }

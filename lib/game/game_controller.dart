@@ -127,6 +127,11 @@ class GameController extends ChangeNotifier {
   double _lastTickWallMs = 0;
   int _lastUiDiscSignature = -1;
   int _lastHitAudioFrame = 0;
+  int _lastSentStateSig = 0;
+  int _lastStateSentMs = 0;
+  int _lastNetworkBoardBumpMs = 0;
+  int? _localShotDisc;
+  int _localShotUntilMs = 0;
 
   final boardRepaint = BoardRepaintNotifier();
   final uiSync = UiSyncNotifier();
@@ -183,6 +188,25 @@ class GameController extends ChangeNotifier {
 
   void _bumpBoard() {
     boardRepaint.bump();
+  }
+
+  /// Ağ paketlerinden gelen repaint — frame başına en fazla bir kez.
+  void _bumpBoardFromNetwork() {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    if (now - _lastNetworkBoardBumpMs < 14) return;
+    _lastNetworkBoardBumpMs = now;
+    _bumpBoard();
+  }
+
+  int _discStateSignature() {
+    var sig = 17;
+    for (final d in discs) {
+      sig = sig * 31 + (d.vx * 10).round();
+      sig = sig * 31 + (d.vy * 10).round();
+      sig = sig * 31 + (d.vvx * 100).round();
+      sig = sig * 31 + (d.vvy * 100).round();
+    }
+    return sig;
   }
 
   void _markVisualGeneration() {
@@ -265,7 +289,7 @@ class GameController extends ChangeNotifier {
       _frameCount++;
       if (aiMode && aiBot.shouldThink(_frameCount * _physicsStepMs, aiLevel)) {
         if (aiBot.think(discs, aiLevel)) _haptic(25);
-      } else if (!aiMode && isOnlineHost && _frameCount % 4 == 0) {
+      } else if (!aiMode && isOnlineHost && _frameCount % 5 == 0) {
         _sendState();
       }
 
@@ -299,6 +323,10 @@ class GameController extends ChangeNotifier {
     _physicsAccum = 0;
     _lastTickWallMs = 0;
     _lastUiDiscSignature = -1;
+    _lastSentStateSig = 0;
+    _lastStateSentMs = 0;
+    _localShotDisc = null;
+    _localShotUntilMs = 0;
     aiBot.reset();
     discs = trainingMode
         ? PhysicsEngine.initTrainingDiscs(trainingLayout)
@@ -688,7 +716,7 @@ class GameController extends ChangeNotifier {
           }
         } else {
           if (boardChanged) {
-            _bumpBoard();
+            _bumpBoardFromNetwork();
             _syncUiIfDiscCountsChanged();
           }
           if (uiChanged) notifyListeners();
@@ -702,6 +730,7 @@ class GameController extends ChangeNotifier {
             discs[idx].vvy = (msg['vvy'] as num).toDouble();
             audio?.playShot();
             _bumpBoard();
+            _sendState(force: true);
           }
         }
         break;
@@ -824,7 +853,10 @@ class GameController extends ChangeNotifier {
 
   bool _applyDiscStates(List states) {
     var changed = false;
+    final nowMs = DateTime.now().millisecondsSinceEpoch;
     for (var i = 0; i < states.length && i < discs.length; i++) {
+      if (_localShotDisc == i && nowMs < _localShotUntilMs) continue;
+
       final s = states[i] as List;
       final nx = (s[0] as num).toDouble();
       final ny = (s[1] as num).toDouble();
@@ -842,8 +874,7 @@ class GameController extends ChangeNotifier {
         d.vvy = nvy;
         changed = true;
       } else {
-        final posErr = math.sqrt(posErrSq);
-        final posBlend = posErr > 8 ? 0.45 : 0.22;
+        final posBlend = posErrSq > 64 ? 0.35 : 0.18;
         if (posErrSq > 0.08 * 0.08) {
           d.vx += dx * posBlend;
           d.vy += dy * posBlend;
@@ -852,8 +883,8 @@ class GameController extends ChangeNotifier {
         final dvx = nvx - d.vvx;
         final dvy = nvy - d.vvy;
         if (dvx.abs() > 0.012 || dvy.abs() > 0.012) {
-          d.vvx += dvx * 0.7;
-          d.vvy += dvy * 0.7;
+          d.vvx += dvx * 0.5;
+          d.vvy += dvy * 0.5;
           changed = true;
         }
       }
@@ -866,17 +897,34 @@ class GameController extends ChangeNotifier {
     if (!force) {
       final anyMoving = discs.any((d) => d.vvx.abs() > 0.01 || d.vvy.abs() > 0.01);
       if (!anyMoving) return;
+      final now = DateTime.now().millisecondsSinceEpoch;
+      if (now - _lastStateSentMs < 45) return;
+      final sig = _discStateSignature();
+      if (sig == _lastSentStateSig) return;
+      _lastSentStateSig = sig;
+      _lastStateSentMs = now;
+    } else {
+      _lastSentStateSig = _discStateSignature();
+      _lastStateSentMs = DateTime.now().millisecondsSinceEpoch;
     }
+
+    final discPayload = discs
+        .map((d) => [
+              (d.vx * 10).round() / 10,
+              (d.vy * 10).round() / 10,
+              (d.vvx * 100).round() / 100,
+              (d.vvy * 100).round() / 100,
+            ])
+        .toList();
+
+    if (phase == GamePhase.playing && !force) {
+      ws.send({'type': 'state', 'discs': discPayload});
+      return;
+    }
+
     ws.send({
       'type': 'state',
-      'discs': discs
-          .map((d) => [
-                (d.vx * 10).round() / 10,
-                (d.vy * 10).round() / 10,
-                (d.vvx * 100).round() / 100,
-                (d.vvy * 100).round() / 100,
-              ])
-          .toList(),
+      'discs': discPayload,
       'roundWins': roundWins.toList(),
       'currentRound': currentRound,
       'phase': phase.name,
@@ -1077,9 +1125,14 @@ class GameController extends ChangeNotifier {
       if (aiMode || isOnlineHost || localDuoMode) {
         discs[dragState.discIndex].vvx = vvx;
         discs[dragState.discIndex].vvy = vvy;
+        if (isOnlineHost && !aiMode && !localDuoMode) {
+          _sendState(force: true);
+        }
       } else {
         discs[dragState.discIndex].vvx = vvx;
         discs[dragState.discIndex].vvy = vvy;
+        _localShotDisc = dragState.discIndex;
+        _localShotUntilMs = DateTime.now().millisecondsSinceEpoch + 280;
         ws.send({
           'type': 'shot',
           'disc': dragState.discIndex,
