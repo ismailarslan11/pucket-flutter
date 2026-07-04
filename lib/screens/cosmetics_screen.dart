@@ -97,7 +97,7 @@ class _CosmeticsScreenState extends State<CosmeticsScreen> {
     if (outcome == RewardedAdOutcome.notReady) {
       setState(() => _watchingAd = false);
       final detail = ads.lastRewardedError;
-      _snack(detail.isNotEmpty ? '${l10n.tokensAdNotReady}\n$detail' : l10n.tokensAdNotReady);
+      _snack(detail.isNotEmpty ? detail : l10n.tokensAdNotReady);
       return;
     }
 
@@ -224,6 +224,33 @@ class _CosmeticsScreenState extends State<CosmeticsScreen> {
               final unlocked = metaSvc.isDiscUnlocked(item.id);
               final selected = _disc == item.id;
               return _PremiumDiscTile(
+                item: item,
+                name: l10n.discName(item.id),
+                selected: selected,
+                unlocked: unlocked,
+                onSelect: unlocked ? () => setState(() => _disc = item.id) : null,
+                onBuy: unlocked ? null : () => _purchase('disc', item.id, item.price),
+              );
+            },
+          ),
+          const SizedBox(height: 24),
+          Text(l10n.cosmeticsDiscEmoji, style: _sectionStyle),
+          const SizedBox(height: 10),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 4,
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 10,
+              childAspectRatio: 0.78,
+            ),
+            itemCount: CosmeticCatalog.emojiDiscs.length,
+            itemBuilder: (context, i) {
+              final item = CosmeticCatalog.emojiDiscs[i];
+              final unlocked = metaSvc.isDiscUnlocked(item.id);
+              final selected = _disc == item.id;
+              return _EmojiDiscTile(
                 item: item,
                 name: l10n.discName(item.id),
                 selected: selected,
@@ -495,6 +522,86 @@ class _PremiumDiscTile extends StatelessWidget {
             onPressed: onBuy,
             style: TextButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 4),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: Text(
+              l10n.tokensPrice(item.price),
+              style: const TextStyle(color: AppColors.gold, fontSize: 10, fontWeight: FontWeight.w800),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _EmojiDiscTile extends StatelessWidget {
+  const _EmojiDiscTile({
+    required this.item,
+    required this.name,
+    required this.selected,
+    required this.unlocked,
+    required this.onSelect,
+    required this.onBuy,
+  });
+
+  final CosmeticItem item;
+  final String name;
+  final bool selected;
+  final bool unlocked;
+  final VoidCallback? onSelect;
+  final VoidCallback? onBuy;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return Column(
+      children: [
+        GestureDetector(
+          onTap: onSelect ?? onBuy,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: item.bgColor,
+                  border: Border.all(
+                    color: selected ? AppColors.gold : Colors.white24,
+                    width: selected ? 3 : 1.5,
+                  ),
+                ),
+                alignment: Alignment.center,
+                child: Text(item.emoji, style: const TextStyle(fontSize: 28, height: 1)),
+              ),
+              if (!unlocked)
+                Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.black.withValues(alpha: 0.5),
+                  ),
+                  child: const Icon(Icons.lock, color: Colors.white70, size: 18),
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          name,
+          textAlign: TextAlign.center,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w600, height: 1.1),
+        ),
+        if (!unlocked)
+          TextButton(
+            onPressed: onBuy,
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 2),
               minimumSize: Size.zero,
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),

@@ -36,7 +36,7 @@
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>GADApplicationIdentifier</key>
-	<string>ca-app-pub-2558408055462441~7988103551</string>
+	<string>ca-app-pub-8812492864768219~4176844887</string>
 	<key>GIDClientID</key>
 	<string>834928081370-8joaucc5tjldsrd7e080ck7sufh0d6so.apps.googleusercontent.com</string>
 	<key>GIDServerClientID</key>

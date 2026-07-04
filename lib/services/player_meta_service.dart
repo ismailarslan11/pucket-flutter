@@ -33,10 +33,14 @@ class PlayerMetaService extends ChangeNotifier {
   }
 
   bool isDiscUnlocked(String id) =>
-      CosmeticCatalog.freeDiscs.contains(id) || unlockedDiscs.contains(id);
+      CosmeticCatalog.freeForTesting ||
+      CosmeticCatalog.freeDiscs.contains(id) ||
+      unlockedDiscs.contains(id);
 
   bool isBoardUnlocked(String id) =>
-      CosmeticCatalog.freeBoards.contains(id) || unlockedBoards.contains(id);
+      CosmeticCatalog.freeForTesting ||
+      CosmeticCatalog.freeBoards.contains(id) ||
+      unlockedBoards.contains(id);
 
   Future<void> onMatchPlayed(String uid, {required bool won, required bool ranked}) async {
     await load(uid);

@@ -11,9 +11,9 @@
 #   export API_URL=https://...
 #   export TEST_ADS=1          # yalnızca debug: Google test reklamları
 #
-# iOS prod reklam (TEST_ADS=0 iken zorunlu):
-#   cp tool/admob_ios.env.example tool/admob_ios.env
-#   # AdMob Console → iOS uygulaması (com.pucket.pucketFlutter) ID'lerini doldur
+# iOS prod reklam (TEST_ADS=0 iken):
+#   cp tool/admob.env.example tool/admob.env
+#   ./tool/setup_admob.sh
 #
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -23,7 +23,12 @@ WS_URL="${WS_URL:-wss://pucket-flutter-2.onrender.com}"
 API_URL="${API_URL:-https://pucket-flutter-2.onrender.com}"
 TEST_ADS="${TEST_ADS:-0}"
 
-if [[ -f tool/admob_ios.env ]]; then
+if [[ -f tool/admob.env ]]; then
+  set -a
+  # shellcheck disable=SC1091
+  source tool/admob.env
+  set +a
+elif [[ -f tool/admob_ios.env ]]; then
   set -a
   # shellcheck disable=SC1091
   source tool/admob_ios.env
@@ -44,15 +49,16 @@ echo "→ API_URL=$API_URL"
 echo "→ Build: $TARGET"
 echo "→ TEST_ADS=$TEST_ADS (1=Google test reklam, 0=prod birimler)"
 
-if [[ "$TARGET" == "ios" && "$TEST_ADS" != "1" ]]; then
-  IOS_APP_ID="${ADMOB_IOS_APP_ID:-ca-app-pub-2558408055462441~7988103551}"
-  IOS_BANNER_ID="${ADMOB_IOS_BANNER_ID:-ca-app-pub-2558408055462441/8708525371}"
-  /usr/libexec/PlistBuddy -c "Set :GADApplicationIdentifier ${IOS_APP_ID}" ios/Runner/Info.plist
-  DEFINES+=("--dart-define=ADMOB_IOS_BANNER_ID=${IOS_BANNER_ID}")
+if [[ "$TARGET" == "ios" && "$TEST_ADS" != "1" && -n "${ADMOB_IOS_APP_ID:-}" ]]; then
+  /usr/libexec/PlistBuddy -c "Set :GADApplicationIdentifier ${ADMOB_IOS_APP_ID}" ios/Runner/Info.plist
+  DEFINES+=("--dart-define=ADMOB_IOS_BANNER_ID=${ADMOB_IOS_BANNER_ID}")
   if [[ -n "${ADMOB_IOS_INTERSTITIAL_ID:-}" ]]; then
     DEFINES+=("--dart-define=ADMOB_IOS_INTERSTITIAL_ID=${ADMOB_IOS_INTERSTITIAL_ID}")
   fi
-  echo "→ iOS AdMob App ID: ${IOS_APP_ID}"
+  if [[ -n "${ADMOB_IOS_REWARDED_ID:-}" ]]; then
+    DEFINES+=("--dart-define=ADMOB_IOS_REWARDED_ID=${ADMOB_IOS_REWARDED_ID}")
+  fi
+  echo "→ iOS AdMob App ID: ${ADMOB_IOS_APP_ID}"
 fi
 
 if [[ "$TARGET" == "appbundle" ]]; then

@@ -69,7 +69,7 @@ class _GameBoardState extends State<GameBoard> with SingleTickerProviderStateMix
         _discColor = disc;
         _boardTheme = board;
       });
-      if (CosmeticCatalog.isPremiumDisc(_discColor)) {
+      if (CosmeticCatalog.isImageDisc(_discColor)) {
         DiscImageCache.ensureLoaded(_discColor).then((_) {
           if (mounted) _game?.boardRepaint.bump();
         });

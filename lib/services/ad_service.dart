@@ -25,8 +25,11 @@ class AdService extends ChangeNotifier {
 
   InterstitialAd? _interstitial;
   bool _loadingInterstitial = false;
-  RewardedAd? _rewarded;
+  RewardedInterstitialAd? _rewardedInterstitial;
+  RewardedAd? _rewardedClassic;
   bool _loadingRewarded = false;
+  int _rewardedFailCount = 0;
+  DateTime? _rewardedRetryAfter;
   int _initRetries = 0;
 
   static const _minInterval = Duration(minutes: 3);
@@ -34,6 +37,9 @@ class AdService extends ChangeNotifier {
 
   DateTime? _lastShownAt;
   int _matchesSinceAd = 0;
+
+  bool get _rewardedLoaded =>
+      AdConfig.useClassicRewardedAd ? _rewardedClassic != null : _rewardedInterstitial != null;
 
   Future<void> init() async {
     if (!AdConfig.supported || initialized) return;
@@ -174,55 +180,120 @@ class AdService extends ChangeNotifier {
 
   Future<void> showInterstitialOnMenuReturn() async {}
 
-  void preloadRewarded() {
+  String _friendlyRewardedError(LoadAdError error) {
+    switch (error.code) {
+      case 0:
+        return 'Dahili hata — biraz sonra tekrar dene';
+      case 1:
+        return 'Çok sık deneme — 1-2 dakika bekle';
+      case 2:
+        return 'Ağ hatası — internet bağlantını kontrol et';
+      case 3:
+        if (AdConfig.useTestAds) {
+          return 'Test reklam yüklenemedi — uygulamayı kapatıp tekrar aç';
+        }
+        return 'AdMob henüz reklam göndermiyor — yeni hesapta 24-48 saat sürebilir';
+      default:
+        return error.message;
+    }
+  }
+
+  int _rewardedRetrySeconds(int code) {
+    return switch (code) {
+      1 => 90 + (_rewardedFailCount.clamp(0, 4) * 30),
+      3 => AdConfig.useTestAds ? 15 : 120,
+      2 => 25,
+      _ => 35,
+    };
+  }
+
+  void _onRewardedLoaded() {
+    _loadingRewarded = false;
+    _rewardedFailCount = 0;
+    _rewardedRetryAfter = null;
+    lastRewardedError = '';
+    debugPrint('Rewarded loaded: ${AdConfig.rewardedUnitId}');
+    notifyListeners();
+  }
+
+  void _onRewardedFailed(LoadAdError error) {
+    _rewardedFailCount++;
+    final waitSec = _rewardedRetrySeconds(error.code);
+    _rewardedRetryAfter = DateTime.now().add(Duration(seconds: waitSec));
+    lastRewardedError = '${_friendlyRewardedError(error)} (kod ${error.code})';
+    debugPrint(
+      'Rewarded load failed: ${error.message} '
+      'code=${error.code} unit=${AdConfig.rewardedUnitId} retryIn=${waitSec}s',
+    );
+    _loadingRewarded = false;
+    notifyListeners();
+    Future.delayed(Duration(seconds: waitSec), () => preloadRewarded());
+  }
+
+  void preloadRewarded({bool force = false}) {
     if (!AdConfig.supported || !initialized || !canLoadAds) return;
-    if (_loadingRewarded || _rewarded != null) return;
+    if (_loadingRewarded || _rewardedLoaded) return;
+    if (!force &&
+        _rewardedRetryAfter != null &&
+        DateTime.now().isBefore(_rewardedRetryAfter!)) {
+      return;
+    }
     final unitId = AdConfig.rewardedUnitId;
     if (unitId.isEmpty) return;
 
     _loadingRewarded = true;
-    RewardedAd.load(
+    if (AdConfig.useClassicRewardedAd) {
+      RewardedAd.load(
+        adUnitId: unitId,
+        request: const AdRequest(),
+        rewardedAdLoadCallback: RewardedAdLoadCallback(
+          onAdLoaded: (ad) {
+            _rewardedClassic = ad;
+            _onRewardedLoaded();
+          },
+          onAdFailedToLoad: _onRewardedFailed,
+        ),
+      );
+      return;
+    }
+
+    RewardedInterstitialAd.load(
       adUnitId: unitId,
       request: const AdRequest(),
-      rewardedAdLoadCallback: RewardedAdLoadCallback(
+      rewardedInterstitialAdLoadCallback: RewardedInterstitialAdLoadCallback(
         onAdLoaded: (ad) {
-          _rewarded = ad;
-          _loadingRewarded = false;
-          debugPrint('Rewarded ad loaded: ${AdConfig.rewardedUnitId}');
+          _rewardedInterstitial = ad;
+          _onRewardedLoaded();
         },
-        onAdFailedToLoad: (error) {
-          lastRewardedError = error.message;
-          debugPrint('Rewarded load failed: ${error.message} (${AdConfig.rewardedUnitId})');
-          _loadingRewarded = false;
-          Future.delayed(const Duration(seconds: 30), preloadRewarded);
-        },
+        onAdFailedToLoad: _onRewardedFailed,
       ),
     );
   }
 
   Future<bool> ensureRewardedReady({
-    Duration timeout = const Duration(seconds: 15),
+    Duration timeout = const Duration(seconds: 25),
   }) async {
     if (!AdConfig.supported || !initialized) return false;
     if (!canLoadAds) {
       await refreshAfterConsent();
       if (!canLoadAds) return false;
     }
-    if (_rewarded != null) return true;
+    if (_rewardedLoaded) return true;
 
     preloadRewarded();
     final deadline = DateTime.now().add(timeout);
     while (DateTime.now().isBefore(deadline)) {
-      if (_rewarded != null) return true;
-      await Future<void>.delayed(const Duration(milliseconds: 350));
-      if (!_loadingRewarded && _rewarded == null) {
+      if (_rewardedLoaded) return true;
+      final inBackoff = _rewardedRetryAfter != null &&
+          DateTime.now().isBefore(_rewardedRetryAfter!);
+      if (!inBackoff && !_loadingRewarded && !_rewardedLoaded) {
         preloadRewarded();
       }
+      await Future<void>.delayed(const Duration(milliseconds: 400));
     }
-    return _rewarded != null;
+    return _rewardedLoaded;
   }
 
-  /// Ödüllü reklam sonucu. [earned] = kullanıcı ödülü hak etti.
   Future<RewardedAdOutcome> showRewardedForTokens() async {
     if (!AdConfig.supported || !initialized || !canLoadAds) {
       return RewardedAdOutcome.notReady;
@@ -230,13 +301,25 @@ class AdService extends ChangeNotifier {
 
     final ready = await ensureRewardedReady();
     if (!ready) {
-      lastRewardedError = lastRewardedError.isNotEmpty ? lastRewardedError : 'Reklam yüklenemedi';
+      final err = lastRewardedError;
+      lastRewardedError = err.isNotEmpty
+          ? err
+          : 'Reklam henüz dolmadı — yeni AdMob hesabında 24-48 saat sürebilir';
       return RewardedAdOutcome.notReady;
     }
 
-    final ad = _rewarded!;
-    _rewarded = null;
+    if (AdConfig.useClassicRewardedAd) {
+      final ad = _rewardedClassic!;
+      _rewardedClassic = null;
+      return _showClassicRewarded(ad);
+    }
 
+    final interstitial = _rewardedInterstitial!;
+    _rewardedInterstitial = null;
+    return _showInterstitialRewarded(interstitial);
+  }
+
+  Future<RewardedAdOutcome> _showClassicRewarded(RewardedAd ad) async {
     final completer = Completer<RewardedAdOutcome>();
     var earned = false;
 
@@ -245,7 +328,6 @@ class AdService extends ChangeNotifier {
         ad.dispose();
         preloadRewarded();
         if (completer.isCompleted) return;
-        // Android'de earned callback bazen dismiss'ten sonra gelir — kısa bekle.
         Future<void>.delayed(const Duration(milliseconds: 800), () {
           if (completer.isCompleted) return;
           completer.complete(earned ? RewardedAdOutcome.earned : RewardedAdOutcome.dismissedEarly);
@@ -284,12 +366,60 @@ class AdService extends ChangeNotifier {
     );
   }
 
-  bool get rewardedReady => _rewarded != null;
+  Future<RewardedAdOutcome> _showInterstitialRewarded(RewardedInterstitialAd ad) async {
+    final completer = Completer<RewardedAdOutcome>();
+    var earned = false;
+
+    ad.fullScreenContentCallback = FullScreenContentCallback(
+      onAdDismissedFullScreenContent: (ad) {
+        ad.dispose();
+        preloadRewarded();
+        if (completer.isCompleted) return;
+        Future<void>.delayed(const Duration(milliseconds: 800), () {
+          if (completer.isCompleted) return;
+          completer.complete(earned ? RewardedAdOutcome.earned : RewardedAdOutcome.dismissedEarly);
+        });
+      },
+      onAdFailedToShowFullScreenContent: (ad, error) {
+        lastRewardedError = error.message;
+        ad.dispose();
+        preloadRewarded();
+        if (!completer.isCompleted) {
+          completer.complete(RewardedAdOutcome.showFailed);
+        }
+      },
+    );
+
+    try {
+      ad.show(
+        onUserEarnedReward: (ad, reward) {
+          earned = true;
+          debugPrint('Reward earned: ${reward.amount} ${reward.type}');
+          if (!completer.isCompleted) {
+            completer.complete(RewardedAdOutcome.earned);
+          }
+        },
+      );
+    } catch (e) {
+      lastRewardedError = '$e';
+      ad.dispose();
+      preloadRewarded();
+      return RewardedAdOutcome.showFailed;
+    }
+
+    return completer.future.timeout(
+      const Duration(minutes: 3),
+      onTimeout: () => earned ? RewardedAdOutcome.earned : RewardedAdOutcome.dismissedEarly,
+    );
+  }
+
+  bool get rewardedReady => _rewardedLoaded;
 
   @override
   void dispose() {
     _interstitial?.dispose();
-    _rewarded?.dispose();
+    _rewardedInterstitial?.dispose();
+    _rewardedClassic?.dispose();
     super.dispose();
   }
 }

@@ -229,7 +229,13 @@ class GamePainter extends CustomPainter {
     final pos = _s2c(d.vx, d.vy);
     final r = GameConstants.discRadius * sx;
     final isMine = d.owner == mySeat;
-    final usePremium = isMine && CosmeticCatalog.isPremiumDisc(discColor);
+
+    if (isMine && CosmeticCatalog.isEmojiDisc(discColor)) {
+      _drawEmojiDisc(canvas, pos, r, CosmeticCatalog.emojiDisc(discColor)!);
+      return;
+    }
+
+    final usePremium = isMine && CosmeticCatalog.isImageDisc(discColor);
     final img = usePremium ? DiscImageCache.imageFor(discColor) : null;
 
     if (img != null) {
@@ -262,6 +268,24 @@ class GamePainter extends CustomPainter {
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.2,
     );
+  }
+
+  void _drawEmojiDisc(Canvas canvas, Offset pos, double r, CosmeticItem item) {
+    canvas.drawCircle(pos, r, Paint()..color = item.bgColor);
+    canvas.drawCircle(
+      pos,
+      r,
+      Paint()
+        ..color = Colors.white.withValues(alpha: 0.28)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.2,
+    );
+    final emojiSize = r * 1.35;
+    final tp = TextPainter(
+      text: TextSpan(text: item.emoji, style: TextStyle(fontSize: emojiSize, height: 1)),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    tp.paint(canvas, Offset(pos.dx - tp.width / 2, pos.dy - tp.height / 2));
   }
 
   void _drawSling(Canvas canvas, Disc d, DragState drag) {

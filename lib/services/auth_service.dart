@@ -343,6 +343,12 @@ class AuthService extends ChangeNotifier {
       final apple = await SignInWithApple.getAppleIDCredential(
         scopes: [AppleIDAuthorizationScopes.email, AppleIDAuthorizationScopes.fullName],
       );
+      if (apple.identityToken == null || apple.identityToken!.isEmpty) {
+        lastError = 'Apple kimlik jetonu alınamadı — Xcode Team ve Sign in with Apple ayarlarını kontrol et';
+        loading = false;
+        notifyListeners();
+        return;
+      }
       final oauth = OAuthProvider('apple.com').credential(
         idToken: apple.identityToken,
         accessToken: apple.authorizationCode,
@@ -350,16 +356,29 @@ class AuthService extends ChangeNotifier {
       await _auth!.signInWithCredential(oauth);
     } on SignInWithAppleAuthorizationException catch (e) {
       if (e.code != AuthorizationErrorCode.canceled) {
-        lastError = 'Apple girişi başarısız';
+        debugPrint('Apple auth error: ${e.code} ${e.message}');
+        lastError = switch (e.code) {
+          AuthorizationErrorCode.unknown =>
+            'Apple girişi başarısız — simülatörde Settings → Apple Account ile giriş yap',
+          AuthorizationErrorCode.invalidResponse =>
+            'Apple yanıt vermedi — Xcode’da Team seç ve Sign in with Apple capability ekle',
+          AuthorizationErrorCode.notHandled =>
+            'Apple girişi yapılandırılmamış — developer.apple.com’da App ID’ye Sign in with Apple ekle',
+          AuthorizationErrorCode.failed =>
+            'Apple girişi başarısız — Firebase Console’da Apple sağlayıcısını etkinleştir',
+          _ => 'Apple girişi başarısız (${e.code.name})',
+        };
       }
       loading = false;
       notifyListeners();
     } on FirebaseAuthException catch (e) {
-      lastError = e.message ?? 'Apple girişi başarısız';
+      debugPrint('Firebase Apple auth: ${e.code} ${e.message}');
+      lastError = e.message ?? 'Apple girişi başarısız (${e.code})';
       loading = false;
       notifyListeners();
-    } catch (_) {
-      lastError = 'Apple girişi başarısız';
+    } catch (e, st) {
+      debugPrint('Apple sign-in failed: $e\n$st');
+      lastError = 'Apple girişi başarısız: $e';
       loading = false;
       notifyListeners();
     }

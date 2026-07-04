@@ -256,10 +256,24 @@ const DISC_PRICES = {
   mountain_dwarven: 125,
   void_crystal: 500,
   sprite_blessing: 350,
+  emoji_fire: 40,
+  emoji_lightning: 45,
+  emoji_ice: 45,
+  emoji_star: 50,
+  emoji_clover: 50,
+  emoji_skull: 55,
+  emoji_ghost: 55,
+  emoji_devil: 65,
+  emoji_rocket: 60,
+  emoji_basketball: 40,
+  emoji_crown: 80,
+  emoji_trophy: 90,
 };
 const BOARD_PRICES = { neon: 120, wood: 150 };
 const FREE_DISCS = new Set(['green', 'gold', 'blue', 'red', 'purple']);
 const FREE_BOARDS = new Set(['classic']);
+/** Test: tüm kozmetikler ücretsiz — yayın öncesi false yap */
+const COSMETICS_FREE_FOR_TESTING = true;
 
 function winTokenAmount(elo) {
   if (elo >= 1700) return 35;
@@ -784,12 +798,12 @@ const server = http.createServer((req, res) => {
             const next = { ...meta.cosmetics, ...data.cosmetics };
             const disc = next.discColor;
             const board = next.boardTheme;
-            if (disc && !FREE_DISCS.has(disc) && !(meta.unlockedDiscs || []).includes(disc)) {
+            if (disc && !COSMETICS_FREE_FOR_TESTING && !FREE_DISCS.has(disc) && !(meta.unlockedDiscs || []).includes(disc)) {
               res.writeHead(403, cors);
               res.end(JSON.stringify({ ok: false, error: 'Kilitli kozmetik' }));
               return;
             }
-            if (board && !FREE_BOARDS.has(board) && !(meta.unlockedBoards || []).includes(board)) {
+            if (board && !COSMETICS_FREE_FOR_TESTING && !FREE_BOARDS.has(board) && !(meta.unlockedBoards || []).includes(board)) {
               res.writeHead(403, cors);
               res.end(JSON.stringify({ ok: false, error: 'Kilitli kozmetik' }));
               return;

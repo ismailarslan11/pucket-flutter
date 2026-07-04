@@ -46,3 +46,10 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Local secrets / generated env
+tool/admob.env
+tool/admob_ios.env
+tool/firebase_project.env
+android/key.properties
+android/pucket-release.jks

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -25,6 +26,7 @@ class PushService {
   static String? _cachedUid;
   static bool _setupDone = false;
   static bool _listenersRegistered = false;
+  static bool topicSubscribed = false;
   static Future<void>? _setupFuture;
 
   static String statusMessage = 'Henüz başlatılmadı';
@@ -42,12 +44,14 @@ class PushService {
       color: AppColors.brandBlue,
   );
 
-  static Future<void> setup() async {
+  static String? get fcmToken => _cachedToken;
+
+  static Future<void> setup({bool force = false}) async {
     if (kIsWeb || !firebaseEnabled) {
       statusMessage = 'Firebase kapalı';
       return;
     }
-    if (_setupDone) return;
+    if (_setupDone && _cachedToken != null && !force) return;
     if (!Platform.isAndroid && !Platform.isIOS) {
       statusMessage = 'Bu platform desteklenmiyor';
       return;
@@ -55,11 +59,19 @@ class PushService {
 
     _setupFuture ??= _setupImpl();
     await _setupFuture;
+    _setupFuture = null;
   }
 
   static Future<void> _setupImpl() async {
     try {
       await _initLocalNotifications();
+
+      if (Platform.isAndroid) {
+        final android = _local.resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>();
+        final androidOk = await android?.requestNotificationsPermission();
+        if (androidOk == true) permissionGranted = true;
+      }
 
       final messaging = FirebaseMessaging.instance;
       await messaging.setAutoInitEnabled(true);
@@ -77,13 +89,12 @@ class PushService {
       );
       permissionGranted =
           settings.authorizationStatus == AuthorizationStatus.authorized ||
-              settings.authorizationStatus == AuthorizationStatus.provisional;
+              settings.authorizationStatus == AuthorizationStatus.provisional ||
+              permissionGranted;
 
-      if (Platform.isAndroid) {
-        final android = _local.resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>();
-        final androidOk = await android?.requestNotificationsPermission();
-        if (androidOk == true) permissionGranted = true;
+      if (!permissionGranted && Platform.isAndroid) {
+        statusMessage = 'Bildirim izni kapalı — Android ayarlarından PUCKET için açın';
+        debugPrint('Push: bildirim izni reddedildi');
       }
 
       _registerListenersOnce();
@@ -92,8 +103,9 @@ class PushService {
       if (_cachedToken == null) {
         statusMessage = Platform.isIOS
             ? 'FCM token alınamadı. Gerçek iPhone + bildirim izni + Firebase APNs anahtarı gerekir.'
-            : 'FCM token alınamadı. Ayarlar → Yenile veya Google Play Services kontrol edin.';
+            : 'FCM token alınamadı. Bildirim iznini açın ve Google Play Services güncel olsun.';
         debugPrint('Push: $statusMessage');
+        unawaited(_delayedTokenAndTopicRetry());
       } else {
         statusMessage = 'Token alındı (${_cachedToken!.substring(0, 12)}…)';
         debugPrint('FCM token: $_cachedToken');
@@ -131,24 +143,46 @@ class PushService {
   static Future<void> _subscribeTopic() async {
     try {
       await FirebaseMessaging.instance.subscribeToTopic(topic);
+      topicSubscribed = true;
+      statusMessage = 'Topic abone: $topic';
       debugPrint('FCM topic abone: $topic');
     } catch (e) {
+      topicSubscribed = false;
       debugPrint('FCM topic abonelik hatası: $e');
+    }
+  }
+
+  static Future<void> _delayedTokenAndTopicRetry() async {
+    for (final waitSec in [5, 15, 30, 60]) {
+      await Future<void>.delayed(Duration(seconds: waitSec));
+      if (_cachedToken != null && topicSubscribed) return;
+      final token = await _fetchTokenWithRetry();
+      if (token != null && token.isNotEmpty) {
+        _cachedToken = token;
+        debugPrint('FCM token (gecikmeli): $token');
+        await _subscribeTopic();
+        if (_cachedUid != null) {
+          await MetaApi.saveFcmToken(_cachedUid!, token);
+        }
+        return;
+      }
     }
   }
 
   static Future<void> initAndRegister(String uid) async {
     if (kIsWeb || !firebaseEnabled) return;
     _cachedUid = uid;
-    await setup();
+    await setup(force: _cachedToken == null);
 
     final token = _cachedToken ?? await _fetchTokenWithRetry();
     if (token != null && token.isNotEmpty) {
       _cachedToken = token;
       await _subscribeTopic();
       await MetaApi.saveFcmToken(uid, token);
-      statusMessage = 'Sunucuya kaydedildi';
+      statusMessage = 'Sunucuya kaydedildi (topic: $topic)';
       debugPrint('FCM token sunucuya kaydedildi');
+    } else {
+      unawaited(_delayedTokenAndTopicRetry());
     }
   }
 
