@@ -256,24 +256,25 @@ const DISC_PRICES = {
   mountain_dwarven: 125,
   void_crystal: 500,
   sprite_blessing: 350,
-  emoji_fire: 40,
-  emoji_lightning: 45,
-  emoji_ice: 45,
-  emoji_star: 50,
-  emoji_clover: 50,
-  emoji_skull: 55,
-  emoji_ghost: 55,
-  emoji_devil: 65,
-  emoji_rocket: 60,
-  emoji_basketball: 40,
-  emoji_crown: 80,
-  emoji_trophy: 90,
+  emoji_fire: 15,
+  emoji_basketball: 15,
+  emoji_ice: 18,
+  emoji_lightning: 18,
+  emoji_clover: 20,
+  emoji_cry: 20,
+  emoji_star: 22,
+  emoji_skull: 25,
+  emoji_ghost: 25,
+  emoji_rocket: 28,
+  emoji_devil: 30,
+  emoji_crown: 32,
+  emoji_trophy: 35,
 };
 const BOARD_PRICES = { neon: 120, wood: 150 };
 const FREE_DISCS = new Set(['green', 'gold', 'blue', 'red', 'purple']);
 const FREE_BOARDS = new Set(['classic']);
 /** Test: tüm kozmetikler ücretsiz — yayın öncesi false yap */
-const COSMETICS_FREE_FOR_TESTING = true;
+const COSMETICS_FREE_FOR_TESTING = false;
 
 function winTokenAmount(elo) {
   if (elo >= 1700) return 35;

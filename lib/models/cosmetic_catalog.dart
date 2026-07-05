@@ -5,7 +5,7 @@ class CosmeticCatalog {
   CosmeticCatalog._();
 
   /// Test için tüm pullar/temalar ücretsiz — yayın öncesi `false` yap.
-  static const freeForTesting = true;
+  static const freeForTesting = false;
 
   static const freeDiscs = {'green', 'gold', 'blue', 'red', 'purple'};
   static const freeBoards = {'classic'};
@@ -25,20 +25,21 @@ class CosmeticCatalog {
     CosmeticItem(id: 'sprite_blessing', price: 350, asset: 'assets/images/discs/sprite_blessing.png'),
   ];
 
-  /// Jetonla satın alınabilir emojili pullar.
+  /// Jetonla satın alınabilir emojili pullar — premium pullardan ucuz (15–35 jeton).
   static const emojiDiscs = [
-    CosmeticItem(id: 'emoji_fire', price: 40, emoji: '🔥', bgArgb: 0xFF4A1810),
-    CosmeticItem(id: 'emoji_lightning', price: 45, emoji: '⚡', bgArgb: 0xFF3A3208),
-    CosmeticItem(id: 'emoji_ice', price: 45, emoji: '❄️', bgArgb: 0xFF0A2840),
-    CosmeticItem(id: 'emoji_star', price: 50, emoji: '⭐', bgArgb: 0xFF3A3008),
-    CosmeticItem(id: 'emoji_clover', price: 50, emoji: '🍀', bgArgb: 0xFF0A3018),
-    CosmeticItem(id: 'emoji_skull', price: 55, emoji: '💀', bgArgb: 0xFF1A1A22),
-    CosmeticItem(id: 'emoji_ghost', price: 55, emoji: '👻', bgArgb: 0xFF2A2048),
-    CosmeticItem(id: 'emoji_devil', price: 65, emoji: '😈', bgArgb: 0xFF3A0A18),
-    CosmeticItem(id: 'emoji_rocket', price: 60, emoji: '🚀', bgArgb: 0xFF1A2040),
-    CosmeticItem(id: 'emoji_basketball', price: 40, emoji: '🏀', bgArgb: 0xFF3A2010),
-    CosmeticItem(id: 'emoji_crown', price: 80, emoji: '👑', bgArgb: 0xFF403008),
-    CosmeticItem(id: 'emoji_trophy', price: 90, emoji: '🏆', bgArgb: 0xFF403010),
+    CosmeticItem(id: 'emoji_fire', price: 15, emoji: '🔥', bgArgb: 0xFF4A1810),
+    CosmeticItem(id: 'emoji_basketball', price: 15, emoji: '🏀', bgArgb: 0xFF3A2010),
+    CosmeticItem(id: 'emoji_ice', price: 18, emoji: '❄️', bgArgb: 0xFF0A2840),
+    CosmeticItem(id: 'emoji_lightning', price: 18, emoji: '⚡', bgArgb: 0xFF3A3208),
+    CosmeticItem(id: 'emoji_clover', price: 20, emoji: '🍀', bgArgb: 0xFF0A3018),
+    CosmeticItem(id: 'emoji_cry', price: 20, emoji: '😢', bgArgb: 0xFF1A2848),
+    CosmeticItem(id: 'emoji_star', price: 22, emoji: '⭐', bgArgb: 0xFF3A3008),
+    CosmeticItem(id: 'emoji_skull', price: 25, emoji: '💀', bgArgb: 0xFF1A1A22),
+    CosmeticItem(id: 'emoji_ghost', price: 25, emoji: '👻', bgArgb: 0xFF2A2048),
+    CosmeticItem(id: 'emoji_rocket', price: 28, emoji: '🚀', bgArgb: 0xFF1A2040),
+    CosmeticItem(id: 'emoji_devil', price: 30, emoji: '😈', bgArgb: 0xFF3A0A18),
+    CosmeticItem(id: 'emoji_crown', price: 32, emoji: '👑', bgArgb: 0xFF403008),
+    CosmeticItem(id: 'emoji_trophy', price: 35, emoji: '🏆', bgArgb: 0xFF403010),
   ];
 
   static const premiumBoards = [
