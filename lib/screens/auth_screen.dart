@@ -7,6 +7,7 @@ import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import '../l10n/l10n_extension.dart';
 import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/yesa_background.dart';
 import '../widgets/pucket_logo.dart';
 
 class AuthScreen extends StatelessWidget {
@@ -19,8 +20,7 @@ class AuthScreen extends StatelessWidget {
     final googleOk = auth.googleSignInAvailable;
 
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(gradient: AppGradients.screenBg),
+      body: YesaBackground(
         child: SafeArea(
           child: Center(
             child: SingleChildScrollView(
@@ -31,7 +31,12 @@ class AuthScreen extends StatelessWidget {
                   const SizedBox(height: 6),
                   Text(
                     l10n.onlineMultiplayer,
-                    style: const TextStyle(color: AppColors.cyan, letterSpacing: 4, fontSize: 10),
+                    style: const TextStyle(
+                      color: AppColors.accentYellow,
+                      letterSpacing: 4,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                   const SizedBox(height: 28),
                   ConstrainedBox(
@@ -39,11 +44,7 @@ class AuthScreen extends StatelessWidget {
                     child: Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(28),
-                    decoration: BoxDecoration(
-                      color: AppColors.card,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppColors.border),
-                    ),
+                    decoration: YesaDecor.card(radius: 24),
                     child: Column(
                       children: [
                         Text(
@@ -54,7 +55,7 @@ class AuthScreen extends StatelessWidget {
                         if (auth.loading)
                           const Padding(
                             padding: EdgeInsets.all(20),
-                            child: CircularProgressIndicator(color: AppColors.green),
+                            child: CircularProgressIndicator(color: AppColors.accentYellow),
                           )
                         else ...[
                           _GoogleButton(
@@ -106,7 +107,7 @@ class AuthScreen extends StatelessWidget {
                         ],
                         if (auth.lastError != null) ...[
                           const SizedBox(height: 12),
-                          Text(auth.lastError!, style: const TextStyle(color: AppColors.red, fontSize: 12)),
+                          Text(auth.lastError!, style: const TextStyle(color: AppColors.error, fontSize: 12)),
                         ],
                         const SizedBox(height: 12),
                         Text(

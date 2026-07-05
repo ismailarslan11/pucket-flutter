@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
 import '../services/username_api.dart';
 import '../theme/app_theme.dart';
+import '../widgets/yesa_background.dart';
 import '../widgets/pucket_logo.dart';
 import '../widgets/pucket_button.dart';
 
@@ -118,8 +119,7 @@ class _UsernameScreenState extends State<UsernameScreen> {
     final canSubmit = _valid && !_checking && !_submitting && (_available || _serverError);
 
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(gradient: AppGradients.screenBg),
+      body: YesaBackground(
         child: SafeArea(
           child: Center(
             child: SingleChildScrollView(

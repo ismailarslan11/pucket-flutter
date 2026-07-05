@@ -21,7 +21,6 @@ class GameBoard extends StatefulWidget {
 class _GameBoardState extends State<GameBoard> with SingleTickerProviderStateMixin {
   late Ticker _ticker;
   GameController? _game;
-  double _lastMs = 0;
   String _discColor = 'green';
   String _boardTheme = 'classic';
   double _innerW = 0;
@@ -80,14 +79,11 @@ class _GameBoardState extends State<GameBoard> with SingleTickerProviderStateMix
   void _onTick(Duration elapsed) {
     if (!mounted) return;
     final game = _game;
-    if (game == null || game.phase != GamePhase.playing) {
-      _lastMs = elapsed.inMicroseconds / 1000.0;
-      return;
-    }
+    if (game == null) return;
+    if (game.phase != GamePhase.playing) return;
     final ms = elapsed.inMicroseconds / 1000.0;
-    if (ms - _lastMs >= 15) {
-      _lastMs = ms;
-      game.tick(ms);
+    if (game.tick(ms)) {
+      game.boardRepaint.bump();
     }
   }
 
@@ -188,6 +184,8 @@ class _GameBoardState extends State<GameBoard> with SingleTickerProviderStateMix
     return RepaintBoundary(
       child: CustomPaint(
         size: Size(_innerW, _innerH),
+        isComplex: true,
+        willChange: true,
         painter: GamePainter(
           game: game,
           sx: _sx,

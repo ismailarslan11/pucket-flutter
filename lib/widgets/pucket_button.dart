@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
+import 'yesa_effects.dart';
 
 class PucketButton extends StatelessWidget {
   const PucketButton({
@@ -8,99 +9,151 @@ class PucketButton extends StatelessWidget {
     required this.label,
     required this.onPressed,
     this.secondary = false,
+    this.primary = false,
     this.color,
     this.shadowColor,
     this.gradient,
     this.subtitle,
     this.width = 270,
+    this.enabled = true,
   });
 
   final String label;
   final VoidCallback onPressed;
   final bool secondary;
+  final bool primary;
   final Color? color;
   final Color? shadowColor;
   final Gradient? gradient;
   final String? subtitle;
   final double width;
+  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
     final maxW = MediaQuery.sizeOf(context).width - 48;
     final btnWidth = width > maxW ? maxW : width;
+    const radius = 20.0;
 
     if (secondary) {
       return SizedBox(
         width: btnWidth,
-        child: OutlinedButton(
-          onPressed: onPressed,
-          style: OutlinedButton.styleFrom(
-            foregroundColor: AppColors.textMuted,
-            side: const BorderSide(color: AppColors.border, width: 2),
-            padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 32),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-          ),
-          child: Text(
-            label,
-            style: const TextStyle(fontWeight: FontWeight.w900, letterSpacing: 2, fontSize: 14),
+        child: ScalePress(
+          onTap: enabled ? onPressed : null,
+          scale: enabled ? 0.96 : 1,
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: AppGradients.secondaryBtn,
+              borderRadius: BorderRadius.circular(radius),
+              border: Border.all(color: AppColors.lavanta.withValues(alpha: 0.4), width: 1.2),
+              boxShadow: AppShadows.depth(AppColors.morDahaKoyu),
+            ),
+            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 22),
+            child: Text(
+              label.toUpperCase(),
+              textAlign: TextAlign.center,
+              style: AppTextStyles.label.copyWith(
+                color: enabled ? AppColors.textMuted : AppColors.textFaint,
+                fontSize: 12,
+                letterSpacing: 1,
+              ),
+            ),
           ),
         ),
       );
     }
 
-    final bg = color ?? AppColors.green;
-    final shadow = shadowColor ?? AppColors.darkGreen;
-    final textColor = gradient != null || bg.computeLuminance() < 0.45 ? Colors.white : Colors.black;
+    final isHero = primary || gradient == AppGradients.play || gradient == AppGradients.heroPlay;
+    final bgGradient = gradient ?? (isHero ? AppGradients.heroPlay : AppGradients.neonPurple);
+    final glowColor = shadowColor ?? (isHero ? AppColors.sariAna : AppColors.acikMor);
+    final textColor = isHero ? AppColors.morDahaKoyu : AppColors.beyaz;
 
     return SizedBox(
       width: btnWidth,
-      child: Material(
-        color: gradient == null ? bg : Colors.transparent,
-        borderRadius: BorderRadius.circular(4),
-        child: InkWell(
-          onTap: onPressed,
-          borderRadius: BorderRadius.circular(4),
-          child: Ink(
+      child: ScalePress(
+        onTap: enabled ? onPressed : null,
+        scale: enabled ? 0.95 : 1,
+        child: GlowPulse(
+          color: glowColor,
+          min: enabled ? 0.3 : 0,
+          max: enabled ? 0.7 : 0,
+          child: Container(
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(4),
-              color: gradient == null ? bg : null,
-              gradient: gradient,
-              boxShadow: [BoxShadow(color: shadow, offset: const Offset(0, 5), blurRadius: 0)],
+              borderRadius: BorderRadius.circular(radius),
+              gradient: color != null ? null : bgGradient,
+              color: color,
+              border: Border.all(
+                color: AppColors.beyaz.withValues(alpha: isHero ? 0.5 : 0.25),
+                width: 1.5,
+              ),
+              boxShadow: enabled ? AppShadows.depth(glowColor) : null,
             ),
-            child: Container(
-              padding: EdgeInsets.symmetric(vertical: subtitle != null ? 12 : 14, horizontal: 20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    label,
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: textColor,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 3,
-                      fontSize: subtitle != null ? 15 : 17,
+            child: Stack(
+              children: [
+                // Üst parlaklık — 3D derinlik
+                Positioned(
+                  top: 0,
+                  left: 8,
+                  right: 8,
+                  child: Container(
+                    height: 1.5,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(1),
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.white.withValues(alpha: 0.45),
+                          Colors.white.withValues(alpha: 0),
+                        ],
+                      ),
                     ),
                   ),
-                  if (subtitle != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Text(
-                        subtitle!,
+                ),
+                Padding(
+                  padding: EdgeInsets.symmetric(
+                    vertical: subtitle != null ? 12 : 15,
+                    horizontal: 20,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        label.toUpperCase(),
                         textAlign: TextAlign.center,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.7),
-                          fontSize: 10,
-                          letterSpacing: 1,
+                          color: enabled ? textColor : textColor.withValues(alpha: 0.45),
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1.2,
+                          fontSize: subtitle != null ? 13 : 14,
+                          shadows: isHero
+                              ? [
+                                  Shadow(
+                                    color: AppColors.beyaz.withValues(alpha: 0.35),
+                                    blurRadius: 4,
+                                  ),
+                                ]
+                              : null,
                         ),
                       ),
-                    ),
-                ],
-              ),
+                      if (subtitle != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            subtitle!,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: textColor.withValues(alpha: enabled ? 0.7 : 0.35),
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
         ),

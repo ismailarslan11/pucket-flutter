@@ -30,13 +30,7 @@ class PucketLogo extends StatelessWidget {
         DecoratedBox(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(useIcon ? height * 0.22 : 16),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.brandBlue.withValues(alpha: 0.22),
-                blurRadius: useIcon ? 12 : 28,
-                offset: Offset(0, useIcon ? 4 : 10),
-              ),
-            ],
+            boxShadow: AppShadows.neon(AppColors.acikMor, blur: useIcon ? 14 : 24),
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(useIcon ? height * 0.22 : 16),

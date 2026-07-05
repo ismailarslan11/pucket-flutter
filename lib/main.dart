@@ -31,6 +31,7 @@ import 'services/firebase_messaging_background.dart';
 import 'services/push_service.dart';
 import 'theme/app_theme.dart';
 import 'widgets/pucket_logo.dart';
+import 'widgets/yesa_background.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -223,15 +224,14 @@ class _Splash extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.bg,
-      body: Container(
-        decoration: const BoxDecoration(gradient: AppGradients.screenBg),
+      body: YesaBackground(
         child: const Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               PucketLogo(height: 160, showTagline: true),
               SizedBox(height: 28),
-              CircularProgressIndicator(color: AppColors.brandBlue),
+              CircularProgressIndicator(color: AppColors.accentYellow),
             ],
           ),
         ),

@@ -9,6 +9,7 @@ import '../l10n/l10n_extension.dart';
 import '../models/rank_tier.dart';
 import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/yesa_background.dart';
 import '../widgets/pucket_button.dart';
 import 'app_router.dart';
 
@@ -158,8 +159,7 @@ class _QueueScreenState extends State<QueueScreen> {
 
     return Scaffold(
       body: SizedBox.expand(
-        child: Container(
-          decoration: const BoxDecoration(gradient: AppGradients.screenBg),
+        child: YesaBackground(
           child: SafeArea(
             child: LayoutBuilder(
               builder: (context, constraints) {

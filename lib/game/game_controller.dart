@@ -125,6 +125,8 @@ class GameController extends ChangeNotifier {
   int _visualGeneration = 0;
   double _physicsAccum = 0;
   double _lastTickWallMs = 0;
+  final List<double> _prevVx = [];
+  final List<double> _prevVy = [];
   int _lastUiDiscSignature = -1;
   int _lastHitAudioFrame = 0;
   int _lastSentStateSig = 0;
@@ -139,6 +141,54 @@ class GameController extends ChangeNotifier {
   static const _physicsStepMs = 1000 / 60;
 
   int get visualGeneration => _visualGeneration;
+
+  /// Fizik adımları arasında yumuşak ara kare (0→1).
+  double get discRenderAlpha {
+    if (_physicsAccum <= 0) return 1;
+    return (_physicsAccum / _physicsStepMs).clamp(0.0, 1.0);
+  }
+
+  double renderDiscX(int i) {
+    if (i >= discs.length) return 0;
+    if (i >= _prevVx.length) return discs[i].vx;
+    final a = discRenderAlpha;
+    return _prevVx[i] + (discs[i].vx - _prevVx[i]) * a;
+  }
+
+  double renderDiscY(int i) {
+    if (i >= discs.length) return 0;
+    if (i >= _prevVy.length) return discs[i].vy;
+    final a = discRenderAlpha;
+    return _prevVy[i] + (discs[i].vy - _prevVy[i]) * a;
+  }
+
+  void _syncPrevBuffers() {
+    final n = discs.length;
+    while (_prevVx.length < n) {
+      _prevVx.add(0);
+      _prevVy.add(0);
+    }
+    if (_prevVx.length > n) {
+      _prevVx.length = n;
+      _prevVy.length = n;
+    }
+  }
+
+  void _initPrevFromCurrent() {
+    _syncPrevBuffers();
+    for (var i = 0; i < discs.length; i++) {
+      _prevVx[i] = discs[i].vx;
+      _prevVy[i] = discs[i].vy;
+    }
+  }
+
+  void _capturePrevPositions() {
+    _syncPrevBuffers();
+    for (var i = 0; i < discs.length; i++) {
+      _prevVx[i] = discs[i].vx;
+      _prevVy[i] = discs[i].vy;
+    }
+  }
 
   Timer? _secTimer;
   Timer? _cdTimer;
@@ -230,37 +280,44 @@ class GameController extends ChangeNotifier {
     _matchStartTimer = null;
   }
 
-  void tick(double nowMs) {
-    if (phase != GamePhase.playing) return;
+  /// Tahta ticker'ından çağrılır. Yeniden çizim gerekiyorsa true döner.
+  bool tick(double nowMs) {
+    if (phase != GamePhase.playing) return false;
 
     final dragging = drag != null || _duoDrags.isNotEmpty;
     final movingCount = PhysicsEngine.countMoving(discs);
     final isClient = !aiMode && !isOnlineHost && !localDuoMode;
 
     if (!dragging && movingCount == 0) {
-      if (!isClient) return;
+      if (!isClient) {
+        _lastTickWallMs = 0;
+        return false;
+      }
       final clientDrifting = discs.any((d) => d.vvx.abs() > 0.02 || d.vvy.abs() > 0.02);
-      if (!clientDrifting) return;
+      if (!clientDrifting) {
+        _lastTickWallMs = 0;
+        return false;
+      }
     }
 
     if (_lastTickWallMs == 0) _lastTickWallMs = nowMs;
-    _physicsAccum += nowMs - _lastTickWallMs;
+    var delta = nowMs - _lastTickWallMs;
     _lastTickWallMs = nowMs;
-    // FPS düşünce fizik fırlamasın
-    if (_physicsAccum > _physicsStepMs * 2) _physicsAccum = _physicsStepMs * 2;
+    if (delta > 100) delta = 100;
+    _physicsAccum += delta;
+    if (_physicsAccum > _physicsStepMs * 3) _physicsAccum = _physicsStepMs * 3;
 
     var stepped = false;
     while (_physicsAccum >= _physicsStepMs) {
       _physicsAccum -= _physicsStepMs;
-      if (_physicsStep()) return;
+      _capturePrevPositions();
+      if (_physicsStep()) return true;
       stepped = true;
     }
-    if (stepped) {
-      _syncUiIfDiscCountsChanged();
-      _bumpBoard();
-    } else if (dragging) {
-      _bumpBoard();
-    }
+
+    if (stepped) _syncUiIfDiscCountsChanged();
+
+    return stepped || dragging || movingCount > 0 || _lastMovingDiscs > 0;
   }
 
   void _syncUiIfDiscCountsChanged() {
@@ -331,6 +388,7 @@ class GameController extends ChangeNotifier {
     discs = trainingMode
         ? PhysicsEngine.initTrainingDiscs(trainingLayout)
         : PhysicsEngine.initDiscs();
+    _initPrevFromCurrent();
     phase = GamePhase.idle;
     lastWinner = null;
     myRematchPending = false;
@@ -570,6 +628,7 @@ class GameController extends ChangeNotifier {
         discs[i].vvx = (s[2] as num).toDouble();
         discs[i].vvy = (s[3] as num).toDouble();
       }
+      _initPrevFromCurrent();
     }
     if (snap['roundWins'] is List) {
       final rw = snap['roundWins'] as List;
@@ -872,6 +931,10 @@ class GameController extends ChangeNotifier {
         d.vy = ny;
         d.vvx = nvx;
         d.vvy = nvy;
+        if (i < _prevVx.length) {
+          _prevVx[i] = nx;
+          _prevVy[i] = ny;
+        }
         changed = true;
       } else {
         final posBlend = posErrSq > 64 ? 0.35 : 0.18;

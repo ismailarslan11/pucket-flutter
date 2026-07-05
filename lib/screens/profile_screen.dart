@@ -8,6 +8,8 @@ import '../services/match_api.dart';
 import '../services/player_meta_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/pucket_button.dart';
+import '../widgets/yesa_background.dart';
+import '../widgets/yesa_effects.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -51,147 +53,296 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final tier = user != null ? RankTier.forElo(user.elo) : RankTier.tiers.first;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.profileTitle),
-        backgroundColor: AppColors.bg,
-      ),
-      body: user == null
-          ? Center(child: Text(l10n.profileEmpty))
-          : ListView(
-              padding: const EdgeInsets.all(20),
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: AppColors.card,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: AppColors.border),
-                  ),
-                  child: Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 28,
-                        backgroundColor: AppColors.green.withValues(alpha: 0.2),
-                        backgroundImage:
-                            user.photoUrl != null && user.photoUrl!.isNotEmpty
-                                ? NetworkImage(user.photoUrl!)
-                                : null,
-                        child: user.photoUrl == null || user.photoUrl!.isEmpty
-                            ? Text(
-                                user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 22,
-                                  color: AppColors.green,
-                                ),
-                              )
-                            : null,
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(user.name, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
-                            Text('${l10n.tierName(tier)} • ${user.elo} ELO',
-                                style: TextStyle(color: tier.color, fontSize: 12)),
-                            Text('${user.wins}${l10n.winsLosses} ${user.losses}M • ${user.matches}',
-                                style: const TextStyle(color: AppColors.textMuted, fontSize: 11)),
-                            if (meta.season != null)
-                              Text(
-                                '${l10n.seasonLabel(meta.season!.name)} · ${meta.meta?.seasonWins ?? 0} ${l10n.seasonWins}',
-                                style: const TextStyle(color: AppColors.gold, fontSize: 10),
-                              ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(l10n.achievements, style: const TextStyle(fontWeight: FontWeight.w800, letterSpacing: 2, fontSize: 12)),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: (meta.meta?.achievements ?? []).isEmpty
-                      ? [
-                          Chip(
-                            label: Text(l10n.questInProgress, style: const TextStyle(fontSize: 11)),
-                            backgroundColor: AppColors.card,
-                          ),
-                        ]
-                      : meta.meta!.achievements.map((id) {
-                          final label = PlayerMetaService.achievementLabels[id] ?? id;
-                          return Chip(
-                            label: Text(label, style: const TextStyle(fontSize: 11)),
-                            backgroundColor: AppColors.card,
-                            side: const BorderSide(color: AppColors.green),
-                          );
-                        }).toList(),
-                ),
-                const SizedBox(height: 20),
-                Text(l10n.matchHistory, style: const TextStyle(fontWeight: FontWeight.w800, letterSpacing: 2, fontSize: 12)),
-                const SizedBox(height: 10),
-                if (_loading)
-                  const Center(child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator()))
-                else if (_history.isEmpty)
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: AppColors.card,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: AppColors.border),
-                    ),
-                    child: Text(l10n.noHistory, style: const TextStyle(color: AppColors.textMuted, height: 1.4)),
-                  )
-                else
-                  ..._history.map((m) => Container(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        padding: const EdgeInsets.all(12),
+      body: YesaBackground(
+        child: SafeArea(
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(10, 8, 16, 4),
+                child: Row(
+                  children: [
+                    ScalePress(
+                      onTap: () => Navigator.pop(context),
+                      child: Container(
+                        width: 40,
+                        height: 40,
                         decoration: BoxDecoration(
-                          color: AppColors.card,
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: AppColors.border),
+                          shape: BoxShape.circle,
+                          gradient: AppGradients.neonPurple,
+                          border: Border.all(color: AppColors.beyaz.withValues(alpha: 0.3)),
+                          boxShadow: AppShadows.depth(AppColors.morDahaKoyu),
                         ),
-                        child: Row(
-                          children: [
-                            Text(m.won ? 'G' : 'M', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: m.won ? AppColors.green : AppColors.red)),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text('vs ${m.opponent}',
-                                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
-                                  Text(
-                                    '${m.ranked ? l10n.rankedLabel : l10n.casualLabel}${m.timestamp > 0 ? ' · ${_formatTime(m.timestamp)}' : ''}',
-                                    style: const TextStyle(color: AppColors.textDim, fontSize: 10),
-                                  ),
-                                ],
+                        child: const Icon(Icons.arrow_back_rounded, color: AppColors.beyaz, size: 20),
+                      ),
+                    ),
+                    Expanded(
+                      child: Text(
+                        l10n.profileTitle,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 2,
+                          color: AppColors.beyaz,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 40),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: user == null
+                    ? Center(
+                        child: Text(l10n.profileEmpty, style: const TextStyle(color: AppColors.textMuted)),
+                      )
+                    : ListView(
+                        padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+                        children: [
+                          StaggerIn(
+                            index: 0,
+                            child: GlowPulse(
+                              color: tier.color,
+                              min: 0.15,
+                              max: 0.4,
+                              child: Container(
+                                padding: const EdgeInsets.all(18),
+                                decoration: YesaDecor.card(radius: 24, borderColor: tier.color.withValues(alpha: 0.5)),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 62,
+                                      height: 62,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        gradient: AppGradients.heroPlay,
+                                        border: Border.all(color: AppColors.beyaz.withValues(alpha: 0.55), width: 2),
+                                        boxShadow: AppShadows.neon(AppColors.sariAna, blur: 10),
+                                      ),
+                                      alignment: Alignment.center,
+                                      child: user.photoUrl != null && user.photoUrl!.isNotEmpty
+                                          ? ClipOval(
+                                              child: Image.network(
+                                                user.photoUrl!,
+                                                width: 58,
+                                                height: 58,
+                                                fit: BoxFit.cover,
+                                              ),
+                                            )
+                                          : Text(
+                                              user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.w900,
+                                                fontSize: 24,
+                                                color: AppColors.morDahaKoyu,
+                                              ),
+                                            ),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            user.name,
+                                            style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: AppColors.beyaz),
+                                          ),
+                                          const SizedBox(height: 3),
+                                          Text(
+                                            '${l10n.tierName(tier)} · ${user.elo} ELO',
+                                            style: AppTextStyles.glow(tier.color).copyWith(fontSize: 12),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            '${user.wins}${l10n.winsLosses} ${user.losses}M · ${user.matches}',
+                                            style: const TextStyle(color: AppColors.textMuted, fontSize: 11, fontWeight: FontWeight.w600),
+                                          ),
+                                          if (meta.season != null)
+                                            Padding(
+                                              padding: const EdgeInsets.only(top: 4),
+                                              child: Text(
+                                                '${l10n.seasonLabel(meta.season!.name)} · ${meta.meta?.seasonWins ?? 0} ${l10n.seasonWins}',
+                                                style: const TextStyle(color: AppColors.sariAna, fontSize: 10, fontWeight: FontWeight.w700),
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
-                            Text(
-                              '${m.eloChange >= 0 ? '+' : ''}${m.eloChange}',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w900,
-                                color: m.eloChange >= 0 ? AppColors.green : AppColors.red,
-                              ),
+                          ),
+                          const SizedBox(height: 20),
+                          StaggerIn(
+                            index: 1,
+                            child: Text(
+                              l10n.achievements.toUpperCase(),
+                              style: AppTextStyles.label.copyWith(color: AppColors.lavanta, letterSpacing: 1.4),
                             ),
-                          ],
-                        ),
-                      )),
-                const SizedBox(height: 16),
-                PucketButton(
-                  label: l10n.refresh,
-                  secondary: true,
-                  onPressed: () {
-                    setState(() => _loading = true);
-                    _load();
-                  },
+                          ),
+                          const SizedBox(height: 10),
+                          StaggerIn(
+                            index: 2,
+                            child: Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: (meta.meta?.achievements ?? []).isEmpty
+                                  ? [_AchievementChip(label: l10n.questInProgress, done: false)]
+                                  : meta.meta!.achievements.map((id) {
+                                      final label = PlayerMetaService.achievementLabels[id] ?? id;
+                                      return _AchievementChip(label: label, done: true);
+                                    }).toList(),
+                            ),
+                          ),
+                          const SizedBox(height: 22),
+                          StaggerIn(
+                            index: 3,
+                            child: Text(
+                              l10n.matchHistory.toUpperCase(),
+                              style: AppTextStyles.label.copyWith(color: AppColors.lavanta, letterSpacing: 1.4),
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          if (_loading)
+                            const Center(
+                              child: Padding(
+                                padding: EdgeInsets.all(24),
+                                child: CircularProgressIndicator(color: AppColors.sariAna),
+                              ),
+                            )
+                          else if (_history.isEmpty)
+                            StaggerIn(
+                              index: 4,
+                              child: Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: YesaDecor.card(radius: 16),
+                                child: Text(
+                                  l10n.noHistory,
+                                  style: const TextStyle(color: AppColors.textMuted, height: 1.4),
+                                ),
+                              ),
+                            )
+                          else
+                            for (var i = 0; i < _history.length; i++)
+                              StaggerIn(
+                                index: 4 + (i % 8),
+                                delayMs: 30,
+                                child: _MatchRow(record: _history[i], timeLabel: _formatTime(_history[i].timestamp)),
+                              ),
+                          const SizedBox(height: 18),
+                          PucketButton(
+                            label: l10n.refresh,
+                            secondary: true,
+                            onPressed: () {
+                              setState(() => _loading = true);
+                              _load();
+                            },
+                          ),
+                        ],
+                      ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AchievementChip extends StatelessWidget {
+  const _AchievementChip({required this.label, required this.done});
+
+  final String label;
+  final bool done;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+      decoration: BoxDecoration(
+        gradient: done ? AppGradients.neonPurple : null,
+        color: done ? null : AppColors.card,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: done ? AppColors.beyaz.withValues(alpha: 0.35) : AppColors.borderSubtle),
+        boxShadow: done ? AppShadows.neon(AppColors.acikMor, blur: 6) : null,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (done) const Icon(Icons.emoji_events_rounded, size: 13, color: AppColors.beyaz),
+          if (done) const SizedBox(width: 5),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: done ? AppColors.beyaz : AppColors.textMuted,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MatchRow extends StatelessWidget {
+  const _MatchRow({required this.record, required this.timeLabel});
+
+  final MatchRecord record;
+  final String timeLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final color = record.won ? AppColors.neonYesil : AppColors.kirmizi;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        gradient: AppGradients.glassCard,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 30,
+            height: 30,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: color.withValues(alpha: 0.18),
+              border: Border.all(color: color, width: 1.5),
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              record.won ? 'G' : 'M',
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: color),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'vs ${record.opponent}',
+                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: AppColors.beyaz),
+                ),
+                Text(
+                  '${record.ranked ? l10n.rankedLabel : l10n.casualLabel}${record.timestamp > 0 ? ' · $timeLabel' : ''}',
+                  style: const TextStyle(color: AppColors.textDim, fontSize: 10),
                 ),
               ],
             ),
+          ),
+          Text(
+            '${record.eloChange >= 0 ? '+' : ''}${record.eloChange}',
+            style: TextStyle(fontWeight: FontWeight.w900, color: color, fontSize: 13),
+          ),
+        ],
+      ),
     );
   }
 }

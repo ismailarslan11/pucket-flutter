@@ -204,8 +204,11 @@ class PhysicsEngine {
   static void _resolveDiscPair(Disc a, Disc b, double dr) {
     var dx = b.vx - a.vx;
     var dy = b.vy - a.vy;
-    var dist = math.sqrt(dx * dx + dy * dy);
-    if (dist >= dr * 2) return;
+    final minDist = dr * 2;
+    final distSq = dx * dx + dy * dy;
+    if (distSq >= minDist * minDist) return;
+
+    var dist = math.sqrt(distSq);
 
     if (dist < 1e-6) {
       dx = 0;

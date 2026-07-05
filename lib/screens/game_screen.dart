@@ -21,6 +21,7 @@ import '../widgets/game_board.dart';
 import '../widgets/ping_indicator.dart';
 import '../widgets/pucket_logo.dart';
 import '../widgets/pucket_button.dart';
+import '../widgets/yesa_effects.dart';
 import 'app_router.dart';
 
 class GameScreen extends StatefulWidget {
@@ -691,13 +692,15 @@ class _GameScreenState extends State<GameScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                title,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: title.length <= 2 ? 88 : 32,
-                  fontWeight: FontWeight.w900,
-                  color: title.length <= 2 ? AppColors.green : AppColors.gold,
+              GlowPulse(
+                color: title.length <= 2 ? AppColors.neonYesil : AppColors.sariAna,
+                min: 0.2,
+                max: 0.55,
+                child: Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.glow(title.length <= 2 ? AppColors.neonYesil : AppColors.sariAna)
+                      .copyWith(fontSize: title.length <= 2 ? 88 : 32),
                 ),
               ),
               const SizedBox(height: 14),
@@ -777,23 +780,20 @@ class _GameScreenState extends State<GameScreen> {
             children: [
               Text(
                 result.won ? l10n.matchWon : l10n.matchLost,
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w900,
-                  color: result.won ? AppColors.gold : AppColors.red,
-                ),
+                style: AppTextStyles.glow(result.won ? AppColors.sariAna : AppColors.kirmizi).copyWith(fontSize: 24),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
               Text(score, style: const TextStyle(color: AppColors.textMuted, fontSize: 13)),
               if (result.won && result.firstTimeWin) ...[
                 const SizedBox(height: 16),
-                Text(
-                  '+${result.pointsEarned}',
-                  style: const TextStyle(
-                    fontSize: 52,
-                    fontWeight: FontWeight.w900,
-                    color: AppColors.green,
+                GlowPulse(
+                  color: AppColors.neonYesil,
+                  min: 0.2,
+                  max: 0.5,
+                  child: Text(
+                    '+${result.pointsEarned}',
+                    style: AppTextStyles.glow(AppColors.neonYesil).copyWith(fontSize: 52),
                   ),
                 ),
                 Text(l10n.careerPoints, style: const TextStyle(color: AppColors.textMuted, fontSize: 12)),
@@ -823,6 +823,7 @@ class _GameScreenState extends State<GameScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                 decoration: BoxDecoration(
+                  color: tier.color.withValues(alpha: 0.14),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: tier.color),
                 ),
@@ -832,7 +833,7 @@ class _GameScreenState extends State<GameScreen> {
                 const SizedBox(height: 10),
                 Text(
                   l10n.promotedToLeague(tierLabel),
-                  style: const TextStyle(color: AppColors.gold, fontSize: 13, fontWeight: FontWeight.w800),
+                  style: AppTextStyles.glow(AppColors.sariAna).copyWith(fontSize: 13),
                   textAlign: TextAlign.center,
                 ),
               ],
@@ -840,7 +841,7 @@ class _GameScreenState extends State<GameScreen> {
                 const SizedBox(height: 10),
                 Text(
                   l10n.careerAllDone,
-                  style: const TextStyle(color: AppColors.gold, fontSize: 12, fontWeight: FontWeight.w800),
+                  style: AppTextStyles.glow(AppColors.sariAna).copyWith(fontSize: 12),
                   textAlign: TextAlign.center,
                 ),
               ],
@@ -902,24 +903,25 @@ class _GameScreenState extends State<GameScreen> {
             children: [
               Text(
                 result.won ? l10n.matchWon : l10n.matchLost,
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w900,
-                  color: result.won ? AppColors.gold : AppColors.red,
-                ),
+                style: AppTextStyles.glow(result.won ? AppColors.sariAna : AppColors.kirmizi).copyWith(fontSize: 24),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 12),
-              Text(
-                '${result.eloChange >= 0 ? '+' : ''}${result.eloChange}',
-                style: TextStyle(
-                  fontSize: 56,
-                  fontWeight: FontWeight.w900,
-                  color: result.eloChange >= 0 ? AppColors.green : AppColors.red,
+              GlowPulse(
+                color: result.eloChange >= 0 ? AppColors.neonYesil : AppColors.kirmizi,
+                min: 0.2,
+                max: 0.5,
+                child: Text(
+                  '${result.eloChange >= 0 ? '+' : ''}${result.eloChange}',
+                  style: AppTextStyles.glow(result.eloChange >= 0 ? AppColors.neonYesil : AppColors.kirmizi)
+                      .copyWith(fontSize: 56),
                 ),
               ),
               Text(l10n.eloPoints, style: const TextStyle(color: AppColors.textMuted, fontSize: 12)),
-              Text('${result.newElo} ELO', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
+              Text(
+                '${result.newElo} ELO',
+                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: AppColors.beyaz),
+              ),
               if (game.opponentName.isNotEmpty) ...[
                 const SizedBox(height: 6),
                 Text(
@@ -932,6 +934,7 @@ class _GameScreenState extends State<GameScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
+                  color: tier.color.withValues(alpha: 0.14),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: tier.color),
                 ),
@@ -942,7 +945,7 @@ class _GameScreenState extends State<GameScreen> {
                   padding: const EdgeInsets.only(top: 8),
                   child: Text(
                     l10n.promotedLeagueMsg(result.newLeague),
-                    style: const TextStyle(color: AppColors.gold, fontSize: 12),
+                    style: AppTextStyles.glow(AppColors.sariAna).copyWith(fontSize: 12),
                     textAlign: TextAlign.center,
                   ),
                 ),
@@ -1010,7 +1013,7 @@ class _GameScreenState extends State<GameScreen> {
               const SizedBox(height: 16),
               Text(
                 isOpponentPause ? l10n.pausedByOpponent : l10n.paused,
-                style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: AppColors.gold),
+                style: AppTextStyles.glow(AppColors.sariAna).copyWith(fontSize: 28),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 12),

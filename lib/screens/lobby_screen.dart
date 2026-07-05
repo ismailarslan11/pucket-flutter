@@ -10,6 +10,7 @@ import '../services/auth_service.dart';
 import '../services/share_service.dart';
 import '../services/websocket_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/yesa_background.dart';
 import '../widgets/pucket_button.dart';
 import 'app_router.dart';
 
@@ -206,11 +207,9 @@ class _LobbyScreenState extends State<LobbyScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.bg,
-      body: SizedBox.expand(
-        child: DecoratedBox(
-          decoration: const BoxDecoration(gradient: AppGradients.screenBg),
-          child: SafeArea(
-            child: Stack(
+      body: YesaBackground(
+        child: SafeArea(
+          child: Stack(
               children: [
                 Positioned(
                   top: 4,
@@ -309,7 +308,6 @@ class _LobbyScreenState extends State<LobbyScreen> {
             ),
           ),
         ),
-      ),
     );
   }
 

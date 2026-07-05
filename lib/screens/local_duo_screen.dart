@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../l10n/l10n_extension.dart';
 import '../theme/app_theme.dart';
+import '../widgets/yesa_background.dart';
 import '../widgets/pucket_button.dart';
 import 'app_router.dart';
 
@@ -46,8 +47,7 @@ class _LocalDuoScreenState extends State<LocalDuoScreen> {
     final l10n = context.l10n;
 
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(gradient: AppGradients.screenBg),
+      body: YesaBackground(
         child: SafeArea(
           child: Column(
             children: [

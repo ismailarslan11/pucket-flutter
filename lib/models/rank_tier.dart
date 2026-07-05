@@ -11,12 +11,12 @@ class RankTier {
   const RankTier(this.name, this.emoji, this.minElo, this.color);
 
   static const tiers = [
-    RankTier('Bronz', '', 0, AppColors.darkOrange),
-    RankTier('Gümüş', '', 1100, AppColors.silver),
-    RankTier('Altın', '', 1200, AppColors.accentYellow),
-    RankTier('Elmas', '', 1350, AppColors.fieldBlue),
-    RankTier('Usta', '', 1500, AppColors.brandBlue),
-    RankTier('Efsane', '', 1700, AppColors.brandOrange),
+    RankTier('Bronz', '', 0, AppColors.turuncuKoyu),
+    RankTier('Gümüş', '', 1100, AppColors.lavanta),
+    RankTier('Altın', '', 1200, AppColors.sariAna),
+    RankTier('Elmas', '', 1350, AppColors.acikMor),
+    RankTier('Usta', '', 1500, AppColors.vurguMoru),
+    RankTier('Efsane', '', 1700, AppColors.turuncuAna),
   ];
 
   static RankTier forElo(int elo) {

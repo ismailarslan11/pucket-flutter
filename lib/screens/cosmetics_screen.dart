@@ -11,6 +11,7 @@ import '../services/player_meta_service.dart';
 import '../theme/cosmetics_theme.dart';
 import '../theme/app_theme.dart';
 import '../widgets/pucket_button.dart';
+import '../widgets/yesa_background.dart';
 
 class CosmeticsScreen extends StatefulWidget {
   const CosmeticsScreen({super.key});
@@ -174,9 +175,10 @@ class _CosmeticsScreenState extends State<CosmeticsScreen> {
       backgroundColor: AppColors.bg,
       appBar: AppBar(
         title: Text(l10n.menuCosmetics),
-        backgroundColor: AppColors.bg,
+        backgroundColor: AppColors.bgDeep,
       ),
-      body: ListView(
+      body: YesaBackground(
+        child: ListView(
         padding: const EdgeInsets.all(20),
         children: [
           _TokenHeader(
@@ -318,6 +320,7 @@ class _CosmeticsScreenState extends State<CosmeticsScreen> {
                   },
           ),
         ],
+        ),
       ),
     );
   }
@@ -349,28 +352,34 @@ class _TokenHeader extends StatelessWidget {
     final l10n = context.l10n;
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: AppGradients.ranked,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.gold.withValues(alpha: 0.4)),
+      decoration: YesaDecor.highlightBanner(radius: 18).copyWith(
+        border: Border.all(color: AppColors.accentYellow.withValues(alpha: 0.35)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(Icons.monetization_on, color: AppColors.gold, size: 28),
+              Icon(Icons.monetization_on, color: AppColors.brandPurpleDeep.withValues(alpha: 0.85), size: 28),
               const SizedBox(width: 8),
               Text(
                 l10n.tokensBalance(tokens),
-                style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 22),
+                style: const TextStyle(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 22,
+                  color: AppColors.brandPurpleDeep,
+                ),
               ),
             ],
           ),
           const SizedBox(height: 8),
           Text(
             l10n.tokensEarnHint(winPreview, adPreview),
-            style: const TextStyle(color: AppColors.textMuted, fontSize: 12, height: 1.4),
+            style: TextStyle(
+              color: AppColors.brandPurpleDeep.withValues(alpha: 0.75),
+              fontSize: 12,
+              height: 1.4,
+            ),
           ),
           const SizedBox(height: 12),
           if (showWatchButton)

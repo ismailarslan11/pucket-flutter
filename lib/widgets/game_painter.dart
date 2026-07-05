@@ -36,7 +36,12 @@ class GamePainter extends CustomPainter {
 
   static final _redFill = Paint()..color = AppColors.red;
   static final _blueFill = Paint()..color = AppColors.blue;
-  static final _premiumPaint = Paint()..filterQuality = FilterQuality.none;
+  static final _discStroke = Paint()
+    ..color = Color(0x59FFFFFF)
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 1.2;
+  static final _premiumPaint = Paint()..filterQuality = FilterQuality.low;
+  static final _emojiPictureCache = <String, ui.Picture>{};
   static final _slingLow = Paint()
     ..color = AppColors.fieldBlue
     ..strokeWidth = 2
@@ -87,8 +92,15 @@ class GamePainter extends CustomPainter {
 
     canvas.drawPicture(_fieldPictureFor(size, mySeat));
 
-    for (final d in discs) {
-      _drawDisc(canvas, d, mySeat: mySeat, localDuo: localDuo, fast: fastDraw);
+    for (var i = 0; i < discs.length; i++) {
+      _drawDisc(
+        canvas,
+        discs[i],
+        i,
+        mySeat: mySeat,
+        localDuo: localDuo,
+        fast: fastDraw,
+      );
     }
     for (final drag in drags) {
       if (drag.discIndex < discs.length) {
@@ -225,8 +237,17 @@ class GamePainter extends CustomPainter {
     );
   }
 
-  void _drawDisc(Canvas canvas, Disc d, {required int mySeat, required bool localDuo, required bool fast}) {
-    final pos = _s2c(d.vx, d.vy);
+  void _drawDisc(
+    Canvas canvas,
+    Disc d,
+    int index, {
+    required int mySeat,
+    required bool localDuo,
+    required bool fast,
+  }) {
+    final rx = fast ? game.renderDiscX(index) : d.vx;
+    final ry = fast ? game.renderDiscY(index) : d.vy;
+    final pos = _s2c(rx, ry);
     final r = GameConstants.discRadius * sx;
     final isMine = d.owner == mySeat;
 
@@ -260,36 +281,38 @@ class GamePainter extends CustomPainter {
         : (isMine ? CosmeticsTheme.discColor(discColor) : defaultColor);
 
     canvas.drawCircle(pos, r, Paint()..color = color);
-    canvas.drawCircle(
-      pos,
-      r,
-      Paint()
-        ..color = Colors.white.withValues(alpha: 0.35)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.2,
-    );
+    canvas.drawCircle(pos, r, _discStroke);
   }
 
   void _drawEmojiDisc(Canvas canvas, Offset pos, double r, CosmeticItem item) {
-    canvas.drawCircle(pos, r, Paint()..color = item.bgColor);
-    canvas.drawCircle(
-      pos,
-      r,
-      Paint()
-        ..color = Colors.white.withValues(alpha: 0.28)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.2,
-    );
-    final emojiSize = r * 1.35;
-    final tp = TextPainter(
-      text: TextSpan(text: item.emoji, style: TextStyle(fontSize: emojiSize, height: 1)),
-      textDirection: TextDirection.ltr,
-    )..layout();
-    tp.paint(canvas, Offset(pos.dx - tp.width / 2, pos.dy - tp.height / 2));
+    final bucket = (r * 2).round() / 2;
+    final key = '${item.id}@$bucket';
+    final picture = _emojiPictureCache.putIfAbsent(key, () {
+      final recorder = ui.PictureRecorder();
+      final c = Canvas(recorder);
+      const center = Offset.zero;
+      c.drawCircle(center, bucket, Paint()..color = item.bgColor);
+      c.drawCircle(center, bucket, _discStroke);
+      final emojiSize = bucket * 1.35;
+      final tp = TextPainter(
+        text: TextSpan(text: item.emoji, style: TextStyle(fontSize: emojiSize, height: 1)),
+        textDirection: TextDirection.ltr,
+      )..layout();
+      tp.paint(c, Offset(-tp.width / 2, -tp.height / 2));
+      return recorder.endRecording();
+    });
+
+    canvas.save();
+    canvas.translate(pos.dx, pos.dy);
+    canvas.drawPicture(picture);
+    canvas.restore();
   }
 
   void _drawSling(Canvas canvas, Disc d, DragState drag) {
-    final discPos = _s2c(d.vx, d.vy);
+    final idx = drag.discIndex;
+    final rx = game.phase == GamePhase.playing ? game.renderDiscX(idx) : d.vx;
+    final ry = game.phase == GamePhase.playing ? game.renderDiscY(idx) : d.vy;
+    final discPos = _s2c(rx, ry);
     final pullPos = _s2c(drag.currentVx, drag.currentVy);
     final ddx = drag.currentVx - drag.startVx;
     final ddy = drag.currentVy - drag.startVy;

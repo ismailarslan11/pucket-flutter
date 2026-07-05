@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../theme/app_theme.dart';
+import '../widgets/yesa_background.dart';
 import '../widgets/pucket_button.dart';
 import 'app_router.dart';
 
@@ -25,8 +26,7 @@ class _JoinScreenState extends State<JoinScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       resizeToAvoidBottomInset: true,
-      body: Container(
-        decoration: const BoxDecoration(gradient: AppGradients.screenBg),
+      body: YesaBackground(
         child: SafeArea(
           child: LayoutBuilder(
             builder: (context, constraints) {

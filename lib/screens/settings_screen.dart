@@ -12,8 +12,11 @@ import '../services/consent_service.dart';
 import '../services/firebase_engagement_service.dart';
 import '../services/firebase_init.dart';
 import '../services/settings_service.dart';
-import 'legal_screen.dart';
 import '../theme/app_theme.dart';
+import '../widgets/yesa_background.dart';
+import '../widgets/yesa_effects.dart';
+import '../widgets/yesa_menu_tile.dart';
+import 'legal_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -24,216 +27,307 @@ class SettingsScreen extends StatelessWidget {
     final l10n = context.l10n;
 
     return Scaffold(
-      backgroundColor: AppColors.bg,
-      body: SafeArea(
-        child: Stack(
-          children: [
-            SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(24, 52, 24, 40),
-              child: Column(
-                children: [
-                  Text(
-                    l10n.settingsTitle,
-                    style: const TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.w900,
-                      color: AppColors.green,
-                      letterSpacing: 3,
+      body: YesaBackground(
+        child: SafeArea(
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(10, 8, 16, 4),
+                child: Row(
+                  children: [
+                    ScalePress(
+                      onTap: () => Navigator.pop(context),
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: AppGradients.neonPurple,
+                          border: Border.all(color: AppColors.beyaz.withValues(alpha: 0.3)),
+                          boxShadow: AppShadows.depth(AppColors.morDahaKoyu),
+                        ),
+                        child: const Icon(Icons.arrow_back_rounded, color: AppColors.beyaz, size: 20),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  _languageRow(context, settings, l10n),
-                  _row(
-                    l10n.settingsMusic,
-                    l10n.settingsMusicSub,
-                    Switch(
-                      value: settings.musicOn,
-                      activeThumbColor: AppColors.green,
-                      onChanged: settings.setMusic,
+                    Expanded(
+                      child: Text(
+                        l10n.settingsTitle,
+                        textAlign: TextAlign.center,
+                        style: AppTextStyles.glow(AppColors.sariAna).copyWith(fontSize: 18, letterSpacing: 2),
+                      ),
                     ),
-                  ),
-                  _row(
-                    l10n.settingsSfx,
-                    l10n.settingsSfxSub,
-                    Switch(
-                      value: settings.sfxOn,
-                      activeThumbColor: AppColors.green,
-                      onChanged: settings.setSfx,
+                    const SizedBox(width: 40),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+                  children: [
+                    StaggerIn(index: 0, child: _languageCard(context, settings, l10n)),
+                    const SizedBox(height: 14),
+                    StaggerIn(
+                      index: 1,
+                      child: _SettingsCard(
+                        title: 'SES & TİTREŞİM',
+                        children: [
+                          _switchRow(
+                            l10n.settingsMusic,
+                            l10n.settingsMusicSub,
+                            settings.musicOn,
+                            settings.setMusic,
+                          ),
+                          _sliderRow(l10n.settingsMusicVol, settings.musicVolume, settings.setMusicVolume),
+                          const Divider(color: AppColors.borderSubtle, height: 20),
+                          _switchRow(
+                            l10n.settingsSfx,
+                            l10n.settingsSfxSub,
+                            settings.sfxOn,
+                            settings.setSfx,
+                          ),
+                          _sliderRow(l10n.settingsSfxVol, settings.sfxVolume, settings.setSfxVolume),
+                          const Divider(color: AppColors.borderSubtle, height: 20),
+                          _switchRow(
+                            l10n.settingsVibration,
+                            l10n.settingsVibrationSub,
+                            settings.vibrationOn,
+                            settings.setVibration,
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  _sliderRow(l10n.settingsMusicVol, settings.musicVolume, settings.setMusicVolume),
-                  _sliderRow(l10n.settingsSfxVol, settings.sfxVolume, settings.setSfxVolume),
-                  _row(
-                    l10n.settingsVibration,
-                    l10n.settingsVibrationSub,
-                    Switch(
-                      value: settings.vibrationOn,
-                      activeThumbColor: AppColors.green,
-                      onChanged: settings.setVibration,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  if (AdConfig.supported)
-                    _row(
-                      l10n.settingsAds,
-                      l10n.settingsAdsSub,
-                      TextButton(
-                        onPressed: () async {
-                          final ok = await ConsentService.showPrivacyOptions();
-                          if (!context.mounted) return;
-                          if (!ok) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(l10n.settingsAdPrivacyUnavailable)),
-                            );
-                            return;
-                          }
-                          await context.read<AdService>().refreshAfterConsent();
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(l10n.settingsAdPrivacySaved)),
-                            );
-                          }
-                        },
-                        child: Text(
-                          l10n.settingsAdPrivacy,
-                          style: const TextStyle(color: AppColors.green, fontSize: 13),
+                    if (AdConfig.supported || firebaseEnabled) ...[
+                      const SizedBox(height: 14),
+                      StaggerIn(
+                        index: 2,
+                        child: _SettingsCard(
+                          title: 'GİZLİLİK',
+                          children: [
+                            if (AdConfig.supported)
+                              _linkRow(
+                                l10n.settingsAds,
+                                l10n.settingsAdsSub,
+                                l10n.settingsAdPrivacy,
+                                () async {
+                                  final ok = await ConsentService.showPrivacyOptions();
+                                  if (!context.mounted) return;
+                                  if (!ok) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text(l10n.settingsAdPrivacyUnavailable)),
+                                    );
+                                    return;
+                                  }
+                                  await context.read<AdService>().refreshAfterConsent();
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text(l10n.settingsAdPrivacySaved)),
+                                    );
+                                  }
+                                },
+                              ),
+                            if (firebaseEnabled)
+                              Align(
+                                alignment: Alignment.centerLeft,
+                                child: TextButton(
+                                  onPressed: () async {
+                                    final fid = await FirebaseEngagementService.refreshInstallationId();
+                                    if (fid != null && fid.isNotEmpty) {
+                                      await Clipboard.setData(ClipboardData(text: fid));
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text(l10n.settingsFidCopied)),
+                                        );
+                                      }
+                                    }
+                                  },
+                                  child: Text(
+                                    l10n.settingsCopyFid,
+                                    style: const TextStyle(color: AppColors.sariAna, fontSize: 12, fontWeight: FontWeight.w700),
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
                       ),
-                    ),
-                  if (firebaseEnabled)
-                    TextButton(
-                      onPressed: () async {
-                        final fid = await FirebaseEngagementService.refreshInstallationId();
-                        if (fid != null && fid.isNotEmpty) {
-                          await Clipboard.setData(ClipboardData(text: fid));
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(l10n.settingsFidCopied)),
-                            );
-                          }
-                        }
-                      },
-                      child: Text(
-                        l10n.settingsCopyFid,
-                        style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+                    ],
+                    const SizedBox(height: 14),
+                    StaggerIn(
+                      index: 3,
+                      child: Column(
+                        children: [
+                          ScalePress(
+                            onTap: () async {
+                              await context.read<AuthService>().signOut();
+                              if (context.mounted) Navigator.pop(context);
+                            },
+                            child: Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              decoration: BoxDecoration(
+                                color: AppColors.kirmizi.withValues(alpha: 0.14),
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(color: AppColors.kirmizi.withValues(alpha: 0.4)),
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                l10n.signOut,
+                                style: const TextStyle(color: AppColors.kirmizi, fontWeight: FontWeight.w800, fontSize: 13),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              TextButton(
+                                onPressed: () => LegalScreen.showPrivacy(context),
+                                child: Text(l10n.privacyPolicy, style: const TextStyle(color: AppColors.textMuted, fontSize: 12)),
+                              ),
+                              TextButton(
+                                onPressed: () => LegalScreen.showTerms(context),
+                                child: Text(l10n.termsOfUse, style: const TextStyle(color: AppColors.textMuted, fontSize: 12)),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
-                  TextButton(
-                    onPressed: () async {
-                      await context.read<AuthService>().signOut();
-                      if (context.mounted) Navigator.pop(context);
-                    },
-                    child: Text(l10n.signOut, style: const TextStyle(color: AppColors.brandOrange)),
-                  ),
-                  TextButton(
-                    onPressed: () => LegalScreen.showPrivacy(context),
-                    child: Text(l10n.privacyPolicy, style: const TextStyle(color: AppColors.textMuted)),
-                  ),
-                  TextButton(
-                    onPressed: () => LegalScreen.showTerms(context),
-                    child: Text(l10n.termsOfUse, style: const TextStyle(color: AppColors.textMuted)),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            Positioned(
-              top: 8,
-              left: 8,
-              child: IconButton(
-                icon: const Icon(Icons.arrow_back, color: AppColors.textMuted, size: 28),
-                onPressed: () => Navigator.pop(context),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _languageRow(BuildContext context, SettingsService settings, AppLocalizations l10n) {
-    return Container(
-      constraints: const BoxConstraints(maxWidth: 340),
-      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: AppColors.borderSubtle)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            l10n.settingsLanguage,
-            style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.silverWhite, fontSize: 13),
-          ),
-          Text(l10n.settingsLanguageSub, style: const TextStyle(color: AppColors.textMuted, fontSize: 11)),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: AppLanguage.values.map((lang) {
-              final selected = settings.language == lang;
-              return ChoiceChip(
-                label: Text('${lang.flag} ${lang.label}'),
-                selected: selected,
-                selectedColor: AppColors.green.withValues(alpha: 0.25),
-                side: BorderSide(color: selected ? AppColors.green : AppColors.borderSubtle),
-                labelStyle: TextStyle(
-                  color: selected ? AppColors.green : AppColors.textMuted,
-                  fontWeight: selected ? FontWeight.w700 : FontWeight.normal,
-                  fontSize: 12,
+  Widget _languageCard(BuildContext context, SettingsService settings, AppLocalizations l10n) {
+    return _SettingsCard(
+      title: l10n.settingsLanguage.toUpperCase(),
+      children: [
+        Text(l10n.settingsLanguageSub, style: const TextStyle(color: AppColors.textMuted, fontSize: 11)),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: AppLanguage.values.map((lang) {
+            final selected = settings.language == lang;
+            return ScalePress(
+              onTap: () => settings.setLanguage(lang),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  gradient: selected ? AppGradients.neonPurple : null,
+                  color: selected ? null : AppColors.card,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: selected ? AppColors.beyaz.withValues(alpha: 0.35) : AppColors.borderSubtle),
+                  boxShadow: selected ? AppShadows.neon(AppColors.acikMor, blur: 6) : null,
                 ),
-                onSelected: (_) => settings.setLanguage(lang),
-              );
-            }).toList(),
-          ),
-        ],
-      ),
+                child: Text(
+                  '${lang.flag} ${lang.label}',
+                  style: TextStyle(
+                    color: selected ? AppColors.beyaz : AppColors.textMuted,
+                    fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
     );
   }
 
-  Widget _row(String title, String sub, Widget trailing) {
-    return Container(
-      constraints: const BoxConstraints(maxWidth: 340),
-      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: AppColors.borderSubtle)),
-      ),
+  Widget _switchRow(String title, String sub, bool value, void Function(bool) onChanged) {
+    return Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.beyaz, fontSize: 13)),
+              Text(sub, style: const TextStyle(color: AppColors.textMuted, fontSize: 11)),
+            ],
+          ),
+        ),
+        Switch(
+          value: value,
+          activeThumbColor: AppColors.sariAna,
+          activeTrackColor: AppColors.sariAna.withValues(alpha: 0.35),
+          onChanged: onChanged,
+        ),
+      ],
+    );
+  }
+
+  Widget _sliderRow(String title, double value, void Function(double) onChanged) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(title, style: const TextStyle(color: AppColors.textMuted, fontSize: 12, fontWeight: FontWeight.w600)),
+        ),
+        SizedBox(
+          width: 140,
+          child: Slider(
+            value: value,
+            activeColor: AppColors.sariAna,
+            inactiveColor: AppColors.borderSubtle,
+            onChanged: onChanged,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _linkRow(String title, String sub, String actionLabel, VoidCallback onTap) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
       child: Row(
         children: [
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.silverWhite, fontSize: 13)),
-                Text(sub, style: const TextStyle(color: AppColors.textMuted, fontSize: 11)),
+                Text(title, style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.beyaz, fontSize: 13)),
+                if (sub.isNotEmpty) Text(sub, style: const TextStyle(color: AppColors.textMuted, fontSize: 11)),
               ],
             ),
           ),
-          trailing,
+          TextButton(
+            style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 8)),
+            onPressed: onTap,
+            child: Text(
+              actionLabel,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: AppColors.sariAna, fontSize: 12, fontWeight: FontWeight.w700),
+            ),
+          ),
         ],
       ),
     );
   }
+}
 
-  Widget _sliderRow(String title, double value, void Function(double) onChanged) {
+class _SettingsCard extends StatelessWidget {
+  const _SettingsCard({required this.title, required this.children});
+
+  final String title;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      constraints: const BoxConstraints(maxWidth: 340),
-      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: AppColors.borderSubtle)),
-      ),
-      child: Row(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: YesaDecor.card(radius: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.silverWhite, fontSize: 13)),
-          ),
-          SizedBox(
-            width: 140,
-            child: Slider(
-              value: value,
-              activeColor: AppColors.green,
-              onChanged: onChanged,
-            ),
-          ),
+          YesaSectionLabel(title),
+          ...children,
         ],
       ),
     );
