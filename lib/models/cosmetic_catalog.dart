@@ -11,18 +11,16 @@ class CosmeticCatalog {
   static const freeBoards = {'classic'};
 
   static const premiumDiscs = [
-    CosmeticItem(id: 'gryphon', price: 50, asset: 'assets/images/discs/gryphon.png'),
-    CosmeticItem(id: 'abyssal_serpent', price: 100, asset: 'assets/images/discs/abyssal_serpent.png'),
-    CosmeticItem(id: 'ascended_phoenix', price: 200, asset: 'assets/images/discs/ascended_phoenix.png'),
-    CosmeticItem(id: 'world_tree', price: 250, asset: 'assets/images/discs/world_tree.png'),
-    CosmeticItem(id: 'desert_cobra', price: 75, asset: 'assets/images/discs/desert_cobra.png'),
-    CosmeticItem(id: 'leviathan', price: 150, asset: 'assets/images/discs/leviathan.png'),
-    CosmeticItem(id: 'clockwork_golem', price: 175, asset: 'assets/images/discs/clockwork_golem.png'),
-    CosmeticItem(id: 'heavens_step', price: 225, asset: 'assets/images/discs/heavens_step.png'),
-    CosmeticItem(id: 'ifrit_fire', price: 300, asset: 'assets/images/discs/ifrit_fire.png'),
-    CosmeticItem(id: 'mountain_dwarven', price: 125, asset: 'assets/images/discs/mountain_dwarven.png'),
-    CosmeticItem(id: 'void_crystal', price: 500, asset: 'assets/images/discs/void_crystal.png'),
-    CosmeticItem(id: 'sprite_blessing', price: 350, asset: 'assets/images/discs/sprite_blessing.png'),
+    CosmeticItem(id: 'dragon', price: 200, asset: 'assets/images/discs/dragon.png'),
+    CosmeticItem(id: 'diamond', price: 250, asset: 'assets/images/discs/diamond.png'),
+    CosmeticItem(id: 'goldcoin', price: 100, asset: 'assets/images/discs/goldcoin.png'),
+    CosmeticItem(id: 'frost', price: 150, asset: 'assets/images/discs/frost.png'),
+    CosmeticItem(id: 'tiger', price: 175, asset: 'assets/images/discs/tiger.png'),
+    CosmeticItem(id: 'robot', price: 125, asset: 'assets/images/discs/robot.png'),
+    CosmeticItem(id: 'swan', price: 120, asset: 'assets/images/discs/swan.png'),
+    CosmeticItem(id: 'alien', price: 300, asset: 'assets/images/discs/alien.png'),
+    CosmeticItem(id: 'pirate', price: 225, asset: 'assets/images/discs/pirate.png'),
+    CosmeticItem(id: 'nature', price: 160, asset: 'assets/images/discs/nature.png'),
   ];
 
   /// Jetonla satın alınabilir emojili pullar — premium pullardan ucuz (15–35 jeton).
