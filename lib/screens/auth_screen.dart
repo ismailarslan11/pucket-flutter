@@ -169,7 +169,7 @@ class _GoogleButton extends StatelessWidget {
                 Text(
                   label,
                   style: const TextStyle(
-                    color: AppColors.borderSubtle,
+                    color: Color(0xFF3C4043),
                     fontWeight: FontWeight.w600,
                     fontSize: 14,
                   ),
