@@ -11,10 +11,12 @@ class SettingsService extends ChangeNotifier {
   double musicVolume = 0.7;
   double sfxVolume = 0.8;
   bool tutorialSeen = false;
+  bool firstMatchPlayed = false;
   AppLanguage language = AppLanguage.tr;
 
   static const _key = 'pucket_settings';
   static const _tutorialKey = 'pucket_tutorial_seen';
+  static const _firstMatchKey = 'pucket_first_match_played';
   static const _langKey = 'pucket_language';
 
   AppLocalizations get l10n => AppLocalizations(language);
@@ -22,6 +24,7 @@ class SettingsService extends ChangeNotifier {
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
     tutorialSeen = prefs.getBool(_tutorialKey) ?? false;
+    firstMatchPlayed = prefs.getBool(_firstMatchKey) ?? false;
     final savedLang = prefs.getString(_langKey);
     if (savedLang != null) {
       language = AppLanguage.fromCode(savedLang);
@@ -52,6 +55,13 @@ class SettingsService extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_tutorialKey, true);
     notifyListeners();
+  }
+
+  Future<void> markFirstMatchPlayed() async {
+    if (firstMatchPlayed) return;
+    firstMatchPlayed = true;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_firstMatchKey, true);
   }
 
   Future<void> save() async {

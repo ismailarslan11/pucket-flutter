@@ -8,6 +8,7 @@ import '../game/game_controller.dart';
 import '../l10n/l10n_extension.dart';
 import '../models/rank_tier.dart';
 import '../services/auth_service.dart';
+import '../services/settings_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/yesa_background.dart';
 import '../widgets/pucket_button.dart';
@@ -74,7 +75,18 @@ class _QueueScreenState extends State<QueueScreen> {
 
   Future<void> _doInit() async {
     final auth = context.read<AuthService>();
+    final settings = context.read<SettingsService>();
     final l10n = context.l10nRead;
+
+    // İlk maç garantili kolay (gizli) bot — hızlı, kazanılabilir ilk deneyim.
+    if (!settings.firstMatchPlayed) {
+      _watchdog?.cancel();
+      await settings.markFirstMatchPlayed();
+      if (!mounted) return;
+      AppRouter.startBotFallback(context, level: AiLevel.easy, ranked: true);
+      return;
+    }
+
     _status = l10n.queueSearching;
     _game = context.read<GameController>();
     final game = _game!;

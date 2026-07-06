@@ -812,11 +812,20 @@ const server = http.createServer((req, res) => {
           if (data.action === 'earn_win') {
             ensureTokenFields(meta);
             const p = upsertPlayer(uid);
-            const gain = winTokenAmount(p.elo || 1000);
+            let gain = winTokenAmount(p.elo || 1000);
+            // Günün ilk galibiyeti 2x jeton (geri dönüş teşviki).
+            const today = new Date().toISOString().slice(0, 10);
+            let doubled = false;
+            if (meta.lastWinTokenDate !== today) {
+              gain *= 2;
+              doubled = true;
+              meta.lastWinTokenDate = today;
+              db.set(`playerMeta.${uid}.lastWinTokenDate`, today).write();
+            }
             meta.tokens += gain;
             db.set(`playerMeta.${uid}.tokens`, meta.tokens).write();
             res.writeHead(200, cors);
-            res.end(JSON.stringify({ ok: true, meta: getPlayerMeta(uid), tokenGain: gain }));
+            res.end(JSON.stringify({ ok: true, meta: getPlayerMeta(uid), tokenGain: gain, doubled }));
             return;
           }
           if (data.action === 'reward_ad') {
@@ -1375,6 +1384,7 @@ async function startServer() {
     playerMeta: {},
     career: {},
     reports: [],
+    friends: {},
     tournament: { weekId: '', entries: [], scores: {} },
     season: { id: 1, name: 'Sezon 1', startDate: Date.now() },
   }).write();

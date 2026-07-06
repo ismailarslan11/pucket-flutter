@@ -4,9 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../game/ai_bot.dart';
 import '../game/game_controller.dart';
 import '../l10n/l10n_extension.dart';
 import '../services/auth_service.dart';
+import '../services/settings_service.dart';
 import '../services/share_service.dart';
 import '../services/websocket_service.dart';
 import '../theme/app_theme.dart';
@@ -69,6 +71,19 @@ class _LobbyScreenState extends State<LobbyScreen> {
 
   Future<void> _doInit() async {
     final l10n = context.l10nRead;
+
+    // İlk maç (hızlı eşleş) garantili kolay gizli bot — kazanılabilir ilk deneyim.
+    if (widget.quickMatch) {
+      final settings = context.read<SettingsService>();
+      if (!settings.firstMatchPlayed) {
+        _watchdog?.cancel();
+        await settings.markFirstMatchPlayed();
+        if (!mounted) return;
+        AppRouter.startBotFallback(context, level: AiLevel.easy);
+        return;
+      }
+    }
+
     _matchMsgs = [l10n.lobbyMatchMsg1, l10n.lobbyMatchMsg2, l10n.lobbyMatchMsg3];
     _title = l10n.lobbyWaiting;
     _message = l10n.lobbyConnecting;

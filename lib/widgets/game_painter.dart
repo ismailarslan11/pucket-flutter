@@ -85,6 +85,10 @@ class GamePainter extends CustomPainter {
     final fastDraw = game.phase == GamePhase.playing;
 
     canvas.save();
+    // Ekran sarsıntısı (juice) — tüm tahtayı hafifçe kaydır.
+    if (game.fx.shakeX != 0 || game.fx.shakeY != 0) {
+      canvas.translate(game.fx.shakeX, game.fx.shakeY);
+    }
     if (mySeat == 1 && !localDuo) {
       canvas.translate(size.width, size.height);
       canvas.rotate(math.pi);
@@ -107,7 +111,19 @@ class GamePainter extends CustomPainter {
         _drawSling(canvas, discs[drag.discIndex], drag);
       }
     }
+    _drawParticles(canvas);
     canvas.restore();
+  }
+
+  void _drawParticles(Canvas canvas) {
+    final particles = game.fx.particles;
+    if (particles.isEmpty) return;
+    final paint = Paint();
+    for (final p in particles) {
+      final t = (p.life / p.maxLife).clamp(0.0, 1.0);
+      paint.color = p.color.withValues(alpha: t);
+      canvas.drawCircle(_s2c(p.x, p.y), p.size * (0.4 + t * 0.6), paint);
+    }
   }
 
   void _drawFieldStatic(Canvas canvas, Size size, int mySeat) {

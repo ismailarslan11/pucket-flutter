@@ -13,6 +13,7 @@ import '../services/settings_service.dart';
 import '../services/websocket_service.dart';
 import 'ai_bot.dart';
 import 'game_constants.dart';
+import 'game_fx.dart';
 import 'physics_engine.dart';
 import 'training_layout.dart';
 
@@ -138,6 +139,7 @@ class GameController extends ChangeNotifier {
 
   final boardRepaint = BoardRepaintNotifier();
   final uiSync = UiSyncNotifier();
+  final fx = GameFx();
 
   static const _physicsStepMs = 1000 / 60;
 
@@ -289,7 +291,7 @@ class GameController extends ChangeNotifier {
     final movingCount = PhysicsEngine.countMoving(discs);
     final isClient = !aiMode && !isOnlineHost && !localDuoMode;
 
-    if (!dragging && movingCount == 0) {
+    if (!dragging && movingCount == 0 && !fx.active) {
       if (!isClient) {
         _lastTickWallMs = 0;
         return false;
@@ -312,13 +314,14 @@ class GameController extends ChangeNotifier {
     while (_physicsAccum >= _physicsStepMs) {
       _physicsAccum -= _physicsStepMs;
       _capturePrevPositions();
+      fx.step();
       if (_physicsStep()) return true;
       stepped = true;
     }
 
     if (stepped) _syncUiIfDiscCountsChanged();
 
-    return stepped || dragging || movingCount > 0 || _lastMovingDiscs > 0;
+    return stepped || dragging || movingCount > 0 || _lastMovingDiscs > 0 || fx.active;
   }
 
   void _syncUiIfDiscCountsChanged() {
@@ -326,8 +329,38 @@ class GameController extends ChangeNotifier {
         ? (redHalfTotal() << 16) | blueHalfTotal()
         : mySideRemaining();
     if (sig == _lastUiDiscSignature) return;
+    // Bir disk karşı tarafa geçti (skor hissi): geçit hizasında parlama.
+    if (_lastUiDiscSignature != -1) {
+      fx.burst(
+        GameConstants.vw / 2,
+        GameConstants.vh / 2,
+        count: 14,
+        color: const Color(0xFFFACC15),
+        speed: 3.2,
+        size: 2.6,
+      );
+      fx.addShake(3);
+      _haptic(20);
+    }
     _lastUiDiscSignature = sig;
     uiSync.bump();
+  }
+
+  void _spawnHitFx() {
+    // En hızlı hareket eden diski bul, orada küçük kıvılcım.
+    Disc? fastest;
+    var best = 0.0;
+    for (final d in discs) {
+      final sp = d.vvx * d.vvx + d.vvy * d.vvy;
+      if (sp > best) {
+        best = sp;
+        fastest = d;
+      }
+    }
+    if (fastest == null || best < 4) return;
+    final color = fastest.owner == 0 ? const Color(0xFFFB923C) : const Color(0xFF38BDF8);
+    fx.burst(fastest.vx, fastest.vy, count: 6, color: color, speed: 2.2, size: 2.0);
+    if (best > 40) fx.addShake(2);
   }
 
   /// Bir fizik adımı. Round biterse true döner.
@@ -341,6 +374,8 @@ class GameController extends ChangeNotifier {
           _frameCount - _lastHitAudioFrame > 10) {
         _lastHitAudioFrame = _frameCount;
         audio?.playHit();
+        // Çarpışma juice'u: en hızlı diskte kıvılcım + hafif sarsıntı.
+        _spawnHitFx();
       }
       _lastMovingDiscs = moving;
 
@@ -372,6 +407,7 @@ class GameController extends ChangeNotifier {
     _cdTimer?.cancel();
     _afkTimer?.cancel();
     _clearPauseState();
+    fx.clear();
     seconds = 0;
     drag = null;
     _duoDrags.clear();
@@ -912,6 +948,16 @@ class GameController extends ChangeNotifier {
     _afkTimer?.cancel();
     matchFinished = roundWins[winner] >= roundsToWin;
     _haptic(winner == mySeat ? 50 : 30);
+    // Gol juice'u: güçlü sarsıntı + kutlama patlaması.
+    fx.addShake(10);
+    fx.burst(
+      GameConstants.vw / 2,
+      GameConstants.vh / 2,
+      count: 34,
+      color: winner == mySeat ? const Color(0xFF22C55E) : const Color(0xFFEF4444),
+      speed: 5,
+      size: 3.2,
+    );
     if (winner == mySeat) {
       audio?.playWin();
     } else {
@@ -1049,6 +1095,16 @@ class GameController extends ChangeNotifier {
     currentRound++;
     matchFinished = roundWins[winner] >= roundsToWin;
     _haptic(winner == mySeat ? 50 : 30);
+    // Gol juice'u: güçlü sarsıntı + kutlama patlaması.
+    fx.addShake(10);
+    fx.burst(
+      GameConstants.vw / 2,
+      GameConstants.vh / 2,
+      count: 34,
+      color: winner == mySeat ? const Color(0xFF22C55E) : const Color(0xFFEF4444),
+      speed: 5,
+      size: 3.2,
+    );
     if (winner == mySeat) {
       audio?.playWin();
     } else {
@@ -1248,6 +1304,18 @@ class GameController extends ChangeNotifier {
       }
       audio?.playShot();
       _haptic(25);
+      // Atış juice'u: güce göre sarsıntı + fırlatılan diskte iz.
+      final power = lim / GameConstants.slingMax;
+      fx.addShake(1.5 + power * 3.5);
+      final d = discs[dragState.discIndex];
+      fx.burst(
+        d.vx,
+        d.vy,
+        count: 8,
+        color: const Color(0xFFEDE9FE),
+        speed: 2.4 + power * 2,
+        size: 2.2,
+      );
     }
     _bumpBoard();
   }
