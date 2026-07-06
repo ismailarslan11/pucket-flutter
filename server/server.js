@@ -1007,8 +1007,8 @@ const server = http.createServer((req, res) => {
         }
         const history = db.get('matchHistory').value() || [];
         const filtered = history.filter((m) => m.winner !== uid && m.loser !== uid);
-        db.set('matchHistory', filtered);
-        db.write();
+        // Kalıcılaştır: db facade'ında standalone write yok, zincir üzerinden yaz.
+        db.set('matchHistory', filtered).write();
         res.writeHead(200, cors);
         res.end(JSON.stringify({ ok: true }));
       })
