@@ -56,12 +56,10 @@ android {
                 )
                 signingConfigs.getByName("debug")
             }
-            isMinifyEnabled = true
-            isShrinkResources = true
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro",
-            )
+            // R8 küçültme geçici olarak kapalı — BlueStacks'te açılış çökmesine
+            // yol açıyordu. İleride cihazda test edilerek yeniden açılabilir.
+            isMinifyEnabled = false
+            isShrinkResources = false
         }
     }
 }

@@ -118,10 +118,14 @@ class AppRouter {
     goGame(context);
   }
 
-  static void startBotFallback(BuildContext context, {AiLevel level = AiLevel.medium}) {
+  static void startBotFallback(
+    BuildContext context, {
+    AiLevel level = AiLevel.medium,
+    bool ranked = false,
+  }) {
     final game = context.read<GameController>();
     game.leave();
-    game.startAiGame(level, botFallback: true);
+    game.startAiGame(level, botFallback: true, ranked: ranked);
     goGame(context);
   }
 

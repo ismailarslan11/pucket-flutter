@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 
 import '../models/career_opponent.dart';
 import '../models/disc.dart';
+import '../models/rank_tier.dart';
 import '../services/audio_service.dart';
 import '../services/auth_service.dart';
 import '../services/settings_service.dart';
@@ -444,7 +445,7 @@ class GameController extends ChangeNotifier {
     });
   }
 
-  void startAiGame(AiLevel level, {bool botFallback = false}) {
+  void startAiGame(AiLevel level, {bool botFallback = false, bool ranked = false}) {
     ws.disconnect();
     aiMode = true;
     localDuoMode = false;
@@ -452,7 +453,9 @@ class GameController extends ChangeNotifier {
     trainingMode = false;
     careerOpponent = null;
     isBotFallback = botFallback;
-    isRanked = false;
+    // Gizli bot: ranked kuyruğunda rakip bulunamayınca bota düşülse de
+    // oyuncu için maç ranked görünmeli (ELO değişir, "bot" ibaresi yok).
+    isRanked = botFallback && ranked;
     aiLevel = level;
     _setSeat(0);
     if (botFallback) {
@@ -1069,9 +1072,31 @@ class GameController extends ChangeNotifier {
       }
     }
 
+    // Gizli ranked bot: maç bitince gerçek maç gibi ELO uygula (istemci tarafı).
+    if (matchFinished && isBotFallback && isRanked && auth?.user != null) {
+      _applyBotEloResult(winner == mySeat);
+    }
+
     _markVisualGeneration();
     onRoundEnd?.call();
     notifyListeners();
+  }
+
+  void _applyBotEloResult(bool won) {
+    final u = auth!.user!;
+    const k = 32;
+    final expected = 1 / (1 + math.pow(10, (opponentElo - u.elo) / 400));
+    final change = (k * ((won ? 1 : 0) - expected)).round();
+    final newElo = (u.elo + change).clamp(0, 9999);
+    final newLeague = RankTier.forElo(newElo).name;
+    auth!.applyEloResult(newElo: newElo, newLeague: newLeague, won: won);
+    auth!.syncEloToFirestore(won, newElo, newLeague);
+    pendingEloResult = EloResult(
+      won: won,
+      eloChange: change,
+      newElo: newElo,
+      newLeague: newLeague,
+    );
   }
 
   void _finishRoundFromRemote(int winner) {

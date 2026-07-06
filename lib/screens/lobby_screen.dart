@@ -135,8 +135,9 @@ class _LobbyScreenState extends State<LobbyScreen> {
       });
       _botFallback = Timer(const Duration(seconds: 20), () {
         if (mounted && game.phase == GamePhase.idle) {
+          // Gizli bot: "rakip bulundu" göster, "AI" ibaresi yok.
           setState(() {
-            _message = l10n.lobbyBotFallback;
+            _message = l10n.lobbyOpponentFound;
             _spinning = false;
           });
           Future.delayed(const Duration(milliseconds: 1200), () {

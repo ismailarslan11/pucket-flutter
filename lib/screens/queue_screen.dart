@@ -69,7 +69,7 @@ class _QueueScreenState extends State<QueueScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(l10n.queueNoServer)),
     );
-    AppRouter.startBotFallback(context, level: AiLevel.hard);
+    AppRouter.startBotFallback(context, level: AiLevel.hard, ranked: true);
   }
 
   Future<void> _doInit() async {
@@ -159,14 +159,15 @@ class _QueueScreenState extends State<QueueScreen> {
   void _botFallback() {
     if (_queueBlocked) return;
     _cancelTimers();
+    // Gizli bot: "rakip bulundu" göster, "AI" ibaresi yok.
     setState(() {
-      _status = context.l10nRead.queueBotStarting;
+      _status = context.l10nRead.queueFound;
       _spinning = false;
     });
     Future.delayed(const Duration(milliseconds: 1200), () {
       if (mounted) {
         _game!.leaveQueue();
-        AppRouter.startBotFallback(context, level: AiLevel.hard);
+        AppRouter.startBotFallback(context, level: AiLevel.hard, ranked: true);
       }
     });
   }

@@ -69,11 +69,7 @@ class _GameScreenState extends State<GameScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final game = context.read<GameController>();
-      if (game.isBotFallback) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.l10nRead.lobbyBotFallback)),
-        );
-      }
+      // Gizli bot: "AI antrenman" bildirimi gösterilmez.
       game.onOpponentLeft = () {
         if (mounted) {
           final l10n = context.l10nRead;
@@ -182,7 +178,8 @@ class _GameScreenState extends State<GameScreen> {
             _showOverlay = false;
           });
         });
-      } else if (game.isRanked && game.matchFinished && !game.isBotFallback) {
+      } else if (game.isRanked && game.matchFinished) {
+        // Ranked (gerçek veya gizli bot): ELO ekranı göster.
         if (game.pendingEloResult != null) {
           final r = game.pendingEloResult!;
           setState(() {
@@ -210,7 +207,7 @@ class _GameScreenState extends State<GameScreen> {
     if (game.phase == GamePhase.gameover &&
         !_showElo &&
         !_showCareer &&
-        !(game.isRanked && game.matchFinished && !game.isBotFallback)) {
+        !(game.isRanked && game.matchFinished)) {
       _maybeShowRoundAd(game);
     }
 
@@ -394,11 +391,10 @@ class _GameScreenState extends State<GameScreen> {
                           ? l10n.localDuoMode
                           : game.trainingMode
                           ? l10n.trainingMode
-                          : game.isBotFallback
-                              ? l10n.botFallbackLabel
-                              : game.careerMode
-                                  ? l10n.careerMode
-                                  : (game.isRanked && !game.isBotFallback ? l10n.ranked : l10n.online),
+                          // Gizli bot: ranked ise "RANKED", değilse "ONLINE" göster.
+                          : game.careerMode
+                              ? l10n.careerMode
+                              : (game.isRanked ? l10n.ranked : l10n.online),
                       style: TextStyle(
                         fontSize: 7,
                         color: game.careerMode ? AppColors.gold : AppColors.textDim,
@@ -415,7 +411,7 @@ class _GameScreenState extends State<GameScreen> {
                           : game.trainingMode
                           ? (game.trainingGoalLabel.isNotEmpty ? game.trainingGoalLabel : l10n.trainingMode)
                           : game.isBotFallback
-                              ? l10n.botFallbackEloHint
+                              ? '${game.opponentElo}'
                               : game.careerMode
                                   ? game.opponentLeague
                                   : '${game.opponentElo}',
