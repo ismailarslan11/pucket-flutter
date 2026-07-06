@@ -585,7 +585,7 @@ class GameController extends ChangeNotifier {
       'type': 'login',
       'uid': uid,
       'name': name,
-      if (idToken != null) 'idToken': idToken,
+      'idToken': ?idToken,
       'isAnonymous': isAnonymous,
     });
     return true;
@@ -642,6 +642,14 @@ class GameController extends ChangeNotifier {
       phase = GamePhase.gameover;
     } else if (snap['phase'] == 'playing') {
       phase = GamePhase.playing;
+      if (snap['seconds'] is num) seconds = (snap['seconds'] as num).toInt();
+      // Yeniden bağlanınca süre sayacı ve AFK koruması tekrar kurulmalı.
+      _secTimer?.cancel();
+      _secTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+        seconds++;
+        uiSync.bump();
+      });
+      _startAfkTimer();
     }
   }
 
@@ -766,7 +774,7 @@ class GameController extends ChangeNotifier {
           }
         }
         if (msg['phase'] == 'gameover' && msg['lastWinner'] != null) {
-          if (phase != GamePhase.countdown && phase != GamePhase.playing) {
+          if (phase != GamePhase.countdown) {
             _applyRoundEndFromNetwork({
               'winner': msg['lastWinner'],
               'roundWins': roundWins.toList(),
@@ -794,7 +802,9 @@ class GameController extends ChangeNotifier {
         }
         break;
       case 'roundEnd':
-        if (phase != GamePhase.countdown && phase != GamePhase.playing) {
+        // Sadece geri sayım sırasında yok say (gecikmiş mesaj yeni round'u
+        // geri çekmesin); oyun sırasında gelen round bitişi normal akıştır.
+        if (phase != GamePhase.countdown) {
           _applyRoundEndFromNetwork(msg);
         }
         break;
@@ -939,8 +949,16 @@ class GameController extends ChangeNotifier {
       } else {
         final posBlend = posErrSq > 64 ? 0.35 : 0.18;
         if (posErrSq > 0.08 * 0.08) {
-          d.vx += dx * posBlend;
-          d.vy += dy * posBlend;
+          final shiftX = dx * posBlend;
+          final shiftY = dy * posBlend;
+          d.vx += shiftX;
+          d.vy += shiftY;
+          // Render interpolasyonu bozulmasın diye önceki kare tamponunu da
+          // aynı miktarda kaydır — yoksa ağ düzeltmeleri titreme yaratır.
+          if (i < _prevVx.length) {
+            _prevVx[i] += shiftX;
+            _prevVy[i] += shiftY;
+          }
           changed = true;
         }
         final dvx = nvx - d.vvx;

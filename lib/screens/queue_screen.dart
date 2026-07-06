@@ -30,7 +30,9 @@ class _QueueScreenState extends State<QueueScreen> {
   int? _oppElo;
   Timer? _msgTimer;
   Timer? _botTimer;
+  Timer? _watchdog;
   GameController? _game;
+  bool _errorHandled = false;
 
   @override
   void initState() {
@@ -46,8 +48,33 @@ class _QueueScreenState extends State<QueueScreen> {
   }
 
   Future<void> _init() async {
+    // Güvenlik ağı: bağlantı kurulumu 12 sn içinde bir sonuca varmazsa
+    // sonsuza kadar "aranıyor" ekranında kalmak yerine bot'a düş.
+    _watchdog = Timer(const Duration(seconds: 12), () {
+      if (mounted) _handleConnectFailure();
+    });
+    try {
+      await _doInit();
+    } catch (e, st) {
+      debugPrint('QueueScreen._doInit failed: $e\n$st');
+      if (mounted) _handleConnectFailure();
+    }
+  }
+
+  void _handleConnectFailure() {
+    if (_errorHandled) return;
+    _errorHandled = true;
+    _watchdog?.cancel();
+    final l10n = context.l10nRead;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(l10n.queueNoServer)),
+    );
+    AppRouter.startBotFallback(context, level: AiLevel.hard);
+  }
+
+  Future<void> _doInit() async {
     final auth = context.read<AuthService>();
-    final l10n = context.l10n;
+    final l10n = context.l10nRead;
     _status = l10n.queueSearching;
     _game = context.read<GameController>();
     final game = _game!;
@@ -69,18 +96,23 @@ class _QueueScreenState extends State<QueueScreen> {
       }
     };
 
-    final ok = await game.openConnection(
-      uid: auth.getUid(),
-      name: auth.getName(),
-      idToken: await auth.getIdToken(),
-      isAnonymous: auth.user?.isAnonymous ?? true,
-    );
+    bool ok;
+    try {
+      ok = await game
+          .openConnection(
+            uid: auth.getUid(),
+            name: auth.getName(),
+            idToken: await auth.getIdToken(),
+            isAnonymous: auth.user?.isAnonymous ?? true,
+          )
+          .timeout(const Duration(seconds: 10));
+    } catch (_) {
+      ok = false;
+    }
+    _watchdog?.cancel();
     if (!mounted) return;
     if (!ok) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.queueNoServer)),
-      );
-      AppRouter.startBotFallback(context, level: AiLevel.hard);
+      _handleConnectFailure();
       return;
     }
 
@@ -114,7 +146,7 @@ class _QueueScreenState extends State<QueueScreen> {
     if (game.isRanked && game.roomCode.isNotEmpty && !_showPreview) {
       _cancelTimers();
       setState(() {
-        _status = context.l10n.queueFound;
+        _status = context.l10nRead.queueFound;
         _spinning = false;
         _showPreview = true;
         _myElo = context.read<AuthService>().user?.elo;
@@ -128,7 +160,7 @@ class _QueueScreenState extends State<QueueScreen> {
     if (_queueBlocked) return;
     _cancelTimers();
     setState(() {
-      _status = context.l10n.queueBotStarting;
+      _status = context.l10nRead.queueBotStarting;
       _spinning = false;
     });
     Future.delayed(const Duration(milliseconds: 1200), () {
@@ -142,6 +174,7 @@ class _QueueScreenState extends State<QueueScreen> {
   @override
   void dispose() {
     _cancelTimers();
+    _watchdog?.cancel();
     _game?.removeListener(_onGameUpdate);
     if (_game != null && _game!.phase == GamePhase.idle) {
       _game!.leaveQueue();

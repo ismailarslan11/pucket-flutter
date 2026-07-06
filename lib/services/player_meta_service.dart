@@ -26,7 +26,13 @@ class PlayerMetaService extends ChangeNotifier {
     loading = true;
     notifyListeners();
     await MetaApi.registerPlayer(uid, name.isNotEmpty ? name : 'Oyuncu');
-    meta = await MetaApi.fetchMeta(uid, name: name);
+    final fetched = await MetaApi.fetchMeta(uid, name: name);
+    final previousTokens = meta?.tokens;
+    // Maç sonu jeton kazanma (earnWinTokens) ile bu yenileme yarışabilir;
+    // gecikmiş bir yanıt daha yüksek bir jeton miktarını ezmesin.
+    meta = (fetched != null && previousTokens != null && previousTokens > fetched.tokens)
+        ? fetched.copyWith(tokens: previousTokens)
+        : fetched;
     season = await MetaApi.fetchSeason();
     loading = false;
     notifyListeners();

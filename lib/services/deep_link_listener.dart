@@ -28,6 +28,7 @@ class _DeepLinkListenerState extends State<DeepLinkListener> {
   Future<void> _initLinks() async {
     try {
       final initial = await _appLinks.getInitialLink();
+      if (!mounted) return;
       if (initial != null) {
         DeepLinkService.handleUri(context, initial);
       }

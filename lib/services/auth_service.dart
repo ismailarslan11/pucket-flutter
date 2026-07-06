@@ -503,7 +503,10 @@ class AuthService extends ChangeNotifier {
   Future<String?> getIdToken() async {
     if (!_firebaseReady || _auth?.currentUser == null) return null;
     try {
-      return await _auth!.currentUser!.getIdToken();
+      return await _auth!.currentUser!.getIdToken().timeout(
+            const Duration(seconds: 5),
+            onTimeout: () => null,
+          );
     } catch (_) {
       return null;
     }

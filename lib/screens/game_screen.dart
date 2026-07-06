@@ -167,8 +167,11 @@ class _GameScreenState extends State<GameScreen> {
         final uid = context.read<AuthService>().getUid();
         career.recordResult(opponent: game.careerOpponent!, won: won, uid: uid).then((result) async {
           if (!mounted) return;
-          if (won) await context.read<PlayerMetaService>().onCareerWin(uid);
-          context.read<AdService>().maybeShowInterstitial(
+          final metaSvc = context.read<PlayerMetaService>();
+          final adSvc = context.read<AdService>();
+          if (won) await metaSvc.onCareerWin(uid);
+          if (!mounted) return;
+          adSvc.maybeShowInterstitial(
             matchFinished: true,
             skip: game.trainingMode,
           );
@@ -227,7 +230,7 @@ class _GameScreenState extends State<GameScreen> {
     context.read<PlayerMetaService>().earnWinTokens(uid).then((gain) {
       if (!mounted || gain == null || gain <= 0) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.tokensEarned(gain))),
+        SnackBar(content: Text(context.l10nRead.tokensEarned(gain))),
       );
     });
   }
@@ -320,7 +323,7 @@ class _GameScreenState extends State<GameScreen> {
                       final phaseOverlay = _phaseOverlay(g, l10n);
                       return Stack(
                         children: [
-                          if (phaseOverlay != null) phaseOverlay,
+                          ?phaseOverlay,
                           if (g.phase == GamePhase.countdown)
                             _buildCountdownOverlay(g, l10n),
                           if (_showOverlay &&

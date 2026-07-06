@@ -47,6 +47,18 @@ class PlayerMeta {
       (quests['career'] as num? ?? 0) >= 1;
 
   bool get questsClaimed => quests['claimed'] == true;
+
+  PlayerMeta copyWith({int? tokens}) => PlayerMeta(
+        quests: quests,
+        streak: streak,
+        achievements: achievements,
+        cosmetics: cosmetics,
+        seasonWins: seasonWins,
+        tokens: tokens ?? this.tokens,
+        unlockedDiscs: unlockedDiscs,
+        unlockedBoards: unlockedBoards,
+        lastAdReward: lastAdReward,
+      );
 }
 
 class SeasonInfo {
@@ -91,7 +103,7 @@ class MetaApi {
     try {
       final res = await http
           .post(
-            Uri.parse('${apiBaseUrl}/register'),
+            Uri.parse('$apiBaseUrl/register'),
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode({'uid': uid, 'name': name}),
           )
@@ -107,7 +119,7 @@ class MetaApi {
       try {
         final q = name.isNotEmpty ? '?name=${Uri.encodeComponent(name)}' : '';
         final res = await http
-            .get(Uri.parse('${apiBaseUrl}/meta/$uid$q'))
+            .get(Uri.parse('$apiBaseUrl/meta/$uid$q'))
             .timeout(const Duration(seconds: 8));
         if (res.statusCode != 200) return null;
         return PlayerMeta.fromJson(jsonDecode(res.body) as Map<String, dynamic>);
@@ -121,7 +133,7 @@ class MetaApi {
     try {
       final res = await http
           .post(
-            Uri.parse('${apiBaseUrl}/meta/$uid'),
+            Uri.parse('$apiBaseUrl/meta/$uid'),
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode(body),
           )
@@ -140,7 +152,7 @@ class MetaApi {
     try {
       final res = await http
           .post(
-            Uri.parse('${apiBaseUrl}/meta/$uid'),
+            Uri.parse('$apiBaseUrl/meta/$uid'),
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode({'action': 'claim_quests'}),
           )
@@ -165,7 +177,7 @@ class MetaApi {
     try {
       final res = await http
           .post(
-            Uri.parse('${apiBaseUrl}/meta/$uid'),
+            Uri.parse('$apiBaseUrl/meta/$uid'),
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode({'action': 'earn_win'}),
           )
@@ -189,7 +201,7 @@ class MetaApi {
     try {
       final res = await http
           .post(
-            Uri.parse('${apiBaseUrl}/meta/$uid'),
+            Uri.parse('$apiBaseUrl/meta/$uid'),
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode({'action': 'reward_ad'}),
           )
@@ -217,7 +229,7 @@ class MetaApi {
     try {
       final res = await http
           .post(
-            Uri.parse('${apiBaseUrl}/meta/$uid'),
+            Uri.parse('$apiBaseUrl/meta/$uid'),
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode({'action': 'purchase', 'itemType': itemType, 'itemId': itemId}),
           )
@@ -242,7 +254,7 @@ class MetaApi {
 
   static Future<SeasonInfo?> fetchSeason() async {
     try {
-      final res = await http.get(Uri.parse('${apiBaseUrl}/season')).timeout(const Duration(seconds: 8));
+      final res = await http.get(Uri.parse('$apiBaseUrl/season')).timeout(const Duration(seconds: 8));
       if (res.statusCode != 200) return null;
       return SeasonInfo.fromJson(jsonDecode(res.body) as Map<String, dynamic>);
     } catch (_) {
@@ -252,7 +264,7 @@ class MetaApi {
 
   static Future<List<TournamentEntry>> fetchTournament() async {
     try {
-      final res = await http.get(Uri.parse('${apiBaseUrl}/tournament')).timeout(const Duration(seconds: 8));
+      final res = await http.get(Uri.parse('$apiBaseUrl/tournament')).timeout(const Duration(seconds: 8));
       if (res.statusCode != 200) return [];
       final j = jsonDecode(res.body) as Map<String, dynamic>;
       final list = j['leaderboard'] as List? ?? [];
@@ -266,7 +278,7 @@ class MetaApi {
     try {
       final res = await http
           .post(
-            Uri.parse('${apiBaseUrl}/tournament/join'),
+            Uri.parse('$apiBaseUrl/tournament/join'),
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode({'uid': uid, 'name': name}),
           )
@@ -286,7 +298,7 @@ class MetaApi {
     try {
       final res = await http
           .post(
-            Uri.parse('${apiBaseUrl}/report'),
+            Uri.parse('$apiBaseUrl/report'),
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode({
               'reporter': reporter,
@@ -304,7 +316,7 @@ class MetaApi {
 
   static Future<Map<String, dynamic>?> fetchCareer(String uid) async {
     try {
-      final res = await http.get(Uri.parse('${apiBaseUrl}/career/$uid')).timeout(const Duration(seconds: 8));
+      final res = await http.get(Uri.parse('$apiBaseUrl/career/$uid')).timeout(const Duration(seconds: 8));
       if (res.statusCode != 200) return null;
       return jsonDecode(res.body) as Map<String, dynamic>;
     } catch (_) {
@@ -316,7 +328,7 @@ class MetaApi {
     try {
       await http
           .post(
-            Uri.parse('${apiBaseUrl}/career/$uid'),
+            Uri.parse('$apiBaseUrl/career/$uid'),
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode(data),
           )

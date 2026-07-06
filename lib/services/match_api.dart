@@ -32,7 +32,7 @@ class MatchApi {
   static Future<List<MatchRecord>> fetchHistory(String uid) async {
     try {
       final res = await http
-          .get(Uri.parse('${apiBaseUrl}/match-history/$uid'))
+          .get(Uri.parse('$apiBaseUrl/match-history/$uid'))
           .timeout(const Duration(seconds: 8));
       if (res.statusCode != 200) return [];
       final list = jsonDecode(res.body) as List;
@@ -45,7 +45,7 @@ class MatchApi {
   static Future<Map<String, dynamic>?> fetchPlayer(String uid) async {
     try {
       final res = await http
-          .get(Uri.parse('${apiBaseUrl}/player/$uid'))
+          .get(Uri.parse('$apiBaseUrl/player/$uid'))
           .timeout(const Duration(seconds: 8));
       if (res.statusCode != 200) return null;
       return jsonDecode(res.body) as Map<String, dynamic>;

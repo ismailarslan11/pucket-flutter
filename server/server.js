@@ -1331,6 +1331,9 @@ setInterval(() => {
   for (let i = matchmakingQueue.length - 1; i >= 0; i--) {
     if (now - matchmakingQueue[i].joinedAt > 30000) matchmakingQueue.splice(i, 1);
   }
+  for (let i = casualMatchmakingQueue.length - 1; i >= 0; i--) {
+    if (now - casualMatchmakingQueue[i].joinedAt > 30000) casualMatchmakingQueue.splice(i, 1);
+  }
 }, 30000);
 
 async function startServer() {

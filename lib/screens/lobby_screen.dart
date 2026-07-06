@@ -38,8 +38,10 @@ class _LobbyScreenState extends State<LobbyScreen> {
   bool _spinning = true;
   Timer? _msgTimer;
   Timer? _botFallback;
+  Timer? _watchdog;
   GameController? _game;
   List<String> _matchMsgs = [];
+  bool _errorShown = false;
 
   bool get _showRoomCode => !widget.quickMatch && _roomCode != '——';
 
@@ -50,7 +52,23 @@ class _LobbyScreenState extends State<LobbyScreen> {
   }
 
   Future<void> _init() async {
-    final l10n = context.l10n;
+    // Güvenlik ağı: bağlantı kurulumu (öncesi dahil) 12 sn içinde bir sonuca
+    // varmazsa, kullanıcıyı sonsuza kadar "bağlanıyor" ekranında bırakmak
+    // yerine bağlantı hatası göster. openConnection tamamlanınca iptal edilir.
+    _watchdog = Timer(const Duration(seconds: 12), () {
+      if (mounted) _showConnectionError();
+    });
+
+    try {
+      await _doInit();
+    } catch (e, st) {
+      debugPrint('LobbyScreen._doInit failed: $e\n$st');
+      if (mounted) _showConnectionError();
+    }
+  }
+
+  Future<void> _doInit() async {
+    final l10n = context.l10nRead;
     _matchMsgs = [l10n.lobbyMatchMsg1, l10n.lobbyMatchMsg2, l10n.lobbyMatchMsg3];
     _title = l10n.lobbyWaiting;
     _message = l10n.lobbyConnecting;
@@ -71,12 +89,20 @@ class _LobbyScreenState extends State<LobbyScreen> {
 
     game.addListener(_onGameUpdate);
 
-    final ok = await game.openConnection(
-      uid: auth.getUid(),
-      name: auth.getName(),
-      idToken: await auth.getIdToken(),
-      isAnonymous: auth.user?.isAnonymous ?? true,
-    );
+    bool ok;
+    try {
+      ok = await game
+          .openConnection(
+            uid: auth.getUid(),
+            name: auth.getName(),
+            idToken: await auth.getIdToken(),
+            isAnonymous: auth.user?.isAnonymous ?? true,
+          )
+          .timeout(const Duration(seconds: 10));
+    } catch (_) {
+      ok = false;
+    }
+    _watchdog?.cancel();
     if (!mounted) return;
     if (!ok) {
       if (widget.quickMatch && mounted) {
@@ -144,7 +170,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
     final game = _game;
     if (game == null || !mounted) return;
     if (game.roomCode.isEmpty) return;
-    final l10n = context.l10n;
+    final l10n = context.l10nRead;
 
     if (widget.quickMatch) {
       if (!game.lobbyWaiting) {
@@ -175,7 +201,10 @@ class _LobbyScreenState extends State<LobbyScreen> {
   }
 
   void _showConnectionError() {
-    final l10n = context.l10n;
+    if (_errorShown) return;
+    _errorShown = true;
+    _watchdog?.cancel();
+    final l10n = context.l10nRead;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(l10n.lobbyConnectionError), duration: const Duration(seconds: 4)),
     );
@@ -193,6 +222,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
   void dispose() {
     _msgTimer?.cancel();
     _botFallback?.cancel();
+    _watchdog?.cancel();
     _game?.removeListener(_onGameUpdate);
     if (_game != null && _game!.phase == GamePhase.idle) {
       _game!.leave();
@@ -315,7 +345,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
     if (_roomCode == '——') return;
     Clipboard.setData(ClipboardData(text: _roomCode));
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(context.l10n.lobbyCodeCopied(_roomCode))),
+      SnackBar(content: Text(context.l10nRead.lobbyCodeCopied(_roomCode))),
     );
   }
 

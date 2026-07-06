@@ -315,7 +315,7 @@ class _CosmeticsScreenState extends State<CosmeticsScreen> {
                     });
                     if (mounted) {
                       setState(() => _saving = false);
-                      Navigator.pop(context);
+                      Navigator.pop(this.context);
                     }
                   },
           ),
