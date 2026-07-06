@@ -988,6 +988,37 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  if (url.pathname === '/account/delete' && req.method === 'POST') {
+    readJsonBody(req)
+      .then((data) => {
+        const uid = (data.uid || '').trim();
+        if (!uid) {
+          res.writeHead(400, cors);
+          res.end(JSON.stringify({ ok: false, error: 'UID gerekli' }));
+          return;
+        }
+        // Oyuncunun tüm verilerini kaldır (Play/App Store hesap silme gereksinimi).
+        db.unset(`players.${uid}`);
+        db.unset(`playerMeta.${uid}`);
+        db.unset(`career.${uid}`);
+        const usernames = db.get('usernames').value() || {};
+        for (const [key, owner] of Object.entries(usernames)) {
+          if (owner === uid) db.unset(`usernames.${key}`);
+        }
+        const history = db.get('matchHistory').value() || [];
+        const filtered = history.filter((m) => m.winner !== uid && m.loser !== uid);
+        db.set('matchHistory', filtered);
+        db.write();
+        res.writeHead(200, cors);
+        res.end(JSON.stringify({ ok: true }));
+      })
+      .catch(() => {
+        res.writeHead(400, cors);
+        res.end(JSON.stringify({ ok: false, error: 'Geçersiz istek' }));
+      });
+    return;
+  }
+
   if (url.pathname === '/report' && req.method === 'POST') {
     readJsonBody(req)
       .then((data) => {

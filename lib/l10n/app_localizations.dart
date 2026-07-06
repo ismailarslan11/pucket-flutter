@@ -232,6 +232,12 @@ class AppLocalizations {
   String get afkTitle => _t('afkTitle');
   String get afkSub => _t('afkSub');
   String get signOut => _t('signOut');
+  String get deleteAccount => _t('deleteAccount');
+  String get deleteAccountConfirm => _t('deleteAccountConfirm');
+  String get deleteAccountBody => _t('deleteAccountBody');
+  String get deleteAccountDone => _t('deleteAccountDone');
+  String get deleteAccountFailed => _t('deleteAccountFailed');
+  String get cancel => _t('cancel');
 
   // ── Extras ──
   String get menuTraining => _t('menuTraining');
@@ -511,6 +517,12 @@ const _tr = {
   'afkTitle': 'AFK',
   'afkSub': 'Uzun süre hamle yapmadınız — maç sonlandırıldı.',
   'signOut': 'Çıkış Yap',
+  'deleteAccount': 'Hesabımı Sil',
+  'deleteAccountConfirm': 'Hesabını sil?',
+  'deleteAccountBody': 'Tüm verilerin (ELO, jeton, kozmetikler, geçmiş) kalıcı olarak silinecek. Bu işlem geri alınamaz.',
+  'deleteAccountDone': 'Hesabın silindi',
+  'deleteAccountFailed': 'Hesap silinemedi, tekrar dene',
+  'cancel': 'İptal',
   'menuTraining': 'ANTRENMAN',
   'menuLocalDuo': '2 KİŞİLİK MOD',
   'menuLocalDuoSub': 'Aynı anda · aynı telefon',
@@ -787,6 +799,12 @@ const _en = {
   'afkTitle': 'AFK',
   'afkSub': 'No move for too long — match ended.',
   'signOut': 'Sign Out',
+  'deleteAccount': 'Delete Account',
+  'deleteAccountConfirm': 'Delete your account?',
+  'deleteAccountBody': 'All your data (ELO, tokens, cosmetics, history) will be permanently deleted. This cannot be undone.',
+  'deleteAccountDone': 'Your account was deleted',
+  'deleteAccountFailed': 'Could not delete account, try again',
+  'cancel': 'Cancel',
   'menuTraining': 'TRAINING',
   'menuLocalDuo': '2 PLAYER MODE',
   'menuLocalDuoSub': 'Play at once · one phone',
@@ -1063,6 +1081,12 @@ const _de = {
   'afkTitle': 'AFK',
   'afkSub': 'Zu lange inaktiv — Match beendet.',
   'signOut': 'Abmelden',
+  'deleteAccount': 'Konto löschen',
+  'deleteAccountConfirm': 'Konto löschen?',
+  'deleteAccountBody': 'Alle deine Daten (ELO, Token, Kosmetik, Verlauf) werden dauerhaft gelöscht. Dies kann nicht rückgängig gemacht werden.',
+  'deleteAccountDone': 'Dein Konto wurde gelöscht',
+  'deleteAccountFailed': 'Konto konnte nicht gelöscht werden, versuche es erneut',
+  'cancel': 'Abbrechen',
   'menuTraining': 'TRAINING',
   'menuLocalDuo': '2-SPIELER-MODUS',
   'menuLocalDuoSub': 'Gleichzeitig · ein Handy',
@@ -1339,6 +1363,12 @@ const _es = {
   'afkTitle': 'AFK',
   'afkSub': 'Sin movimiento — partida terminada.',
   'signOut': 'Cerrar sesión',
+  'deleteAccount': 'Eliminar cuenta',
+  'deleteAccountConfirm': '¿Eliminar tu cuenta?',
+  'deleteAccountBody': 'Todos tus datos (ELO, fichas, cosméticos, historial) se eliminarán de forma permanente. Esto no se puede deshacer.',
+  'deleteAccountDone': 'Tu cuenta fue eliminada',
+  'deleteAccountFailed': 'No se pudo eliminar la cuenta, inténtalo de nuevo',
+  'cancel': 'Cancelar',
   'menuTraining': 'ENTRENAMIENTO',
   'menuLocalDuo': 'MODO 2 JUGADORES',
   'menuLocalDuoSub': 'A la vez · un teléfono',
@@ -1615,6 +1645,12 @@ const _ar = {
   'afkTitle': 'AFK',
   'afkSub': 'بدون حركة لفترة طويلة — انتهت المباراة.',
   'signOut': 'تسجيل الخروج',
+  'deleteAccount': 'حذف الحساب',
+  'deleteAccountConfirm': 'حذف حسابك؟',
+  'deleteAccountBody': 'سيتم حذف جميع بياناتك (النقاط، الرموز، التجميل، السجل) نهائيًا. لا يمكن التراجع عن هذا.',
+  'deleteAccountDone': 'تم حذف حسابك',
+  'deleteAccountFailed': 'تعذّر حذف الحساب، حاول مرة أخرى',
+  'cancel': 'إلغاء',
   'menuTraining': 'تدريب',
   'menuLocalDuo': 'وضع لاعبان',
   'menuLocalDuoSub': 'معاً · هاتف واحد',
@@ -1891,6 +1927,12 @@ const _fr = {
   'afkTitle': 'AFK',
   'afkSub': 'Inactivité prolongée — match terminé.',
   'signOut': 'Se déconnecter',
+  'deleteAccount': 'Supprimer le compte',
+  'deleteAccountConfirm': 'Supprimer votre compte ?',
+  'deleteAccountBody': 'Toutes vos données (ELO, jetons, cosmétiques, historique) seront définitivement supprimées. Ceci est irréversible.',
+  'deleteAccountDone': 'Votre compte a été supprimé',
+  'deleteAccountFailed': 'Échec de la suppression du compte, réessayez',
+  'cancel': 'Annuler',
   'menuTraining': 'ENTRAÎNEMENT',
   'menuLocalDuo': 'MODE 2 JOUEURS',
   'menuLocalDuoSub': 'En même temps · un téléphone',

@@ -22,16 +22,27 @@ class PlayerMetaService extends ChangeNotifier {
   List<String> get unlockedDiscs => meta?.unlockedDiscs ?? const [];
   List<String> get unlockedBoards => meta?.unlockedBoards ?? const [];
 
+  // Bir jeton işleminin (kazanma / satın alma / reklam) yetkili yanıtından
+  // sonra kısa bir süre, eşzamanlı bir yenileme bu değeri ezmesin.
+  int _lastTokenMutationMs = 0;
+  static const _tokenGuardWindowMs = 4000;
+
+  void _markTokenMutation() {
+    _lastTokenMutationMs = DateTime.now().millisecondsSinceEpoch;
+  }
+
   Future<void> load(String uid, {String name = ''}) async {
     loading = true;
     notifyListeners();
     await MetaApi.registerPlayer(uid, name.isNotEmpty ? name : 'Oyuncu');
     final fetched = await MetaApi.fetchMeta(uid, name: name);
-    final previousTokens = meta?.tokens;
-    // Maç sonu jeton kazanma (earnWinTokens) ile bu yenileme yarışabilir;
-    // gecikmiş bir yanıt daha yüksek bir jeton miktarını ezmesin.
-    meta = (fetched != null && previousTokens != null && previousTokens > fetched.tokens)
-        ? fetched.copyWith(tokens: previousTokens)
+    final authoritativeTokens = meta?.tokens;
+    final withinGuard =
+        DateTime.now().millisecondsSinceEpoch - _lastTokenMutationMs < _tokenGuardWindowMs;
+    // Yakın zamanda bir jeton işlemi olduysa, yerel değer o işlemin yetkili
+    // sonucudur; yarışan yenileme (artış VEYA azalış) onu ezmemeli.
+    meta = (fetched != null && withinGuard && authoritativeTokens != null)
+        ? fetched.copyWith(tokens: authoritativeTokens)
         : fetched;
     season = await MetaApi.fetchSeason();
     loading = false;
@@ -56,6 +67,7 @@ class PlayerMetaService extends ChangeNotifier {
     final r = await MetaApi.earnWinTokens(uid);
     if (r.meta != null) {
       meta = r.meta;
+      _markTokenMutation();
       if (r.tokenGain != null) {
         lastMessage = '+${r.tokenGain} jeton';
       }
@@ -72,6 +84,7 @@ class PlayerMetaService extends ChangeNotifier {
       final r = await MetaApi.rewardAdTokens(uid);
       if (r.meta != null) {
         meta = r.meta;
+        _markTokenMutation();
         if (r.tokenGain != null) {
           lastMessage = '+${r.tokenGain} jeton';
         }
@@ -96,6 +109,7 @@ class PlayerMetaService extends ChangeNotifier {
     final r = await MetaApi.purchaseCosmetic(uid, itemType: itemType, itemId: itemId);
     if (r.meta != null) {
       meta = r.meta;
+      _markTokenMutation();
       lastMessage = 'Satın alındı';
       notifyListeners();
       return true;

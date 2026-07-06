@@ -189,6 +189,14 @@ class SettingsScreen extends StatelessWidget {
                               ),
                             ],
                           ),
+                          const SizedBox(height: 4),
+                          TextButton(
+                            onPressed: () => _confirmDeleteAccount(context),
+                            child: Text(
+                              l10n.deleteAccount,
+                              style: const TextStyle(color: AppColors.kirmizi, fontSize: 12, fontWeight: FontWeight.w700),
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -200,6 +208,37 @@ class SettingsScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _confirmDeleteAccount(BuildContext context) async {
+    final l10n = context.l10n;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.cardElevated,
+        title: Text(l10n.deleteAccountConfirm, style: const TextStyle(color: AppColors.beyaz)),
+        content: Text(l10n.deleteAccountBody, style: const TextStyle(color: AppColors.textMuted)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(l10n.cancel, style: const TextStyle(color: AppColors.textMuted)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(l10n.deleteAccount, style: const TextStyle(color: AppColors.kirmizi, fontWeight: FontWeight.w800)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    final ok = await context.read<AuthService>().deleteAccount();
+    if (!context.mounted) return;
+    messenger.showSnackBar(
+      SnackBar(content: Text(ok ? l10n.deleteAccountDone : l10n.deleteAccountFailed)),
+    );
+    if (ok) Navigator.of(context).popUntil((r) => r.isFirst);
   }
 
   Widget _languageCard(BuildContext context, SettingsService settings, AppLocalizations l10n) {

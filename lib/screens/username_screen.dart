@@ -247,10 +247,17 @@ class _UsernameScreenState extends State<UsernameScreen> {
     if (!_available && !_serverError) return;
     setState(() => _submitting = true);
     final auth = context.read<AuthService>();
-    final ok = await auth.confirmUsername(_ctrl.text.trim());
+    bool ok;
+    try {
+      ok = await auth
+          .confirmUsername(_ctrl.text.trim())
+          .timeout(const Duration(seconds: 12));
+    } catch (_) {
+      ok = false;
+    }
     if (!mounted) return;
     if (!ok) {
-      final err = auth.lastError ?? 'Kaydedilemedi';
+      final err = auth.lastError ?? 'Kaydedilemedi, tekrar dene';
       final taken = err.contains('alınmış');
       setState(() {
         _submitting = false;

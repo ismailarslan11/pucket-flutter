@@ -130,8 +130,13 @@ class _CosmeticsScreenState extends State<CosmeticsScreen> {
     final l10n = context.l10n;
 
     if (metaSvc.tokens < price) {
-      _snack(l10n.tokensNotEnough);
-      return;
+      // Yerel sayaç sunucudan sapmış olabilir; taze değerle tekrar dene.
+      await metaSvc.load(auth.getUid());
+      if (!mounted) return;
+      if (metaSvc.tokens < price) {
+        _snack(l10n.tokensNotEnough);
+        return;
+      }
     }
 
     final ok = await metaSvc.purchaseCosmetic(

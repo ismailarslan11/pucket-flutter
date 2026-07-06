@@ -8,6 +8,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:uuid/uuid.dart';
@@ -15,6 +16,7 @@ import 'package:uuid/uuid.dart';
 import '../config/google_auth_config.dart';
 import '../models/rank_tier.dart';
 import '../models/user_profile.dart';
+import 'api_config.dart';
 import 'firebase_init.dart';
 import 'macos_google_sign_in.dart';
 import 'username_api.dart';
@@ -468,8 +470,11 @@ class AuthService extends ChangeNotifier {
           'league': tier.name,
           'isAnonymous': user!.isAnonymous,
           'createdAt': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true));
-      } catch (_) {}
+        }, SetOptions(merge: true)).timeout(const Duration(seconds: 8));
+      } catch (_) {
+        // Firestore yazması asılı kalsa bile kullanıcı adı kabul edildi;
+        // yerel kayıt yeterli, ekran donmasın.
+      }
     }
 
     await _persistLocal();
@@ -493,6 +498,52 @@ class AuthService extends ChangeNotifier {
     await prefs.remove(_nameKey);
     await prefs.remove('pucket_user');
     notifyListeners();
+  }
+
+  /// Hesabı ve tüm sunucu verilerini kalıcı olarak siler (mağaza gereksinimi).
+  Future<bool> deleteAccount() async {
+    final uid = getUid();
+    try {
+      final res = await http
+          .post(
+            Uri.parse('$apiBaseUrl/account/delete'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'uid': uid}),
+          )
+          .timeout(const Duration(seconds: 10));
+      if (res.statusCode != 200) return false;
+    } catch (_) {
+      return false;
+    }
+
+    // Firestore kullanıcı belgesini de kaldır (varsa).
+    if (_firebaseReady && _db != null && !_isMacOS) {
+      try {
+        await _db!.collection('users').doc(uid).delete().timeout(const Duration(seconds: 8));
+      } catch (_) {}
+    }
+
+    // Firebase Auth kullanıcısını sil, sonra oturumu kapat.
+    if (_firebaseReady && !_isMacOS) {
+      try {
+        await _auth!.currentUser?.delete().timeout(const Duration(seconds: 8));
+      } catch (_) {
+        try {
+          await _auth!.signOut();
+          await GoogleSignIn.instance.signOut();
+        } catch (_) {}
+      }
+    }
+
+    user = null;
+    authState = AuthState.unauthenticated;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_uidKey);
+    await prefs.remove(_nameKey);
+    await prefs.remove('pucket_user');
+    _cachedGuestUid = null;
+    notifyListeners();
+    return true;
   }
 
   String getUid() {
