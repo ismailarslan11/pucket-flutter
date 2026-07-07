@@ -414,10 +414,30 @@ function saveCareerData(uid, data) {
   return data;
 }
 
+// Haftalık turnuva ödülleri (ilk 3 sıra, jeton).
+const TOURNAMENT_PRIZES = [300, 150, 75];
+
+function distributeTournamentPrizes(prev) {
+  if (!prev || !prev.scores) return;
+  const ranked = Object.entries(prev.scores)
+    .filter(([, pts]) => pts > 0)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, TOURNAMENT_PRIZES.length);
+  ranked.forEach(([uid], i) => {
+    const meta = getPlayerMeta(uid);
+    if (!meta) return;
+    ensureTokenFields(meta);
+    meta.tokens += TOURNAMENT_PRIZES[i];
+    db.set(`playerMeta.${uid}.tokens`, meta.tokens).write();
+  });
+}
+
 function getTournamentState() {
   const wk = weekKey();
   let t = db.get('tournament').value() || { weekId: '', entries: [], scores: {} };
   if (t.weekId !== wk) {
+    // Yeni hafta: önceki haftanın ilk 3'üne ödül dağıt, sonra sıfırla.
+    if (t.weekId) distributeTournamentPrizes(t);
     t = { weekId: wk, entries: [], scores: {} };
     db.set('tournament', t).write();
   }
@@ -1028,7 +1048,7 @@ const server = http.createServer((req, res) => {
       .sort((a, b) => b.points - a.points)
       .slice(0, 20);
     res.writeHead(200, cors);
-    res.end(JSON.stringify({ weekId: t.weekId, entries: t.entries, leaderboard }));
+    res.end(JSON.stringify({ weekId: t.weekId, entries: t.entries, leaderboard, prizes: TOURNAMENT_PRIZES }));
     return;
   }
 

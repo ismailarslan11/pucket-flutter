@@ -232,6 +232,9 @@ class AppLocalizations {
   String get afkTitle => _t('afkTitle');
   String get afkSub => _t('afkSub');
   String get signOut => _t('signOut');
+  String get tournament => _t('tournament');
+  String get tournamentJoined => _t('tournamentJoined');
+  String get tournamentPrizes => _t('tournamentPrizes');
   String get battlePass => _t('battlePass');
   String get battlePassClaim => _t('battlePassClaim');
   String get battlePassClaimed => _t('battlePassClaimed');
@@ -535,6 +538,9 @@ const _tr = {
   'signOut': 'Çıkış Yap',
   'friends': 'Arkadaşlar',
   'battlePass': 'Sezon Yolu',
+  'tournament': 'Turnuva',
+  'tournamentJoined': 'Katıldın! Ranked kazanınca puan topla.',
+  'tournamentPrizes': 'Haftalık Ödüller',
   'battlePassClaim': 'Al',
   'battlePassClaimed': 'Alındı',
   'battlePassLocked': 'Kilitli',
@@ -831,6 +837,9 @@ const _en = {
   'signOut': 'Sign Out',
   'friends': 'Friends',
   'battlePass': 'Season Pass',
+  'tournament': 'Tournament',
+  'tournamentJoined': 'Joined! Earn points by winning ranked.',
+  'tournamentPrizes': 'Weekly Prizes',
   'battlePassClaim': 'Claim',
   'battlePassClaimed': 'Claimed',
   'battlePassLocked': 'Locked',
@@ -1127,6 +1136,9 @@ const _de = {
   'signOut': 'Abmelden',
   'friends': 'Freunde',
   'battlePass': 'Saison-Pass',
+  'tournament': 'Turnier',
+  'tournamentJoined': 'Beigetreten! Punkte durch Ranked-Siege.',
+  'tournamentPrizes': 'Wöchentliche Preise',
   'battlePassClaim': 'Abholen',
   'battlePassClaimed': 'Abgeholt',
   'battlePassLocked': 'Gesperrt',
@@ -1423,6 +1435,9 @@ const _es = {
   'signOut': 'Cerrar sesión',
   'friends': 'Amigos',
   'battlePass': 'Pase de Temporada',
+  'tournament': 'Torneo',
+  'tournamentJoined': '¡Te uniste! Gana puntos ganando ranked.',
+  'tournamentPrizes': 'Premios Semanales',
   'battlePassClaim': 'Reclamar',
   'battlePassClaimed': 'Reclamado',
   'battlePassLocked': 'Bloqueado',
@@ -1719,6 +1734,9 @@ const _ar = {
   'signOut': 'تسجيل الخروج',
   'friends': 'الأصدقاء',
   'battlePass': 'مسار الموسم',
+  'tournament': 'البطولة',
+  'tournamentJoined': 'انضممت! اكسب نقاطاً بالفوز في التصنيف.',
+  'tournamentPrizes': 'جوائز أسبوعية',
   'battlePassClaim': 'استلام',
   'battlePassClaimed': 'تم الاستلام',
   'battlePassLocked': 'مقفل',
@@ -2015,6 +2033,9 @@ const _fr = {
   'signOut': 'Se déconnecter',
   'friends': 'Amis',
   'battlePass': 'Passe de Saison',
+  'tournament': 'Tournoi',
+  'tournamentJoined': 'Rejoint ! Gagnez des points en ranked.',
+  'tournamentPrizes': 'Prix Hebdomadaires',
   'battlePassClaim': 'Réclamer',
   'battlePassClaimed': 'Réclamé',
   'battlePassLocked': 'Verrouillé',

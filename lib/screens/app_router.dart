@@ -20,6 +20,7 @@ import 'join_screen.dart';
 import 'local_duo_screen.dart';
 import 'lobby_screen.dart';
 import 'menu_screen.dart';
+import 'tournament_screen.dart';
 import 'queue_screen.dart';
 import 'settings_screen.dart';
 import 'profile_screen.dart';
@@ -141,6 +142,10 @@ class AppRouter {
 
   static void goBattlePass(BuildContext context) {
     Navigator.push(context, MaterialPageRoute(builder: (_) => const BattlePassScreen()));
+  }
+
+  static void goTournament(BuildContext context) {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => const TournamentScreen()));
   }
 
   static void goTutorial(BuildContext context) {
