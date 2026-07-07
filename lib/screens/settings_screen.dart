@@ -11,6 +11,7 @@ import '../services/auth_service.dart';
 import '../services/consent_service.dart';
 import '../services/firebase_engagement_service.dart';
 import '../services/firebase_init.dart';
+import '../services/purchase_service.dart';
 import '../services/settings_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/yesa_background.dart';
@@ -64,10 +65,12 @@ class SettingsScreen extends StatelessWidget {
                 child: ListView(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
                   children: [
-                    StaggerIn(index: 0, child: _languageCard(context, settings, l10n)),
+                    StaggerIn(index: 0, child: _shopCard(context, l10n)),
+                    const SizedBox(height: 14),
+                    StaggerIn(index: 1, child: _languageCard(context, settings, l10n)),
                     const SizedBox(height: 14),
                     StaggerIn(
-                      index: 1,
+                      index: 2,
                       child: _SettingsCard(
                         title: 'SES & TİTREŞİM',
                         children: [
@@ -239,6 +242,83 @@ class SettingsScreen extends StatelessWidget {
       SnackBar(content: Text(ok ? l10n.deleteAccountDone : l10n.deleteAccountFailed)),
     );
     if (ok) Navigator.of(context).popUntil((r) => r.isFirst);
+  }
+
+  Widget _shopCard(BuildContext context, AppLocalizations l10n) {
+    final purchases = context.watch<PurchaseService>();
+    final settings = context.watch<SettingsService>();
+    final removeAdsProduct = purchases.productFor(ProductIds.removeAds);
+    final tokenProduct = purchases.productFor(ProductIds.tokens100);
+    return _SettingsCard(
+      title: l10n.shop.toUpperCase(),
+      children: [
+        if (!purchases.available)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Text(l10n.iapUnavailable,
+                style: const TextStyle(color: AppColors.textMuted, fontSize: 12)),
+          )
+        else ...[
+          _shopRow(
+            icon: Icons.block_rounded,
+            label: settings.adsRemoved ? l10n.adsAlreadyRemoved : l10n.removeAds,
+            price: settings.adsRemoved ? null : (removeAdsProduct?.price ?? ''),
+            onTap: settings.adsRemoved ? null : () => purchases.buy(ProductIds.removeAds),
+          ),
+          _shopRow(
+            icon: Icons.monetization_on_rounded,
+            label: '${l10n.buyTokens} (100)',
+            price: tokenProduct?.price ?? '',
+            onTap: () => purchases.buy(ProductIds.tokens100),
+          ),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton(
+              onPressed: () => purchases.restore(),
+              child: Text(l10n.restorePurchases,
+                  style: const TextStyle(color: AppColors.sariAna, fontSize: 12, fontWeight: FontWeight.w700)),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _shopRow({
+    required IconData icon,
+    required String label,
+    String? price,
+    VoidCallback? onTap,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          Icon(icon, color: AppColors.sariAna, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(label,
+                style: const TextStyle(color: AppColors.beyaz, fontWeight: FontWeight.w700, fontSize: 13)),
+          ),
+          if (onTap != null)
+            ScalePress(
+              onTap: onTap,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                decoration: BoxDecoration(
+                  gradient: AppGradients.heroPlay,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(price ?? '',
+                    style: const TextStyle(
+                        color: AppColors.morDahaKoyu, fontWeight: FontWeight.w900, fontSize: 12)),
+              ),
+            )
+          else
+            const Icon(Icons.check_circle_rounded, color: AppColors.neonYesil, size: 20),
+        ],
+      ),
+    );
   }
 
   Widget _languageCard(BuildContext context, SettingsService settings, AppLocalizations l10n) {

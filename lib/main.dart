@@ -26,7 +26,9 @@ import 'services/settings_service.dart';
 import 'services/deep_link_service.dart';
 import 'services/deep_link_listener.dart';
 import 'services/disc_image_cache.dart';
+import 'services/meta_api.dart';
 import 'services/player_meta_service.dart';
+import 'services/purchase_service.dart';
 import 'services/firebase_messaging_background.dart';
 import 'services/push_service.dart';
 import 'theme/app_theme.dart';
@@ -62,6 +64,11 @@ void main() async {
   final playerMeta = PlayerMetaService();
   final audio = AudioService(settings);
   final ads = AdService();
+  ads.adsRemoved = settings.adsRemoved;
+  final purchases = PurchaseService();
+  purchases.onPurchased = (productId) {
+    _handlePurchase(productId, settings, ads, auth, playerMeta);
+  };
 
   runApp(
     MultiProvider(
@@ -72,6 +79,7 @@ void main() async {
         ChangeNotifierProvider.value(value: playerMeta),
         ChangeNotifierProvider.value(value: audio),
         ChangeNotifierProvider.value(value: ads),
+        ChangeNotifierProvider.value(value: purchases),
         ChangeNotifierProvider(
           create: (ctx) => GameController(
             ctx.read<SettingsService>(),
@@ -87,7 +95,33 @@ void main() async {
 
   WidgetsBinding.instance.addPostFrameCallback((_) {
     unawaited(_warmUpDeferred(ads));
+    unawaited(purchases.init());
   });
+}
+
+/// Satın alma tamamlanınca ödülü uygula.
+void _handlePurchase(
+  String productId,
+  SettingsService settings,
+  AdService ads,
+  AuthService auth,
+  PlayerMetaService meta,
+) {
+  switch (productId) {
+    case ProductIds.removeAds:
+      ads.adsRemoved = true;
+      unawaited(settings.setAdsRemoved(true));
+      break;
+    case ProductIds.tokens100:
+      unawaited(MetaApi.grantIapTokens(auth.getUid(), 100).then((_) => meta.load(auth.getUid())));
+      break;
+    case ProductIds.tokens500:
+      unawaited(MetaApi.grantIapTokens(auth.getUid(), 550).then((_) => meta.load(auth.getUid())));
+      break;
+    case ProductIds.battlePassPremium:
+      // Premium yol açılışı sunucuda receipt ile yapılır (ileride).
+      break;
+  }
 }
 
 Future<void> _warmUpDeferred(AdService ads) async {

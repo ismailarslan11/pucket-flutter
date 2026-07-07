@@ -232,6 +232,12 @@ class AppLocalizations {
   String get afkTitle => _t('afkTitle');
   String get afkSub => _t('afkSub');
   String get signOut => _t('signOut');
+  String get shop => _t('shop');
+  String get removeAds => _t('removeAds');
+  String get adsAlreadyRemoved => _t('adsAlreadyRemoved');
+  String get buyTokens => _t('buyTokens');
+  String get restorePurchases => _t('restorePurchases');
+  String get iapUnavailable => _t('iapUnavailable');
   String get tournament => _t('tournament');
   String get tournamentJoined => _t('tournamentJoined');
   String get tournamentPrizes => _t('tournamentPrizes');
@@ -539,6 +545,12 @@ const _tr = {
   'friends': 'Arkadaşlar',
   'battlePass': 'Sezon Yolu',
   'tournament': 'Turnuva',
+  'shop': 'Mağaza',
+  'removeAds': 'Reklamları Kaldır',
+  'adsAlreadyRemoved': 'Reklamlar kaldırıldı ✓',
+  'buyTokens': 'Jeton Paketi',
+  'restorePurchases': 'Satın Alımları Geri Yükle',
+  'iapUnavailable': 'Mağaza şu an kullanılamıyor',
   'tournamentJoined': 'Katıldın! Ranked kazanınca puan topla.',
   'tournamentPrizes': 'Haftalık Ödüller',
   'battlePassClaim': 'Al',
@@ -838,6 +850,12 @@ const _en = {
   'friends': 'Friends',
   'battlePass': 'Season Pass',
   'tournament': 'Tournament',
+  'shop': 'Shop',
+  'removeAds': 'Remove Ads',
+  'adsAlreadyRemoved': 'Ads removed ✓',
+  'buyTokens': 'Token Pack',
+  'restorePurchases': 'Restore Purchases',
+  'iapUnavailable': 'Store unavailable right now',
   'tournamentJoined': 'Joined! Earn points by winning ranked.',
   'tournamentPrizes': 'Weekly Prizes',
   'battlePassClaim': 'Claim',
@@ -1137,6 +1155,12 @@ const _de = {
   'friends': 'Freunde',
   'battlePass': 'Saison-Pass',
   'tournament': 'Turnier',
+  'shop': 'Shop',
+  'removeAds': 'Werbung entfernen',
+  'adsAlreadyRemoved': 'Werbung entfernt ✓',
+  'buyTokens': 'Token-Paket',
+  'restorePurchases': 'Käufe wiederherstellen',
+  'iapUnavailable': 'Store derzeit nicht verfügbar',
   'tournamentJoined': 'Beigetreten! Punkte durch Ranked-Siege.',
   'tournamentPrizes': 'Wöchentliche Preise',
   'battlePassClaim': 'Abholen',
@@ -1436,6 +1460,12 @@ const _es = {
   'friends': 'Amigos',
   'battlePass': 'Pase de Temporada',
   'tournament': 'Torneo',
+  'shop': 'Tienda',
+  'removeAds': 'Quitar anuncios',
+  'adsAlreadyRemoved': 'Anuncios quitados ✓',
+  'buyTokens': 'Paquete de fichas',
+  'restorePurchases': 'Restaurar compras',
+  'iapUnavailable': 'Tienda no disponible ahora',
   'tournamentJoined': '¡Te uniste! Gana puntos ganando ranked.',
   'tournamentPrizes': 'Premios Semanales',
   'battlePassClaim': 'Reclamar',
@@ -1735,6 +1765,12 @@ const _ar = {
   'friends': 'الأصدقاء',
   'battlePass': 'مسار الموسم',
   'tournament': 'البطولة',
+  'shop': 'المتجر',
+  'removeAds': 'إزالة الإعلانات',
+  'adsAlreadyRemoved': 'تمت إزالة الإعلانات ✓',
+  'buyTokens': 'حزمة رموز',
+  'restorePurchases': 'استعادة المشتريات',
+  'iapUnavailable': 'المتجر غير متاح الآن',
   'tournamentJoined': 'انضممت! اكسب نقاطاً بالفوز في التصنيف.',
   'tournamentPrizes': 'جوائز أسبوعية',
   'battlePassClaim': 'استلام',
@@ -2034,6 +2070,12 @@ const _fr = {
   'friends': 'Amis',
   'battlePass': 'Passe de Saison',
   'tournament': 'Tournoi',
+  'shop': 'Boutique',
+  'removeAds': 'Supprimer les pubs',
+  'adsAlreadyRemoved': 'Pubs supprimées ✓',
+  'buyTokens': 'Pack de jetons',
+  'restorePurchases': 'Restaurer les achats',
+  'iapUnavailable': 'Boutique indisponible',
   'tournamentJoined': 'Rejoint ! Gagnez des points en ranked.',
   'tournamentPrizes': 'Prix Hebdomadaires',
   'battlePassClaim': 'Réclamer',

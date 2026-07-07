@@ -1309,6 +1309,31 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // IAP jeton paketi. NOT: Üretimde satın alma makbuzu (receipt) sunucuda
+  // doğrulanmalı. Şimdilik istemci-bildirimli (mağaza satın almayı doğrular).
+  if (url.pathname === '/iap/grant' && req.method === 'POST') {
+    readJsonBody(req)
+      .then((data) => {
+        const uid = (data.uid || '').trim();
+        const amount = Math.max(0, Math.min(1000, data.amount | 0));
+        if (!uid || !amount) {
+          res.writeHead(400, cors);
+          res.end(JSON.stringify({ ok: false }));
+          return;
+        }
+        const meta = ensureTokenFields(getPlayerMeta(uid));
+        meta.tokens += amount;
+        db.set(`playerMeta.${uid}.tokens`, meta.tokens).write();
+        res.writeHead(200, cors);
+        res.end(JSON.stringify({ ok: true, tokens: meta.tokens }));
+      })
+      .catch(() => {
+        res.writeHead(400, cors);
+        res.end(JSON.stringify({ ok: false }));
+      });
+    return;
+  }
+
   if (url.pathname === '/account/delete' && req.method === 'POST') {
     readJsonBody(req)
       .then((data) => {

@@ -274,6 +274,22 @@ class MetaApi {
     }
   }
 
+  /// IAP jeton paketi — satın alma sonrası sunucuya jeton ekletir.
+  static Future<bool> grantIapTokens(String uid, int amount) async {
+    try {
+      final res = await http
+          .post(
+            Uri.parse('$apiBaseUrl/iap/grant'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'uid': uid, 'amount': amount}),
+          )
+          .timeout(const Duration(seconds: 8));
+      return res.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
+
   static Future<bool> joinTournament(String uid, String name) async {
     try {
       final res = await http

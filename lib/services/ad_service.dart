@@ -18,6 +18,9 @@ class AdService extends ChangeNotifier {
 
   bool initialized = false;
   bool canLoadAds = false;
+  /// IAP ile reklamlar kaldırıldıysa banner/interstitial gösterilmez.
+  /// (Ödüllü reklam jeton kazanmak için isteğe bağlı kalır.)
+  bool adsRemoved = false;
   String statusMessage = 'Başlatılıyor…';
   String lastBannerError = '';
   String lastRewardedError = '';
@@ -159,6 +162,7 @@ class AdService extends ChangeNotifier {
     bool skip = false,
   }) async {
     if (skip || !matchFinished) return;
+    if (adsRemoved) return;
     if (!AdConfig.supported || !initialized || !canLoadAds) return;
 
     _matchesSinceAd++;

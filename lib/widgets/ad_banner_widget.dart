@@ -160,6 +160,8 @@ class _AdBannerWidgetState extends State<AdBannerWidget> {
   @override
   Widget build(BuildContext context) {
     if (!AdConfig.supported) return const SizedBox.shrink();
+    // IAP ile reklam kaldırıldıysa banner hiç gösterilmez.
+    if (context.watch<AdService>().adsRemoved) return const SizedBox.shrink();
 
     if (!_loaded || _banner == null) {
       return const SizedBox(width: double.infinity, height: 50);
