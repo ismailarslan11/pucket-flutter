@@ -220,9 +220,10 @@ class _GameScreenState extends State<GameScreen> {
 
   void _maybeAwardWinTokens(GameController game) {
     if (!game.matchFinished || game.lastWinner != game.mySeat) return;
-    if (game.trainingMode || game.localDuoMode || game.aiMode || game.isBotFallback || game.careerMode) {
-      return;
-    }
+    if (game.trainingMode || game.localDuoMode || game.careerMode) return;
+    // Gizli bot (fallback) gerçek maç gibi jeton verir — botluğu belli olmasın.
+    // Ama oyuncunun bilerek seçtiği "Bota Karşı" modunda jeton verilmez.
+    if (game.aiMode && !game.isBotFallback) return;
     final key = game.visualGeneration;
     if (_lastWinTokenKey == key) return;
     _lastWinTokenKey = key;
