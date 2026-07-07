@@ -11,6 +11,7 @@ import 'game/game_controller.dart';
 import 'config/ad_config.dart';
 import 'l10n/app_language.dart';
 import 'screens/auth_screen.dart';
+import 'screens/brand_splash.dart';
 import 'screens/menu_screen.dart';
 import 'screens/tutorial_screen.dart';
 import 'screens/username_screen.dart';
@@ -90,7 +91,7 @@ void main() async {
           ),
         ),
       ],
-      child: const PucketApp(),
+      child: const RootApp(),
     ),
   );
 
@@ -131,6 +132,31 @@ Future<void> _warmUpDeferred(AdService ads) async {
     await ads.init();
   }
   unawaited(DiscImageCache.preload());
+}
+
+/// Açılışta bir kez Yesa Studio marka ekranını gösterir, sonra oyuna geçer.
+class RootApp extends StatefulWidget {
+  const RootApp({super.key});
+
+  @override
+  State<RootApp> createState() => _RootAppState();
+}
+
+class _RootAppState extends State<RootApp> {
+  bool _showBrand = true;
+
+  @override
+  Widget build(BuildContext context) {
+    if (_showBrand) {
+      return MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: BrandSplash(onDone: () {
+          if (mounted) setState(() => _showBrand = false);
+        }),
+      );
+    }
+    return const PucketApp();
+  }
 }
 
 class PucketApp extends StatelessWidget {
