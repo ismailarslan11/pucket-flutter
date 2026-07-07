@@ -11,6 +11,7 @@ const {
   canPlayRanked,
   isGuestUid,
 } = require('./firebase_auth');
+const push = require('./push');
 const db = createStore();
 
 const PORT = process.env.PORT || 8080;
@@ -1233,6 +1234,38 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  if (url.pathname === '/friend/challenge' && req.method === 'POST') {
+    readJsonBody(req)
+      .then(async (data) => {
+        const uid = (data.uid || '').trim();
+        const friendUid = (data.friendUid || '').trim();
+        const room = (data.room || '').trim();
+        const name = (data.name || 'Bir arkadaşın').trim();
+        if (!uid || !friendUid) {
+          res.writeHead(400, cors);
+          res.end(JSON.stringify({ ok: false }));
+          return;
+        }
+        const fmeta = getPlayerMeta(friendUid);
+        let sent = false;
+        if (fmeta && fmeta.fcmToken) {
+          sent = await push.sendPush(
+            fmeta.fcmToken,
+            'Pucket meydan okuması!',
+            `${name} seni maça çağırıyor`,
+            { type: 'challenge', room },
+          );
+        }
+        res.writeHead(200, cors);
+        res.end(JSON.stringify({ ok: true, delivered: sent }));
+      })
+      .catch(() => {
+        res.writeHead(400, cors);
+        res.end(JSON.stringify({ ok: false }));
+      });
+    return;
+  }
+
   if (url.pathname === '/friend/remove' && req.method === 'POST') {
     readJsonBody(req)
       .then((data) => {
@@ -1358,6 +1391,8 @@ wss.on('connection', (ws) => {
             const name = msg.name || 'Oyuncu';
             ws.uid = uid;
             markOnline(uid);
+            // Son aktiflik (geri-kazan push'u için).
+            db.set(`playerMeta.${uid}.lastActiveDate`, new Date().toISOString().slice(0, 10)).write();
             ws.isAnonymous = identity.isAnonymous;
             ws.rankedEligible = canPlayRanked(ws, uid);
             const player = upsertPlayer(uid, name);
@@ -1650,8 +1685,36 @@ setInterval(() => {
   }
 }, 30000);
 
+// Günlük geri-kazan push'u: 3-14 gün önce aktif olup dönmemiş oyunculara,
+// günde en fazla bir kez. Saatte bir kontrol eder.
+function startEngagementScheduler() {
+  if (!push.enabled) return;
+  const HOUR = 3600000;
+  setInterval(async () => {
+    const today = new Date().toISOString().slice(0, 10);
+    const players = db.get('playerMeta').value() || {};
+    for (const [uid, meta] of Object.entries(players)) {
+      if (!meta || !meta.fcmToken) continue;
+      if (meta.lastActiveDate === today) continue;
+      if (meta.lastPushDate === today) continue;
+      const last = meta.lastActiveDate ? Date.parse(meta.lastActiveDate) : 0;
+      if (!last) continue;
+      const days = (Date.now() - last) / 86400000;
+      if (days < 3 || days > 14) continue;
+      const ok = await push.sendPush(
+        meta.fcmToken,
+        'Seni özledik! 🏒',
+        'Günlük ödülün ve yeni rakipler seni bekliyor.',
+        { type: 'winback' },
+      );
+      if (ok) db.set(`playerMeta.${uid}.lastPushDate`, today).write();
+    }
+  }, HOUR);
+}
+
 async function startServer() {
   await initFirebaseAuth();
+  push.initPush();
   await db.init();
   db.defaults({
     players: {},
@@ -1669,6 +1732,7 @@ async function startServer() {
   server.listen(PORT, () => {
     console.log(`Pucket server → http://localhost:${PORT}`);
   });
+  startEngagementScheduler();
 }
 
 const shutdown = async (signal) => {

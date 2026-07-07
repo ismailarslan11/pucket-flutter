@@ -5,6 +5,7 @@ import '../l10n/l10n_extension.dart';
 import '../models/rank_tier.dart';
 import '../services/auth_service.dart';
 import '../services/friends_api.dart';
+import '../services/websocket_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/yesa_background.dart';
 import '../widgets/yesa_effects.dart';
@@ -65,6 +66,15 @@ class _FriendsScreenState extends State<FriendsScreen> {
     final uid = context.read<AuthService>().getUid();
     setState(() => _friends.remove(f));
     await FriendsApi.remove(uid, f.uid);
+  }
+
+  Future<void> _challenge(Friend f) async {
+    final auth = context.read<AuthService>();
+    final code = makeRoomCode();
+    // Arkadaşa maç daveti push'u (fire-and-forget), sonra odayı host olarak aç.
+    FriendsApi.challenge(auth.getUid(), f.uid, code, auth.getName());
+    if (!mounted) return;
+    AppRouter.goLobby(context, joinCode: code);
   }
 
   @override
@@ -176,7 +186,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
                               delayMs: 30,
                               child: _FriendRow(
                                 friend: _friends[i],
-                                onChallenge: () => AppRouter.goLobby(context, createRoom: true),
+                                onChallenge: () => _challenge(_friends[i]),
                                 onRemove: () => _remove(_friends[i]),
                               ),
                             ),

@@ -78,6 +78,19 @@ class FriendsApi {
     }
   }
 
+  /// Arkadaşa maç daveti push'u gönderir (oda kodu ile).
+  static Future<void> challenge(String uid, String friendUid, String room, String name) async {
+    try {
+      await http
+          .post(
+            Uri.parse('$apiBaseUrl/friend/challenge'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'uid': uid, 'friendUid': friendUid, 'room': room, 'name': name}),
+          )
+          .timeout(const Duration(seconds: 8));
+    } catch (_) {}
+  }
+
   static Future<bool> remove(String uid, String friendUid) async {
     try {
       final res = await http
