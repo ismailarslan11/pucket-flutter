@@ -300,6 +300,56 @@ function ensureTokenFields(meta) {
   return meta;
 }
 
+// ── Battle Pass ──
+// Her kademe kümülatif XP eşiği + ücretsiz/premium ödül.
+// Ödül tipleri: {t:'tokens',n:X} | {t:'disc',id:'...'} | {t:'board',id:'...'}
+const BP_XP_PER_TIER = 150;
+const BP_TIERS = [
+  { free: { t: 'tokens', n: 30 }, premium: { t: 'tokens', n: 60 } },
+  { free: { t: 'tokens', n: 30 }, premium: { t: 'tokens', n: 60 } },
+  { free: { t: 'tokens', n: 40 }, premium: { t: 'disc', id: 'goldcoin' } },
+  { free: { t: 'tokens', n: 40 }, premium: { t: 'tokens', n: 80 } },
+  { free: { t: 'board', id: 'neon' }, premium: { t: 'disc', id: 'frost' } },
+  { free: { t: 'tokens', n: 50 }, premium: { t: 'tokens', n: 100 } },
+  { free: { t: 'tokens', n: 50 }, premium: { t: 'disc', id: 'tiger' } },
+  { free: { t: 'tokens', n: 60 }, premium: { t: 'tokens', n: 120 } },
+  { free: { t: 'tokens', n: 60 }, premium: { t: 'disc', id: 'dragon' } },
+  { free: { t: 'disc', id: 'robot' }, premium: { t: 'disc', id: 'alien' } },
+];
+
+function bpTierForXp(xp) {
+  return Math.min(BP_TIERS.length, Math.floor((xp || 0) / BP_XP_PER_TIER));
+}
+
+function ensureBpFields(meta) {
+  if (typeof meta.seasonXp !== 'number') meta.seasonXp = 0;
+  if (!Array.isArray(meta.bpClaimedFree)) meta.bpClaimedFree = [];
+  if (!Array.isArray(meta.bpClaimedPremium)) meta.bpClaimedPremium = [];
+  if (typeof meta.bpPremium !== 'boolean') meta.bpPremium = false;
+  return meta;
+}
+
+function grantBpReward(uid, meta, reward) {
+  if (!reward) return;
+  if (reward.t === 'tokens') {
+    ensureTokenFields(meta);
+    meta.tokens += reward.n;
+    db.set(`playerMeta.${uid}.tokens`, meta.tokens).write();
+  } else if (reward.t === 'disc') {
+    ensureTokenFields(meta);
+    if (!meta.unlockedDiscs.includes(reward.id)) {
+      meta.unlockedDiscs.push(reward.id);
+      db.set(`playerMeta.${uid}.unlockedDiscs`, meta.unlockedDiscs).write();
+    }
+  } else if (reward.t === 'board') {
+    ensureTokenFields(meta);
+    if (!meta.unlockedBoards.includes(reward.id)) {
+      meta.unlockedBoards.push(reward.id);
+      db.set(`playerMeta.${uid}.unlockedBoards`, meta.unlockedBoards).write();
+    }
+  }
+}
+
 function getPlayerMeta(uid) {
   if (!uid) return null;
   const meta = db.get(`playerMeta.${uid}`).value();
@@ -1007,6 +1057,115 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // ── Battle Pass ──
+  if (url.pathname.startsWith('/battlepass/') && req.method === 'GET') {
+    const uid = decodeURIComponent(url.pathname.split('/battlepass/')[1]);
+    const meta = ensureBpFields(getPlayerMeta(uid) || {});
+    res.writeHead(200, cors);
+    res.end(
+      JSON.stringify({
+        xp: meta.seasonXp || 0,
+        xpPerTier: BP_XP_PER_TIER,
+        tier: bpTierForXp(meta.seasonXp),
+        premium: !!meta.bpPremium,
+        claimedFree: meta.bpClaimedFree || [],
+        claimedPremium: meta.bpClaimedPremium || [],
+        tiers: BP_TIERS,
+      }),
+    );
+    return;
+  }
+
+  if (url.pathname === '/battlepass/xp' && req.method === 'POST') {
+    readJsonBody(req)
+      .then((data) => {
+        const uid = (data.uid || '').trim();
+        const amount = Math.max(0, Math.min(200, (data.amount | 0)));
+        if (!uid) {
+          res.writeHead(400, cors);
+          res.end(JSON.stringify({ ok: false }));
+          return;
+        }
+        const meta = ensureBpFields(getPlayerMeta(uid) || {});
+        meta.seasonXp = (meta.seasonXp || 0) + amount;
+        db.set(`playerMeta.${uid}.seasonXp`, meta.seasonXp).write();
+        res.writeHead(200, cors);
+        res.end(JSON.stringify({ ok: true, xp: meta.seasonXp, tier: bpTierForXp(meta.seasonXp) }));
+      })
+      .catch(() => {
+        res.writeHead(400, cors);
+        res.end(JSON.stringify({ ok: false }));
+      });
+    return;
+  }
+
+  if (url.pathname === '/battlepass/claim' && req.method === 'POST') {
+    readJsonBody(req)
+      .then((data) => {
+        const uid = (data.uid || '').trim();
+        const tier = data.tier | 0;
+        const premium = data.track === 'premium';
+        if (!uid || tier < 0 || tier >= BP_TIERS.length) {
+          res.writeHead(400, cors);
+          res.end(JSON.stringify({ ok: false, error: 'Geçersiz kademe' }));
+          return;
+        }
+        const meta = ensureBpFields(getPlayerMeta(uid));
+        const reached = bpTierForXp(meta.seasonXp) > tier;
+        if (!reached) {
+          res.writeHead(409, cors);
+          res.end(JSON.stringify({ ok: false, error: 'Kademe açık değil' }));
+          return;
+        }
+        if (premium && !meta.bpPremium) {
+          res.writeHead(403, cors);
+          res.end(JSON.stringify({ ok: false, error: 'Premium kilitli' }));
+          return;
+        }
+        const claimed = premium ? meta.bpClaimedPremium : meta.bpClaimedFree;
+        if (claimed.includes(tier)) {
+          res.writeHead(409, cors);
+          res.end(JSON.stringify({ ok: false, error: 'Zaten alındı' }));
+          return;
+        }
+        const reward = premium ? BP_TIERS[tier].premium : BP_TIERS[tier].free;
+        grantBpReward(uid, meta, reward);
+        claimed.push(tier);
+        db.set(`playerMeta.${uid}.${premium ? 'bpClaimedPremium' : 'bpClaimedFree'}`, claimed).write();
+        res.writeHead(200, cors);
+        res.end(JSON.stringify({ ok: true, reward, meta: getPlayerMeta(uid) }));
+      })
+      .catch(() => {
+        res.writeHead(400, cors);
+        res.end(JSON.stringify({ ok: false, error: 'Geçersiz istek' }));
+      });
+    return;
+  }
+
+  if (url.pathname === '/battlepass/unlock' && req.method === 'POST') {
+    readJsonBody(req)
+      .then((data) => {
+        const uid = (data.uid || '').trim();
+        // NOT: Gerçek satın alma doğrulaması IAP entegrasyonuyla eklenecek.
+        // Şimdilik receipt olmadan premium açılmaz (güvenlik).
+        if (!uid || !data.receipt) {
+          res.writeHead(403, cors);
+          res.end(JSON.stringify({ ok: false, error: 'Satın alma doğrulanamadı' }));
+          return;
+        }
+        const meta = ensureBpFields(getPlayerMeta(uid));
+        meta.bpPremium = true;
+        db.set(`playerMeta.${uid}.bpPremium`, true).write();
+        res.writeHead(200, cors);
+        res.end(JSON.stringify({ ok: true }));
+      })
+      .catch(() => {
+        res.writeHead(400, cors);
+        res.end(JSON.stringify({ ok: false }));
+      });
+    return;
+  }
+
   // ── Arkadaş sistemi ──
   if (url.pathname.startsWith('/friends/') && req.method === 'GET') {
     const uid = decodeURIComponent(url.pathname.split('/friends/')[1]);
@@ -1427,11 +1586,17 @@ wss.on('connection', (ws) => {
       case 'nextRound':
       case 'newMatch':
       case 'rematch':
+      case 'emote':
       case 'gameover': {
         const room = ws.roomId ? rooms.get(ws.roomId) : null;
         if (!room) break;
         if (msg.type === 'shot') {
           if (ws.seat === 1) room.send(0, msg);
+          break;
+        }
+        if (msg.type === 'emote') {
+          // Sadece emoji id'sini geçir (kötüye kullanımı önle).
+          room.broadcast({ type: 'emote', e: String(msg.e || '').slice(0, 8) }, ws);
           break;
         }
         room.broadcast(msg, ws);

@@ -203,6 +203,45 @@ class GameController extends ChangeNotifier {
   int pauseSecondsLeft = 0;
   int? pingMs;
 
+  // Maç içi emote (reaksiyon).
+  static const emotes = ['👍', '🔥', '😎', '😅', '😮', '🎯', '👏', '🤝'];
+  String? myEmote;
+  String? oppEmote;
+  Timer? _myEmoteTimer;
+  Timer? _oppEmoteTimer;
+
+  void sendEmote(String e) {
+    if (aiMode || localDuoMode) {
+      // Botla/yerelde sadece kendi tarafında göster.
+      myEmote = e;
+      _myEmoteTimer?.cancel();
+      _myEmoteTimer = Timer(const Duration(seconds: 2), () {
+        myEmote = null;
+        uiSync.bump();
+      });
+      uiSync.bump();
+      return;
+    }
+    myEmote = e;
+    _myEmoteTimer?.cancel();
+    _myEmoteTimer = Timer(const Duration(seconds: 2), () {
+      myEmote = null;
+      uiSync.bump();
+    });
+    ws.send({'type': 'emote', 'e': e});
+    uiSync.bump();
+  }
+
+  void _showOppEmote(String e) {
+    oppEmote = e;
+    _oppEmoteTimer?.cancel();
+    _oppEmoteTimer = Timer(const Duration(seconds: 2), () {
+      oppEmote = null;
+      uiSync.bump();
+    });
+    uiSync.bump();
+  }
+
   void Function(int ms)? onPingUpdate;
   void Function(String message)? onToast;
   void Function()? onOpponentLeft;
@@ -912,6 +951,10 @@ class GameController extends ChangeNotifier {
           _resumeFromPause(broadcast: false);
         }
         break;
+      case 'emote':
+        final e = msg['e'] as String?;
+        if (e != null && e.isNotEmpty) _showOppEmote(e);
+        break;
       case 'opponent_left':
         phase = GamePhase.idle;
         opponentDisconnected = false;
@@ -1449,6 +1492,8 @@ class GameController extends ChangeNotifier {
     _afkTimer?.cancel();
     _pauseTimer?.cancel();
     _matchStartTimer?.cancel();
+    _myEmoteTimer?.cancel();
+    _oppEmoteTimer?.cancel();
     ws.disconnect();
     super.dispose();
   }

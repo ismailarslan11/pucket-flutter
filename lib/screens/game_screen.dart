@@ -15,6 +15,7 @@ import '../services/career_service.dart';
 import '../services/meta_api.dart';
 import '../services/player_meta_service.dart';
 import '../services/settings_service.dart';
+import '../services/battle_pass_api.dart';
 import '../services/friends_api.dart';
 import '../services/share_service.dart';
 import '../theme/app_theme.dart';
@@ -50,6 +51,7 @@ class _GameScreenState extends State<GameScreen> {
   Timer? _eloFallbackTimer;
   int _lastRoundAdKey = -1;
   int _lastWinTokenKey = -1;
+  int _lastBpXpKey = -1;
 
   @override
   void didChangeDependencies() {
@@ -158,6 +160,7 @@ class _GameScreenState extends State<GameScreen> {
 
     if (game.phase == GamePhase.gameover && _lastPhase != GamePhase.gameover) {
       _maybeAwardWinTokens(game);
+      _maybeAwardBattlePassXp(game);
       if (game.careerMode && game.matchFinished && game.careerOpponent != null) {
         final won = game.lastWinner == game.mySeat;
         final career = context.read<CareerService>();
@@ -231,6 +234,17 @@ class _GameScreenState extends State<GameScreen> {
         SnackBar(content: Text(context.l10nRead.tokensEarned(gain))),
       );
     });
+  }
+
+  void _maybeAwardBattlePassXp(GameController game) {
+    if (!game.matchFinished) return;
+    // Antrenman ve yerel ikili hariç her maç sezon yolu XP'si verir.
+    if (game.trainingMode || game.localDuoMode) return;
+    if (_lastBpXpKey == game.visualGeneration) return;
+    _lastBpXpKey = game.visualGeneration;
+    final won = game.lastWinner == game.mySeat;
+    final uid = context.read<AuthService>().getUid();
+    BattlePassApi.addXp(uid, won ? 50 : 20);
   }
 
   void _maybeShowRoundAd(GameController game) {
@@ -334,6 +348,29 @@ class _GameScreenState extends State<GameScreen> {
                           if (_showCareer && _careerResult != null) _buildCareerOverlay(g, _careerResult!),
                           if (_showPause) _buildPause(g),
                           if (_showSettings) _buildInGameSettings(g),
+                          if (g.oppEmote != null)
+                            Positioned(
+                              top: 12,
+                              left: 0,
+                              right: 0,
+                              child: Center(child: _emoteBubble(g.oppEmote!, AppColors.blue)),
+                            ),
+                          if (g.myEmote != null)
+                            Positioned(
+                              bottom: 12,
+                              left: 0,
+                              right: 0,
+                              child: Center(child: _emoteBubble(g.myEmote!, AppColors.red)),
+                            ),
+                          if (!g.localDuoMode &&
+                              (g.phase == GamePhase.playing || g.phase == GamePhase.countdown) &&
+                              !_showPause &&
+                              !_showSettings)
+                            Positioned(
+                              right: 8,
+                              bottom: 8,
+                              child: _emoteButton(g),
+                            ),
                         ],
                       );
                     },
@@ -347,6 +384,72 @@ class _GameScreenState extends State<GameScreen> {
               builder: (context, _) => _bottomBar(context.read<GameController>(), l10n),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _emoteBubble(String e, Color ring) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: AppColors.morDahaKoyu.withValues(alpha: 0.85),
+        shape: BoxShape.circle,
+        border: Border.all(color: ring, width: 2),
+        boxShadow: AppShadows.neon(ring, blur: 10),
+      ),
+      child: Text(e, style: const TextStyle(fontSize: 28)),
+    );
+  }
+
+  Widget _emoteButton(GameController game) {
+    return GestureDetector(
+      onTap: () => _openEmotePicker(game),
+      child: Container(
+        width: 42,
+        height: 42,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: AppColors.morDahaKoyu.withValues(alpha: 0.7),
+          border: Border.all(color: AppColors.beyaz.withValues(alpha: 0.3)),
+        ),
+        child: const Icon(Icons.emoji_emotions_rounded, color: AppColors.accentYellow, size: 24),
+      ),
+    );
+  }
+
+  void _openEmotePicker(GameController game) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: AppColors.cardElevated,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
+        child: Wrap(
+          alignment: WrapAlignment.center,
+          spacing: 8,
+          runSpacing: 8,
+          children: GameController.emotes.map((e) {
+            return GestureDetector(
+              onTap: () {
+                game.sendEmote(e);
+                Navigator.pop(ctx);
+              },
+              child: Container(
+                width: 56,
+                height: 56,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: AppColors.card,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: AppColors.borderSubtle),
+                ),
+                child: Text(e, style: const TextStyle(fontSize: 28)),
+              ),
+            );
+          }).toList(),
         ),
       ),
     );

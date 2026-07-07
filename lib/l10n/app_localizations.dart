@@ -232,6 +232,13 @@ class AppLocalizations {
   String get afkTitle => _t('afkTitle');
   String get afkSub => _t('afkSub');
   String get signOut => _t('signOut');
+  String get battlePass => _t('battlePass');
+  String get battlePassClaim => _t('battlePassClaim');
+  String get battlePassClaimed => _t('battlePassClaimed');
+  String get battlePassLocked => _t('battlePassLocked');
+  String get battlePassPremium => _t('battlePassPremium');
+  String get battlePassFree => _t('battlePassFree');
+  String get battlePassUnlockSoon => _t('battlePassUnlockSoon');
   String get friends => _t('friends');
   String get friendsEmpty => _t('friendsEmpty');
   String get friendAdd => _t('friendAdd');
@@ -527,6 +534,13 @@ const _tr = {
   'afkSub': 'Uzun süre hamle yapmadınız — maç sonlandırıldı.',
   'signOut': 'Çıkış Yap',
   'friends': 'Arkadaşlar',
+  'battlePass': 'Sezon Yolu',
+  'battlePassClaim': 'Al',
+  'battlePassClaimed': 'Alındı',
+  'battlePassLocked': 'Kilitli',
+  'battlePassPremium': 'Premium',
+  'battlePassFree': 'Ücretsiz',
+  'battlePassUnlockSoon': 'Premium yakında',
   'friendsEmpty': 'Henüz arkadaşın yok. Kullanıcı adıyla ekle!',
   'friendAdd': 'Arkadaş Ekle',
   'friendAddHint': 'Kullanıcı adı',
@@ -816,6 +830,13 @@ const _en = {
   'afkSub': 'No move for too long — match ended.',
   'signOut': 'Sign Out',
   'friends': 'Friends',
+  'battlePass': 'Season Pass',
+  'battlePassClaim': 'Claim',
+  'battlePassClaimed': 'Claimed',
+  'battlePassLocked': 'Locked',
+  'battlePassPremium': 'Premium',
+  'battlePassFree': 'Free',
+  'battlePassUnlockSoon': 'Premium coming soon',
   'friendsEmpty': 'No friends yet. Add by username!',
   'friendAdd': 'Add Friend',
   'friendAddHint': 'Username',
@@ -1105,6 +1126,13 @@ const _de = {
   'afkSub': 'Zu lange inaktiv — Match beendet.',
   'signOut': 'Abmelden',
   'friends': 'Freunde',
+  'battlePass': 'Saison-Pass',
+  'battlePassClaim': 'Abholen',
+  'battlePassClaimed': 'Abgeholt',
+  'battlePassLocked': 'Gesperrt',
+  'battlePassPremium': 'Premium',
+  'battlePassFree': 'Gratis',
+  'battlePassUnlockSoon': 'Premium bald',
   'friendsEmpty': 'Noch keine Freunde. Per Benutzername hinzufügen!',
   'friendAdd': 'Freund hinzufügen',
   'friendAddHint': 'Benutzername',
@@ -1394,6 +1422,13 @@ const _es = {
   'afkSub': 'Sin movimiento — partida terminada.',
   'signOut': 'Cerrar sesión',
   'friends': 'Amigos',
+  'battlePass': 'Pase de Temporada',
+  'battlePassClaim': 'Reclamar',
+  'battlePassClaimed': 'Reclamado',
+  'battlePassLocked': 'Bloqueado',
+  'battlePassPremium': 'Premium',
+  'battlePassFree': 'Gratis',
+  'battlePassUnlockSoon': 'Premium pronto',
   'friendsEmpty': 'Aún no tienes amigos. ¡Agrega por nombre de usuario!',
   'friendAdd': 'Agregar amigo',
   'friendAddHint': 'Nombre de usuario',
@@ -1683,6 +1718,13 @@ const _ar = {
   'afkSub': 'بدون حركة لفترة طويلة — انتهت المباراة.',
   'signOut': 'تسجيل الخروج',
   'friends': 'الأصدقاء',
+  'battlePass': 'مسار الموسم',
+  'battlePassClaim': 'استلام',
+  'battlePassClaimed': 'تم الاستلام',
+  'battlePassLocked': 'مقفل',
+  'battlePassPremium': 'مميز',
+  'battlePassFree': 'مجاني',
+  'battlePassUnlockSoon': 'المميز قريباً',
   'friendsEmpty': 'لا أصدقاء بعد. أضف باسم المستخدم!',
   'friendAdd': 'إضافة صديق',
   'friendAddHint': 'اسم المستخدم',
@@ -1972,6 +2014,13 @@ const _fr = {
   'afkSub': 'Inactivité prolongée — match terminé.',
   'signOut': 'Se déconnecter',
   'friends': 'Amis',
+  'battlePass': 'Passe de Saison',
+  'battlePassClaim': 'Réclamer',
+  'battlePassClaimed': 'Réclamé',
+  'battlePassLocked': 'Verrouillé',
+  'battlePassPremium': 'Premium',
+  'battlePassFree': 'Gratuit',
+  'battlePassUnlockSoon': 'Premium bientôt',
   'friendsEmpty': 'Pas encore d\'amis. Ajoutez par nom d\'utilisateur !',
   'friendAdd': 'Ajouter un ami',
   'friendAddHint': 'Nom d\'utilisateur',

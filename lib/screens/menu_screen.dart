@@ -121,16 +121,23 @@ class MenuScreen extends StatelessWidget {
                             ),
                           ),
                           YesaMenuTile(
-                            label: l10n.menuTutorial,
-                            icon: Icons.school_rounded,
+                            label: l10n.battlePass,
+                            icon: Icons.military_tech_rounded,
+                            accent: true,
                             staggerIndex: 12,
-                            onPressed: () => AppRouter.goTutorial(context),
+                            onPressed: () => AppRouter.goBattlePass(context),
                           ),
                           YesaMenuTile(
                             label: l10n.friends,
                             icon: Icons.group_rounded,
                             staggerIndex: 13,
                             onPressed: () => AppRouter.goFriends(context),
+                          ),
+                          YesaMenuTile(
+                            label: l10n.menuTutorial,
+                            icon: Icons.school_rounded,
+                            staggerIndex: 14,
+                            onPressed: () => AppRouter.goTutorial(context),
                           ),
                           YesaMenuTile(
                             label: l10n.menuProfile,

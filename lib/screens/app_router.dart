@@ -10,6 +10,7 @@ import '../services/audio_service.dart';
 import '../screens/cosmetics_screen.dart';
 import '../game/training_layout.dart';
 import '../screens/training_screen.dart';
+import 'battle_pass_screen.dart';
 import 'career_screen.dart';
 import 'difficulty_screen.dart';
 import 'friends_screen.dart';
@@ -136,6 +137,10 @@ class AppRouter {
 
   static void goFriends(BuildContext context) {
     Navigator.push(context, MaterialPageRoute(builder: (_) => const FriendsScreen()));
+  }
+
+  static void goBattlePass(BuildContext context) {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => const BattlePassScreen()));
   }
 
   static void goTutorial(BuildContext context) {
