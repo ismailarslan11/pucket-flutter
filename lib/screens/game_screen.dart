@@ -239,8 +239,9 @@ class _GameScreenState extends State<GameScreen> {
 
   void _maybeAwardBattlePassXp(GameController game) {
     if (!game.matchFinished) return;
-    // Antrenman ve yerel ikili hariç her maç sezon yolu XP'si verir.
     if (game.trainingMode || game.localDuoMode) return;
+    // "Bota Karşı" modu XP vermez (farm önlenir); gizli bot fallback verir.
+    if (game.aiMode && !game.isBotFallback && !game.careerMode) return;
     if (_lastBpXpKey == game.visualGeneration) return;
     _lastBpXpKey = game.visualGeneration;
     final won = game.lastWinner == game.mySeat;

@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
+import 'deep_link_service.dart';
 import 'firebase_init.dart';
 import 'meta_api.dart';
 import '../theme/app_theme.dart';
@@ -134,9 +135,25 @@ class PushService {
     });
 
     FirebaseMessaging.onMessage.listen(_showForegroundNotification);
-    FirebaseMessaging.onMessageOpenedApp.listen((msg) {
-      debugPrint('Push açıldı: ${msg.notification?.title}');
+    FirebaseMessaging.onMessageOpenedApp.listen(_handleOpened);
+
+    // Uygulama kapalıyken push'a dokunularak açıldıysa.
+    FirebaseMessaging.instance.getInitialMessage().then((initial) {
+      if (initial != null) _handleOpened(initial);
     });
+  }
+
+  /// Arkadaş meydan okuma push'una dokununca ilgili odaya katıl.
+  static void _handleOpened(RemoteMessage msg) {
+    debugPrint('Push açıldı: ${msg.notification?.title}');
+    final data = msg.data;
+    if (data['type'] == 'challenge') {
+      final room = (data['room'] ?? '').toString();
+      if (room.isNotEmpty) {
+        // Menü açılınca DeepLinkService.consumePending tarafından kullanılır.
+        DeepLinkService.pendingJoinCode = room.toUpperCase();
+      }
+    }
   }
 
   static Future<void> _subscribeTopic() async {

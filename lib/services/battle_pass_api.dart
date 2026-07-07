@@ -84,6 +84,22 @@ class BattlePassApi {
     } catch (_) {}
   }
 
+  /// IAP sonrası premium yolu açar (satın alma mağazada doğrulanır).
+  static Future<bool> unlockPremium(String uid) async {
+    try {
+      final res = await http
+          .post(
+            Uri.parse('$apiBaseUrl/battlepass/unlock'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'uid': uid, 'receipt': 'iap'}),
+          )
+          .timeout(const Duration(seconds: 8));
+      return res.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
+
   /// Ödül talep eder. Hata varsa mesaj, başarıda null döner.
   static Future<String?> claim(String uid, int tier, {required bool premium}) async {
     try {

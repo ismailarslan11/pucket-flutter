@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../l10n/app_localizations.dart';
 import '../l10n/l10n_extension.dart';
 import '../models/cosmetic_catalog.dart';
 import '../services/auth_service.dart';
 import '../services/battle_pass_api.dart';
 import '../services/player_meta_service.dart';
+import '../services/purchase_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/yesa_background.dart';
 import '../widgets/yesa_effects.dart';
@@ -142,7 +144,35 @@ class _BattlePassScreenState extends State<BattlePassScreen> {
                 valueColor: const AlwaysStoppedAnimation(AppColors.sariAna),
               ),
             ),
+            if (!bp.premium) ...[
+              const SizedBox(height: 10),
+              _premiumUnlockButton(l10n),
+            ],
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _premiumUnlockButton(AppLocalizations l10n) {
+    final purchases = context.watch<PurchaseService>();
+    final product = purchases.productFor(ProductIds.battlePassPremium);
+    if (!purchases.available || product == null) return const SizedBox.shrink();
+    return SizedBox(
+      width: double.infinity,
+      child: ScalePress(
+        onTap: () => purchases.buy(ProductIds.battlePassPremium),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            gradient: AppGradients.heroPlay,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: AppShadows.neon(AppColors.sariAna, blur: 8),
+          ),
+          child: Text('${l10n.battlePassPremium} — ${product.price}',
+              style: const TextStyle(
+                  color: AppColors.morDahaKoyu, fontWeight: FontWeight.w900, fontSize: 13)),
         ),
       ),
     );

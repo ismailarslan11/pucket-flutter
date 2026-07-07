@@ -26,6 +26,7 @@ import 'services/settings_service.dart';
 import 'services/deep_link_service.dart';
 import 'services/deep_link_listener.dart';
 import 'services/disc_image_cache.dart';
+import 'services/battle_pass_api.dart';
 import 'services/meta_api.dart';
 import 'services/player_meta_service.dart';
 import 'services/purchase_service.dart';
@@ -119,7 +120,7 @@ void _handlePurchase(
       unawaited(MetaApi.grantIapTokens(auth.getUid(), 550).then((_) => meta.load(auth.getUid())));
       break;
     case ProductIds.battlePassPremium:
-      // Premium yol açılışı sunucuda receipt ile yapılır (ileride).
+      unawaited(BattlePassApi.unlockPremium(auth.getUid()));
       break;
   }
 }
