@@ -15,6 +15,7 @@ import '../services/career_service.dart';
 import '../services/meta_api.dart';
 import '../services/player_meta_service.dart';
 import '../services/settings_service.dart';
+import '../services/friends_api.dart';
 import '../services/share_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/game_board.dart';
@@ -744,6 +745,25 @@ class _GameScreenState extends State<GameScreen> {
                       newElo: _eloResult?.newElo,
                       league: _eloResult?.newLeague,
                     );
+                  },
+                ),
+              ],
+              // Gerçek çevrimiçi rakip: arkadaş ekleme sun (bot değilse).
+              if (game.matchFinished &&
+                  !game.aiMode &&
+                  !game.isBotFallback &&
+                  game.opponentUid.isNotEmpty) ...[
+                const SizedBox(height: 14),
+                PucketButton(
+                  label: l10n.friendAdd,
+                  secondary: true,
+                  width: 260,
+                  onPressed: () async {
+                    final auth = context.read<AuthService>();
+                    final messenger = ScaffoldMessenger.of(context);
+                    final added = l10n.friendAdded;
+                    final err = await FriendsApi.addByUid(auth.getUid(), game.opponentUid);
+                    messenger.showSnackBar(SnackBar(content: Text(err ?? added)));
                   },
                 ),
               ],

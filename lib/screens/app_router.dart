@@ -12,6 +12,7 @@ import '../game/training_layout.dart';
 import '../screens/training_screen.dart';
 import 'career_screen.dart';
 import 'difficulty_screen.dart';
+import 'friends_screen.dart';
 import 'game_screen.dart';
 import 'instructions_screen.dart';
 import 'join_screen.dart';
@@ -131,6 +132,10 @@ class AppRouter {
 
   static void goProfile(BuildContext context) {
     Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen()));
+  }
+
+  static void goFriends(BuildContext context) {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => const FriendsScreen()));
   }
 
   static void goTutorial(BuildContext context) {

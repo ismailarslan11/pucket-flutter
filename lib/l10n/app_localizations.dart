@@ -232,6 +232,15 @@ class AppLocalizations {
   String get afkTitle => _t('afkTitle');
   String get afkSub => _t('afkSub');
   String get signOut => _t('signOut');
+  String get friends => _t('friends');
+  String get friendsEmpty => _t('friendsEmpty');
+  String get friendAdd => _t('friendAdd');
+  String get friendAddHint => _t('friendAddHint');
+  String get friendAdded => _t('friendAdded');
+  String get friendRemove => _t('friendRemove');
+  String get friendChallenge => _t('friendChallenge');
+  String get friendOnline => _t('friendOnline');
+  String get friendOffline => _t('friendOffline');
   String get deleteAccount => _t('deleteAccount');
   String get deleteAccountConfirm => _t('deleteAccountConfirm');
   String get deleteAccountBody => _t('deleteAccountBody');
@@ -517,6 +526,15 @@ const _tr = {
   'afkTitle': 'AFK',
   'afkSub': 'Uzun süre hamle yapmadınız — maç sonlandırıldı.',
   'signOut': 'Çıkış Yap',
+  'friends': 'Arkadaşlar',
+  'friendsEmpty': 'Henüz arkadaşın yok. Kullanıcı adıyla ekle!',
+  'friendAdd': 'Arkadaş Ekle',
+  'friendAddHint': 'Kullanıcı adı',
+  'friendAdded': 'Arkadaş eklendi',
+  'friendRemove': 'Çıkar',
+  'friendChallenge': 'Meydan Oku',
+  'friendOnline': 'Çevrimiçi',
+  'friendOffline': 'Çevrimdışı',
   'deleteAccount': 'Hesabımı Sil',
   'deleteAccountConfirm': 'Hesabını sil?',
   'deleteAccountBody': 'Tüm verilerin (ELO, jeton, kozmetikler, geçmiş) kalıcı olarak silinecek. Bu işlem geri alınamaz.',
@@ -797,6 +815,15 @@ const _en = {
   'afkTitle': 'AFK',
   'afkSub': 'No move for too long — match ended.',
   'signOut': 'Sign Out',
+  'friends': 'Friends',
+  'friendsEmpty': 'No friends yet. Add by username!',
+  'friendAdd': 'Add Friend',
+  'friendAddHint': 'Username',
+  'friendAdded': 'Friend added',
+  'friendRemove': 'Remove',
+  'friendChallenge': 'Challenge',
+  'friendOnline': 'Online',
+  'friendOffline': 'Offline',
   'deleteAccount': 'Delete Account',
   'deleteAccountConfirm': 'Delete your account?',
   'deleteAccountBody': 'All your data (ELO, tokens, cosmetics, history) will be permanently deleted. This cannot be undone.',
@@ -1077,6 +1104,15 @@ const _de = {
   'afkTitle': 'AFK',
   'afkSub': 'Zu lange inaktiv — Match beendet.',
   'signOut': 'Abmelden',
+  'friends': 'Freunde',
+  'friendsEmpty': 'Noch keine Freunde. Per Benutzername hinzufügen!',
+  'friendAdd': 'Freund hinzufügen',
+  'friendAddHint': 'Benutzername',
+  'friendAdded': 'Freund hinzugefügt',
+  'friendRemove': 'Entfernen',
+  'friendChallenge': 'Herausfordern',
+  'friendOnline': 'Online',
+  'friendOffline': 'Offline',
   'deleteAccount': 'Konto löschen',
   'deleteAccountConfirm': 'Konto löschen?',
   'deleteAccountBody': 'Alle deine Daten (ELO, Token, Kosmetik, Verlauf) werden dauerhaft gelöscht. Dies kann nicht rückgängig gemacht werden.',
@@ -1357,6 +1393,15 @@ const _es = {
   'afkTitle': 'AFK',
   'afkSub': 'Sin movimiento — partida terminada.',
   'signOut': 'Cerrar sesión',
+  'friends': 'Amigos',
+  'friendsEmpty': 'Aún no tienes amigos. ¡Agrega por nombre de usuario!',
+  'friendAdd': 'Agregar amigo',
+  'friendAddHint': 'Nombre de usuario',
+  'friendAdded': 'Amigo agregado',
+  'friendRemove': 'Quitar',
+  'friendChallenge': 'Desafiar',
+  'friendOnline': 'En línea',
+  'friendOffline': 'Desconectado',
   'deleteAccount': 'Eliminar cuenta',
   'deleteAccountConfirm': '¿Eliminar tu cuenta?',
   'deleteAccountBody': 'Todos tus datos (ELO, fichas, cosméticos, historial) se eliminarán de forma permanente. Esto no se puede deshacer.',
@@ -1637,6 +1682,15 @@ const _ar = {
   'afkTitle': 'AFK',
   'afkSub': 'بدون حركة لفترة طويلة — انتهت المباراة.',
   'signOut': 'تسجيل الخروج',
+  'friends': 'الأصدقاء',
+  'friendsEmpty': 'لا أصدقاء بعد. أضف باسم المستخدم!',
+  'friendAdd': 'إضافة صديق',
+  'friendAddHint': 'اسم المستخدم',
+  'friendAdded': 'تمت إضافة الصديق',
+  'friendRemove': 'إزالة',
+  'friendChallenge': 'تحدَّ',
+  'friendOnline': 'متصل',
+  'friendOffline': 'غير متصل',
   'deleteAccount': 'حذف الحساب',
   'deleteAccountConfirm': 'حذف حسابك؟',
   'deleteAccountBody': 'سيتم حذف جميع بياناتك (النقاط، الرموز، التجميل، السجل) نهائيًا. لا يمكن التراجع عن هذا.',
@@ -1917,6 +1971,15 @@ const _fr = {
   'afkTitle': 'AFK',
   'afkSub': 'Inactivité prolongée — match terminé.',
   'signOut': 'Se déconnecter',
+  'friends': 'Amis',
+  'friendsEmpty': 'Pas encore d\'amis. Ajoutez par nom d\'utilisateur !',
+  'friendAdd': 'Ajouter un ami',
+  'friendAddHint': 'Nom d\'utilisateur',
+  'friendAdded': 'Ami ajouté',
+  'friendRemove': 'Retirer',
+  'friendChallenge': 'Défier',
+  'friendOnline': 'En ligne',
+  'friendOffline': 'Hors ligne',
   'deleteAccount': 'Supprimer le compte',
   'deleteAccountConfirm': 'Supprimer votre compte ?',
   'deleteAccountBody': 'Toutes vos données (ELO, jetons, cosmétiques, historique) seront définitivement supprimées. Ceci est irréversible.',

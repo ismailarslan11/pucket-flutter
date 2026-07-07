@@ -400,6 +400,18 @@ function readJsonBody(req) {
 
 const matchmakingQueue = [];
 const casualMatchmakingQueue = [];
+// Çevrimiçi oyuncular: uid -> aktif bağlantı sayısı (arkadaş durumu için).
+const onlineUids = new Map();
+function markOnline(uid) {
+  if (!uid) return;
+  onlineUids.set(uid, (onlineUids.get(uid) || 0) + 1);
+}
+function markOffline(uid) {
+  if (!uid || !onlineUids.has(uid)) return;
+  const n = onlineUids.get(uid) - 1;
+  if (n <= 0) onlineUids.delete(uid);
+  else onlineUids.set(uid, n);
+}
 
 function findMatch(newEntry) {
   const ELO_RANGE = 200;
@@ -995,6 +1007,96 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // ── Arkadaş sistemi ──
+  if (url.pathname.startsWith('/friends/') && req.method === 'GET') {
+    const uid = decodeURIComponent(url.pathname.split('/friends/')[1]);
+    const list = db.get(`friends.${uid}`).value() || [];
+    const out = list
+      .map((fid) => {
+        const p = getPlayer(fid);
+        if (!p) return null;
+        return {
+          uid: fid,
+          name: p.name,
+          elo: p.elo,
+          league: getLeague(p.elo).name,
+          online: onlineUids.has(fid),
+        };
+      })
+      .filter(Boolean)
+      .sort((a, b) => (b.online ? 1 : 0) - (a.online ? 1 : 0) || b.elo - a.elo);
+    res.writeHead(200, cors);
+    res.end(JSON.stringify(out));
+    return;
+  }
+
+  if (url.pathname === '/friend/add' && req.method === 'POST') {
+    readJsonBody(req)
+      .then((data) => {
+        const uid = (data.uid || '').trim();
+        const uname = (data.username || '').trim().toLowerCase();
+        const directUid = (data.friendUid || '').trim();
+        if (!uid || (!uname && !directUid)) {
+          res.writeHead(400, cors);
+          res.end(JSON.stringify({ ok: false, error: 'Eksik bilgi' }));
+          return;
+        }
+        // uid ile (maç sonu) veya kullanıcı adı ile (elle ekleme) ekle.
+        const friendUid = directUid || db.get(`usernames.${uname}`).value();
+        if (!friendUid || !getPlayer(friendUid)) {
+          res.writeHead(404, cors);
+          res.end(JSON.stringify({ ok: false, error: 'Kullanıcı bulunamadı' }));
+          return;
+        }
+        if (friendUid === uid) {
+          res.writeHead(400, cors);
+          res.end(JSON.stringify({ ok: false, error: 'Kendini ekleyemezsin' }));
+          return;
+        }
+        const mine = db.get(`friends.${uid}`).value() || [];
+        if (mine.includes(friendUid)) {
+          res.writeHead(409, cors);
+          res.end(JSON.stringify({ ok: false, error: 'Zaten arkadaş' }));
+          return;
+        }
+        mine.push(friendUid);
+        const theirs = db.get(`friends.${friendUid}`).value() || [];
+        if (!theirs.includes(uid)) theirs.push(uid);
+        db.set(`friends.${uid}`, mine).set(`friends.${friendUid}`, theirs).write();
+        const p = getPlayer(friendUid);
+        res.writeHead(200, cors);
+        res.end(JSON.stringify({ ok: true, friend: { uid: friendUid, name: p ? p.name : uname } }));
+      })
+      .catch(() => {
+        res.writeHead(400, cors);
+        res.end(JSON.stringify({ ok: false, error: 'Geçersiz istek' }));
+      });
+    return;
+  }
+
+  if (url.pathname === '/friend/remove' && req.method === 'POST') {
+    readJsonBody(req)
+      .then((data) => {
+        const uid = (data.uid || '').trim();
+        const friendUid = (data.friendUid || '').trim();
+        if (!uid || !friendUid) {
+          res.writeHead(400, cors);
+          res.end(JSON.stringify({ ok: false, error: 'Eksik bilgi' }));
+          return;
+        }
+        const mine = (db.get(`friends.${uid}`).value() || []).filter((f) => f !== friendUid);
+        const theirs = (db.get(`friends.${friendUid}`).value() || []).filter((f) => f !== uid);
+        db.set(`friends.${uid}`, mine).set(`friends.${friendUid}`, theirs).write();
+        res.writeHead(200, cors);
+        res.end(JSON.stringify({ ok: true }));
+      })
+      .catch(() => {
+        res.writeHead(400, cors);
+        res.end(JSON.stringify({ ok: false, error: 'Geçersiz istek' }));
+      });
+    return;
+  }
+
   if (url.pathname === '/account/delete' && req.method === 'POST') {
     readJsonBody(req)
       .then((data) => {
@@ -1008,6 +1110,13 @@ const server = http.createServer((req, res) => {
         db.unset(`players.${uid}`);
         db.unset(`playerMeta.${uid}`);
         db.unset(`career.${uid}`);
+        // Arkadaş listelerinden de çıkar
+        const myFriends = db.get(`friends.${uid}`).value() || [];
+        for (const fid of myFriends) {
+          const theirs = (db.get(`friends.${fid}`).value() || []).filter((f) => f !== uid);
+          db.set(`friends.${fid}`, theirs);
+        }
+        db.unset(`friends.${uid}`);
         const usernames = db.get('usernames').value() || {};
         for (const [key, owner] of Object.entries(usernames)) {
           if (owner === uid) db.unset(`usernames.${key}`);
@@ -1089,6 +1198,7 @@ wss.on('connection', (ws) => {
             let uid = identity.uid || msg.uid || `guest_${makeCode()}`;
             const name = msg.name || 'Oyuncu';
             ws.uid = uid;
+            markOnline(uid);
             ws.isAnonymous = identity.isAnonymous;
             ws.rankedEligible = canPlayRanked(ws, uid);
             const player = upsertPlayer(uid, name);
@@ -1335,6 +1445,7 @@ wss.on('connection', (ws) => {
   });
 
   ws.on('close', () => {
+    markOffline(ws.uid);
     const qi = matchmakingQueue.findIndex((e) => e.ws === ws);
     if (qi !== -1) matchmakingQueue.splice(qi, 1);
 
