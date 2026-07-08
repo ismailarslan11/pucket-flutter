@@ -1,0 +1,25 @@
+name: Keep server warm
+
+# Render ücretsiz katmanı 15 dk hareketsizlikte uyur ve ilk istekte ~30 sn
+# soğuk başlangıç yapar. Bu iş sunucuyu düzenli pingleyerek uyanık tutar.
+# (Sunucu taşınınca bu dosya kaldırılabilir.)
+
+on:
+  schedule:
+    - cron: '*/10 * * * *' # her 10 dakikada bir
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping health endpoint
+        run: |
+          for i in 1 2 3; do
+            code=$(curl -sS -m 60 -o /dev/null -w "%{http_code}" https://pucket-flutter-2.onrender.com/health || echo 000)
+            echo "Attempt $i -> HTTP $code"
+            [ "$code" = "200" ] && exit 0
+            sleep 15
+          done
+          echo "Server did not respond 200"
+          exit 1

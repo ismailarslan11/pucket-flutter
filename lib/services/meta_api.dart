@@ -227,13 +227,14 @@ class MetaApi {
     required String itemId,
   }) async {
     try {
+      // Sunucu uyuyor olabilir (soğuk başlangıç); daha uzun zaman aşımı.
       final res = await http
           .post(
             Uri.parse('$apiBaseUrl/meta/$uid'),
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode({'action': 'purchase', 'itemType': itemType, 'itemId': itemId}),
           )
-          .timeout(const Duration(seconds: 8));
+          .timeout(const Duration(seconds: 40));
       final j = jsonDecode(res.body) as Map<String, dynamic>;
       if (res.statusCode != 200) {
         return (meta: null, error: j['error'] as String? ?? 'Satın alınamadı');
