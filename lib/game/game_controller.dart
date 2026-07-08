@@ -103,6 +103,7 @@ class GameController extends ChangeNotifier {
   String opponentUid = '';
   int opponentElo = 1000;
   String opponentLeague = 'Bronz';
+  String opponentDiscColor = 'green';
   String sessionToken = '';
 
   bool reconnecting = false;
@@ -689,6 +690,8 @@ class GameController extends ChangeNotifier {
     opponentUid = msg['oppUid'] as String? ?? opponentUid;
     opponentElo = (msg['oppElo'] as num?)?.toInt() ?? opponentElo;
     opponentLeague = msg['oppLeague'] as String? ?? opponentLeague;
+    final oppDisc = msg['oppDisc'] as String?;
+    if (oppDisc != null && oppDisc.isNotEmpty) opponentDiscColor = oppDisc;
     if (msg['sessionToken'] is String) {
       sessionToken = msg['sessionToken'] as String;
       ws.setSession(uid: auth?.getUid(), sessionToken: sessionToken, roomCode: roomCode);

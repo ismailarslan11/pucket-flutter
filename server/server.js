@@ -636,6 +636,12 @@ function getOrCreateRoom(code) {
   return room;
 }
 
+// Bir oyuncunun seçili pul kozmetiği (rakibe göstermek için).
+function discOf(uid) {
+  const meta = db.get(`playerMeta.${uid}`).value();
+  return (meta && meta.cosmetics && meta.cosmetics.discColor) || 'green';
+}
+
 function sendMatchInfo(room, seat0Uid, seat1Uid) {
   const p0 = getPlayer(seat0Uid);
   const p1 = getPlayer(seat1Uid);
@@ -651,6 +657,7 @@ function sendMatchInfo(room, seat0Uid, seat1Uid) {
     oppLeague: getLeague(p1.elo).name,
     oppName: p1.name,
     oppUid: seat1Uid,
+    oppDisc: discOf(seat1Uid),
   });
   room.send(1, {
     type: 'matched',
@@ -664,6 +671,7 @@ function sendMatchInfo(room, seat0Uid, seat1Uid) {
     oppLeague: getLeague(p0.elo).name,
     oppName: p0.name,
     oppUid: seat0Uid,
+    oppDisc: discOf(seat0Uid),
   });
 }
 
@@ -679,6 +687,7 @@ function sendStart(room) {
       oppElo: getPlayer(room.uids[oppSeat])?.elo ?? 1000,
       oppLeague: getLeague(getPlayer(room.uids[oppSeat])?.elo ?? 1000).name,
       oppUid: room.uids[oppSeat],
+      oppDisc: discOf(room.uids[oppSeat]),
     });
   }
 }
@@ -708,6 +717,7 @@ function pairCasualMatch(entry) {
       oppElo: getPlayer(room.uids[oppSeat])?.elo ?? 1000,
       oppLeague: getLeague(getPlayer(room.uids[oppSeat])?.elo ?? 1000).name,
       oppUid: room.uids[oppSeat],
+      oppDisc: discOf(room.uids[oppSeat]),
     });
   }
   sendStart(room);
@@ -1484,6 +1494,7 @@ wss.on('connection', (ws) => {
             snapshot: room.gameSnapshot,
             oppName: room.names[room.opponentSeat(seat)],
             oppElo: getPlayer(room.uids[room.opponentSeat(seat)])?.elo ?? 1000,
+            oppDisc: discOf(room.uids[room.opponentSeat(seat)]),
           }),
         );
         room.broadcast({ type: 'opponent_reconnected', seat }, ws);
@@ -1582,6 +1593,7 @@ wss.on('connection', (ws) => {
               ? getLeague(getPlayer(room.uids[room.opponentSeat(seat)])?.elo ?? 1000).name
               : undefined,
             oppUid: room.isFull ? room.uids[room.opponentSeat(seat)] : undefined,
+            oppDisc: room.isFull ? discOf(room.uids[room.opponentSeat(seat)]) : undefined,
           }),
         );
 

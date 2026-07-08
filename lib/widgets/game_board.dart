@@ -22,6 +22,7 @@ class _GameBoardState extends State<GameBoard> with SingleTickerProviderStateMix
   late Ticker _ticker;
   GameController? _game;
   String _discColor = 'green';
+  String _oppDiscColor = '';
   String _boardTheme = 'classic';
   double _innerW = 0;
   double _innerH = 0;
@@ -39,10 +40,15 @@ class _GameBoardState extends State<GameBoard> with SingleTickerProviderStateMix
     super.didChangeDependencies();
     final game = context.read<GameController>();
     if (_game != game) {
-      _game?.removeListener(_syncTicker);
+      _game?.removeListener(_onGameChanged);
       _game = game;
-      _game!.addListener(_syncTicker);
+      _game!.addListener(_onGameChanged);
     }
+    _refreshCosmetics();
+    _syncTicker();
+  }
+
+  void _onGameChanged() {
     _refreshCosmetics();
     _syncTicker();
   }
@@ -61,15 +67,24 @@ class _GameBoardState extends State<GameBoard> with SingleTickerProviderStateMix
   void _refreshCosmetics() {
     final meta = context.read<PlayerMetaService>();
     final auth = context.read<AuthService>();
+    final game = _game ?? context.read<GameController>();
     final disc = meta.discColor(auth.getUid());
     final board = meta.boardTheme(auth.getUid());
-    if (disc != _discColor || board != _boardTheme) {
+    // Rakip kozmetiği yalnızca gerçek çevrimiçi maçta gösterilir.
+    final oppDisc = (!game.aiMode && !game.localDuoMode) ? game.opponentDiscColor : '';
+    if (disc != _discColor || board != _boardTheme || oppDisc != _oppDiscColor) {
       setState(() {
         _discColor = disc;
+        _oppDiscColor = oppDisc;
         _boardTheme = board;
       });
       if (CosmeticCatalog.isImageDisc(_discColor)) {
         DiscImageCache.ensureLoaded(_discColor).then((_) {
+          if (mounted) _game?.boardRepaint.bump();
+        });
+      }
+      if (oppDisc.isNotEmpty && CosmeticCatalog.isImageDisc(oppDisc)) {
+        DiscImageCache.ensureLoaded(oppDisc).then((_) {
           if (mounted) _game?.boardRepaint.bump();
         });
       }
@@ -89,7 +104,7 @@ class _GameBoardState extends State<GameBoard> with SingleTickerProviderStateMix
 
   @override
   void dispose() {
-    _game?.removeListener(_syncTicker);
+    _game?.removeListener(_onGameChanged);
     _ticker.dispose();
     super.dispose();
   }
@@ -191,6 +206,7 @@ class _GameBoardState extends State<GameBoard> with SingleTickerProviderStateMix
           sx: _sx,
           sy: _sy,
           discColor: _discColor,
+          oppDiscColor: _oppDiscColor,
           boardTheme: _boardTheme,
         ),
       ),

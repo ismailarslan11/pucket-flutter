@@ -19,12 +19,14 @@ class GamePainter extends CustomPainter {
     required this.sy,
     required this.discColor,
     required this.boardTheme,
+    this.oppDiscColor = '',
   }) : super(repaint: game.boardRepaint);
 
   final GameController game;
   final double sx;
   final double sy;
   final String discColor;
+  final String oppDiscColor;
   final String boardTheme;
 
   static const _fieldVersion = 6;
@@ -266,14 +268,17 @@ class GamePainter extends CustomPainter {
     final pos = _s2c(rx, ry);
     final r = GameConstants.discRadius * sx;
     final isMine = d.owner == mySeat;
+    // Rakibin premium/emoji skin'i de gösterilir (düz renkler karışmasın diye
+    // sadece resim/emoji tabanlı kozmetikler; kırmızı/mavi kimliği korunur).
+    final cosmetic = isMine ? discColor : oppDiscColor;
 
-    if (isMine && CosmeticCatalog.isEmojiDisc(discColor)) {
-      _drawEmojiDisc(canvas, pos, r, CosmeticCatalog.emojiDisc(discColor)!);
+    if (cosmetic.isNotEmpty && CosmeticCatalog.isEmojiDisc(cosmetic)) {
+      _drawEmojiDisc(canvas, pos, r, CosmeticCatalog.emojiDisc(cosmetic)!);
       return;
     }
 
-    final usePremium = isMine && CosmeticCatalog.isImageDisc(discColor);
-    final img = usePremium ? DiscImageCache.imageFor(discColor) : null;
+    final usePremium = cosmetic.isNotEmpty && CosmeticCatalog.isImageDisc(cosmetic);
+    final img = usePremium ? DiscImageCache.imageFor(cosmetic) : null;
 
     if (img != null) {
       final dst = Rect.fromCircle(center: pos, radius: r);
@@ -362,6 +367,7 @@ class GamePainter extends CustomPainter {
     return old.sx != sx ||
         old.sy != sy ||
         old.discColor != discColor ||
+        old.oppDiscColor != oppDiscColor ||
         old.boardTheme != boardTheme ||
         old.game.mySeat != game.mySeat ||
         old.game.localDuoMode != game.localDuoMode;
