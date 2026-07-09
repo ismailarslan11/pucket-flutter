@@ -1412,6 +1412,7 @@ const server = http.createServer((req, res) => {
       getSeasonInfo,
       rooms,
       matchmakingQueue,
+      push,
     })
   ) {
     return;

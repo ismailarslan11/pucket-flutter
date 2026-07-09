@@ -140,9 +140,37 @@ function runAdminAction(ctx, action, params) {
       return clearReports(ctx.db);
     case 'delete_report':
       return deleteReport(ctx.db, params.timestamp);
+    case 'notify':
+      return sendNotification(ctx, params);
     default:
       return { ok: false, error: 'Bilinmeyen işlem' };
   }
+}
+
+// Anlık push bildirimi gönder (tek kullanıcıya veya herkese).
+function sendNotification(ctx, params) {
+  const title = (params.title || '').trim();
+  const body = (params.body || '').trim();
+  const target = (params.target || '').trim(); // boş = herkes
+  if (!title || !body) return { ok: false, error: 'Başlık ve mesaj gerekli' };
+  if (!ctx.push || !ctx.push.enabled) {
+    return { ok: false, error: 'Push kapalı (FIREBASE_SERVICE_ACCOUNT_JSON ayarlı değil)' };
+  }
+  const metaMap = ctx.db.get('playerMeta').value() || {};
+  let tokens = [];
+  if (target) {
+    const m = metaMap[target];
+    if (m && m.fcmToken) tokens = [m.fcmToken];
+    else return { ok: false, error: 'Bu kullanıcının token\'ı yok' };
+  } else {
+    tokens = Object.values(metaMap)
+      .map((m) => m && m.fcmToken)
+      .filter(Boolean);
+  }
+  if (tokens.length === 0) return { ok: false, error: 'Gönderilecek cihaz yok' };
+  // Fire-and-forget (anlık); sonucu beklemeden yanıt ver.
+  tokens.forEach((t) => ctx.push.sendPush(t, title, body, { type: 'admin' }));
+  return { ok: true, message: `${tokens.length} cihaza gönderildi` };
 }
 
 function collectAdminData(ctx) {
@@ -340,6 +368,24 @@ function renderAdminHtml(data, flash) {
       <div class="card"><b>${stats.activeRooms}</b><span>Aktif oda</span></div>
       <div class="card"><b>${stats.queueSize}</b><span>Eşleşme kuyruğu</span></div>
     </div>
+
+    <section>
+      <h2>📢 Bildirim Gönder (anlık)</h2>
+      <form method="POST" action="/admin/action" style="display:flex;flex-direction:column;gap:8px;max-width:520px;">
+        <input type="hidden" name="action" value="notify">
+        <input name="title" placeholder="Başlık" required
+          style="padding:10px;border-radius:8px;border:1px solid #333;background:#111;color:#fff;">
+        <textarea name="body" placeholder="Mesaj" required rows="2"
+          style="padding:10px;border-radius:8px;border:1px solid #333;background:#111;color:#fff;"></textarea>
+        <input name="target" placeholder="Hedef UID (boş bırak = HERKESE)"
+          style="padding:10px;border-radius:8px;border:1px solid #333;background:#111;color:#fff;">
+        <button type="submit"
+          style="padding:12px;border-radius:8px;border:0;background:#22c55e;color:#062;font-weight:800;cursor:pointer;">
+          Gönder
+        </button>
+        <span class="muted">Boş UID = tüm cihazlara. Firebase Console'a gerek yok — buradan anlık gider.</span>
+      </form>
+    </section>
 
     <section>
       <h2>Oyuncular (${sortedPlayers.length})</h2>
