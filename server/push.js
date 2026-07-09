@@ -27,8 +27,16 @@ async function sendPush(token, title, body, data = {}) {
       token,
       notification: { title, body },
       data: Object.fromEntries(Object.entries(data).map(([k, v]) => [k, String(v)])),
-      android: { priority: 'high' },
-      apns: { payload: { aps: { sound: 'default' } } },
+      // Android: yüksek öncelik → Doze'da bile anlık teslimat.
+      android: { priority: 'high', ttl: 0 },
+      // iOS: apns-priority 10 = anlık (5 = kısılır). apns-push-type alert şart.
+      apns: {
+        headers: {
+          'apns-priority': '10',
+          'apns-push-type': 'alert',
+        },
+        payload: { aps: { sound: 'default' } },
+      },
     });
     return true;
   } catch (e) {
