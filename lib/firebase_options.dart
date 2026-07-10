@@ -44,37 +44,37 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyAy114yEHnrXeZ5rQrQ1uCALFGJEk_z-Yo',
-    appId: '1:834928081370:web:c5029e9b0f9c4cedf268e3',
-    messagingSenderId: '834928081370',
-    projectId: 'pucket-202607',
-    authDomain: 'pucket-202607.firebaseapp.com',
-    storageBucket: 'pucket-202607.firebasestorage.app',
+    apiKey: 'AIzaSyBjjf28PLC1LJyxy6kd3Jy8bOIYCEmpmjw',
+    appId: '1:461164328612:android:f3bec96b611ca30b311831',
+    messagingSenderId: '461164328612',
+    projectId: 'pucketyeni',
+    authDomain: 'pucketyeni.firebaseapp.com',
+    storageBucket: 'pucketyeni.firebasestorage.app',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyDcWg-m_KT59ubc5nHT0ovVOu2R897JF-E',
-    appId: '1:834928081370:android:89b888b55f744e4af268e3',
-    messagingSenderId: '834928081370',
-    projectId: 'pucket-202607',
-    storageBucket: 'pucket-202607.firebasestorage.app',
+    apiKey: 'AIzaSyBjjf28PLC1LJyxy6kd3Jy8bOIYCEmpmjw',
+    appId: '1:461164328612:android:f3bec96b611ca30b311831',
+    messagingSenderId: '461164328612',
+    projectId: 'pucketyeni',
+    storageBucket: 'pucketyeni.firebasestorage.app',
   );
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyCAIV2Ub_puscY3Ea1nRv5UGthI_uPyEgw',
-    appId: '1:834928081370:ios:e8ede0dab3b63da0f268e3',
-    messagingSenderId: '834928081370',
-    projectId: 'pucket-202607',
-    storageBucket: 'pucket-202607.firebasestorage.app',
-    iosClientId: '834928081370-8joaucc5tjldsrd7e080ck7sufh0d6so.apps.googleusercontent.com',
+    apiKey: 'AIzaSyAQYymolaAzDtpY4_FvF7-bP_Uh6VZfDjI',
+    appId: '1:461164328612:ios:bf4d5d789d82082a311831',
+    messagingSenderId: '461164328612',
+    projectId: 'pucketyeni',
+    storageBucket: 'pucketyeni.firebasestorage.app',
+    iosClientId: '461164328612-fbt9ckaiab0diimgkm4ii0rohs77ihf2.apps.googleusercontent.com',
     iosBundleId: 'com.pucket.pucketFlutter',
   );
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyCAIV2Ub_puscY3Ea1nRv5UGthI_uPyEgw',
-    appId: '1:834928081370:ios:e8ede0dab3b63da0f268e3',
-    messagingSenderId: '834928081370',
-    projectId: 'pucket-202607',
-    storageBucket: 'pucket-202607.firebasestorage.app',
-    iosClientId: '834928081370-8joaucc5tjldsrd7e080ck7sufh0d6so.apps.googleusercontent.com',
+    apiKey: 'AIzaSyAQYymolaAzDtpY4_FvF7-bP_Uh6VZfDjI',
+    appId: '1:461164328612:ios:bf4d5d789d82082a311831',
+    messagingSenderId: '461164328612',
+    projectId: 'pucketyeni',
+    storageBucket: 'pucketyeni.firebasestorage.app',
+    iosClientId: '461164328612-fbt9ckaiab0diimgkm4ii0rohs77ihf2.apps.googleusercontent.com',
     iosBundleId: 'com.pucket.pucketFlutter',
   );
 }

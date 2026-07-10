@@ -29,7 +29,7 @@
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>com.googleusercontent.apps.834928081370-8joaucc5tjldsrd7e080ck7sufh0d6so</string>
+				<string>com.googleusercontent.apps.461164328612-fbt9ckaiab0diimgkm4ii0rohs77ihf2</string>
 			</array>
 		</dict>
 	</array>
@@ -42,9 +42,9 @@
 	<key>NSUserTrackingUsageDescription</key>
 	<string>Reklamlarınızı daha alakalı hale getirmek için kimliğiniz kullanılır. İzin vermeseniz de oyunu oynayabilirsiniz.</string>
 	<key>GIDClientID</key>
-	<string>834928081370-8joaucc5tjldsrd7e080ck7sufh0d6so.apps.googleusercontent.com</string>
+	<string>461164328612-fbt9ckaiab0diimgkm4ii0rohs77ihf2.apps.googleusercontent.com</string>
 	<key>GIDServerClientID</key>
-	<string>834928081370-4j3p8vp1dll89i7qvcpb0alvahu7ao1f.apps.googleusercontent.com</string>
+	<string>461164328612-0nr4vtrungqa74ko5l2he84cvehurtel.apps.googleusercontent.com</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSAppleSignInUsageDescription</key>

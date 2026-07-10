@@ -1,53 +1,37 @@
 {
   "project_info": {
-    "project_number": "834928081370",
-    "project_id": "pucket-202607",
-    "storage_bucket": "pucket-202607.firebasestorage.app"
+    "project_number": "461164328612",
+    "project_id": "pucketyeni",
+    "storage_bucket": "pucketyeni.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:834928081370:android:89b888b55f744e4af268e3",
+        "mobilesdk_app_id": "1:461164328612:android:f3bec96b611ca30b311831",
         "android_client_info": {
           "package_name": "com.yesastudio.pucket"
         }
       },
       "oauth_client": [
         {
-          "client_id": "834928081370-72f7778jqlpofg5u587itmjmbk4kgfet.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.yesastudio.pucket",
-            "certificate_hash": "0d297ee119cc19a0817b0f21d5f186f1a80ea38f"
-          }
-        },
-        {
-          "client_id": "834928081370-cb5uu9sd574vj6qe3fbdrisellb4lgj0.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.yesastudio.pucket",
-            "certificate_hash": "62f4414cf8d06b7e3942ee2bf9d5c716a1d79e44"
-          }
-        },
-        {
-          "client_id": "834928081370-4j3p8vp1dll89i7qvcpb0alvahu7ao1f.apps.googleusercontent.com",
+          "client_id": "461164328612-0nr4vtrungqa74ko5l2he84cvehurtel.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyDcWg-m_KT59ubc5nHT0ovVOu2R897JF-E"
+          "current_key": "AIzaSyBjjf28PLC1LJyxy6kd3Jy8bOIYCEmpmjw"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "834928081370-4j3p8vp1dll89i7qvcpb0alvahu7ao1f.apps.googleusercontent.com",
+              "client_id": "461164328612-0nr4vtrungqa74ko5l2he84cvehurtel.apps.googleusercontent.com",
               "client_type": 3
             },
             {
-              "client_id": "834928081370-8joaucc5tjldsrd7e080ck7sufh0d6so.apps.googleusercontent.com",
+              "client_id": "461164328612-fbt9ckaiab0diimgkm4ii0rohs77ihf2.apps.googleusercontent.com",
               "client_type": 2,
               "ios_info": {
                 "bundle_id": "com.pucket.pucketFlutter"
