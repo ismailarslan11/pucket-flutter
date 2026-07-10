@@ -159,9 +159,16 @@ class MenuScreen extends StatelessWidget {
                             onPressed: () => AppRouter.goCosmetics(context),
                           ),
                           YesaMenuTile(
+                            label: l10n.menuPremium,
+                            icon: Icons.workspace_premium_rounded,
+                            accent: true,
+                            staggerIndex: 16,
+                            onPressed: () => AppRouter.goPremium(context),
+                          ),
+                          YesaMenuTile(
                             label: l10n.menuSettings,
                             icon: Icons.settings_rounded,
-                            staggerIndex: 16,
+                            staggerIndex: 17,
                             onPressed: () => AppRouter.goSettings(context),
                           ),
                         ],

@@ -252,9 +252,13 @@ class _CosmeticsScreenState extends State<CosmeticsScreen> {
               crossAxisSpacing: 10,
               childAspectRatio: 0.78,
             ),
-            itemCount: CosmeticCatalog.emojiDiscs.length,
+            // VIP pulu yalnızca (IAP ile) açıldıysa listede görünür.
+            itemCount: CosmeticCatalog.emojiDiscs.length +
+                (metaSvc.isDiscUnlocked(CosmeticCatalog.vipDisc.id) ? 1 : 0),
             itemBuilder: (context, i) {
-              final item = CosmeticCatalog.emojiDiscs[i];
+              final item = i < CosmeticCatalog.emojiDiscs.length
+                  ? CosmeticCatalog.emojiDiscs[i]
+                  : CosmeticCatalog.vipDisc;
               final unlocked = metaSvc.isDiscUnlocked(item.id);
               final selected = _disc == item.id;
               return _EmojiDiscTile(

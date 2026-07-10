@@ -19,6 +19,7 @@ class PlayerMetaService extends ChangeNotifier {
   };
 
   int get tokens => meta?.tokens ?? 0;
+  bool get vip => meta?.vip ?? false;
   List<String> get unlockedDiscs => meta?.unlockedDiscs ?? const [];
   List<String> get unlockedBoards => meta?.unlockedBoards ?? const [];
 

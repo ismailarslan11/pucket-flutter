@@ -915,6 +915,8 @@ const server = http.createServer((req, res) => {
               meta.lastWinTokenDate = today;
               db.set(`playerMeta.${uid}.lastWinTokenDate`, today).write();
             }
+            // VIP: her galibiyette +%50 jeton.
+            if (meta.vip) gain = Math.round(gain * 1.5);
             meta.tokens += gain;
             db.set(`playerMeta.${uid}.tokens`, meta.tokens).write();
             res.writeHead(200, cors);
@@ -1325,7 +1327,7 @@ const server = http.createServer((req, res) => {
     readJsonBody(req)
       .then((data) => {
         const uid = (data.uid || '').trim();
-        const amount = Math.max(0, Math.min(1000, data.amount | 0));
+        const amount = Math.max(0, Math.min(1500, data.amount | 0));
         if (!uid || !amount) {
           res.writeHead(400, cors);
           res.end(JSON.stringify({ ok: false }));
@@ -1336,6 +1338,34 @@ const server = http.createServer((req, res) => {
         db.set(`playerMeta.${uid}.tokens`, meta.tokens).write();
         res.writeHead(200, cors);
         res.end(JSON.stringify({ ok: true, tokens: meta.tokens }));
+      })
+      .catch(() => {
+        res.writeHead(400, cors);
+        res.end(JSON.stringify({ ok: false }));
+      });
+    return;
+  }
+
+  // IAP VIP paketi: kalıcı vip bayrağı + özel VIP pulu açılır.
+  // NOT: Üretimde makbuz doğrulaması eklenmeli (bkz. /iap/grant notu).
+  if (url.pathname === '/iap/premium' && req.method === 'POST') {
+    readJsonBody(req)
+      .then((data) => {
+        const uid = (data.uid || '').trim();
+        if (!uid) {
+          res.writeHead(400, cors);
+          res.end(JSON.stringify({ ok: false }));
+          return;
+        }
+        const meta = ensureTokenFields(getPlayerMeta(uid));
+        meta.vip = true;
+        if (!(meta.unlockedDiscs || []).includes('vip_gold')) {
+          meta.unlockedDiscs = [...(meta.unlockedDiscs || []), 'vip_gold'];
+        }
+        db.set(`playerMeta.${uid}.vip`, true).write();
+        db.set(`playerMeta.${uid}.unlockedDiscs`, meta.unlockedDiscs).write();
+        res.writeHead(200, cors);
+        res.end(JSON.stringify({ ok: true, meta: getPlayerMeta(uid) }));
       })
       .catch(() => {
         res.writeHead(400, cors);

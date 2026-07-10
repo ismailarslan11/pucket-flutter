@@ -21,6 +21,7 @@ import 'local_duo_screen.dart';
 import 'lobby_screen.dart';
 import 'menu_screen.dart';
 import 'tournament_screen.dart';
+import 'premium_screen.dart';
 import 'queue_screen.dart';
 import 'settings_screen.dart';
 import 'profile_screen.dart';
@@ -158,6 +159,10 @@ class AppRouter {
 
   static void goCosmetics(BuildContext context) {
     Navigator.push(context, MaterialPageRoute(builder: (_) => const CosmeticsScreen()));
+  }
+
+  static void goPremium(BuildContext context) {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => const PremiumScreen()));
   }
 
   static void startTraining(BuildContext context, TrainingType type, {AiLevel level = AiLevel.easy}) {

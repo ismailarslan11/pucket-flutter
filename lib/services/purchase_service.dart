@@ -13,10 +13,12 @@ class ProductIds {
   static const removeAds = 'pucket_remove_ads'; // non-consumable
   static const tokens100 = 'pucket_tokens_100'; // consumable
   static const tokens500 = 'pucket_tokens_550'; // consumable (bonus)
+  static const tokens1200 = 'pucket_tokens_1200'; // consumable (en avantajlı)
   static const battlePassPremium = 'pucket_bp_premium'; // non-consumable / seasonal
+  static const vip = 'pucket_vip'; // non-consumable — VIP paket
 
-  static const all = {removeAds, tokens100, tokens500, battlePassPremium};
-  static const consumables = {tokens100, tokens500};
+  static const all = {removeAds, tokens100, tokens500, tokens1200, battlePassPremium, vip};
+  static const consumables = {tokens100, tokens500, tokens1200};
 }
 
 class PurchaseService extends ChangeNotifier {

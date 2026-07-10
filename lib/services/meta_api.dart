@@ -14,6 +14,7 @@ class PlayerMeta {
   final List<String> unlockedDiscs;
   final List<String> unlockedBoards;
   final int lastAdReward;
+  final bool vip;
 
   PlayerMeta({
     required this.quests,
@@ -25,6 +26,7 @@ class PlayerMeta {
     required this.unlockedDiscs,
     required this.unlockedBoards,
     required this.lastAdReward,
+    this.vip = false,
   });
 
   factory PlayerMeta.fromJson(Map<String, dynamic> j) => PlayerMeta(
@@ -39,6 +41,7 @@ class PlayerMeta {
         unlockedDiscs: (j['unlockedDiscs'] as List?)?.map((e) => e.toString()).toList() ?? [],
         unlockedBoards: (j['unlockedBoards'] as List?)?.map((e) => e.toString()).toList() ?? [],
         lastAdReward: (j['lastAdReward'] as num?)?.toInt() ?? 0,
+        vip: j['vip'] == true,
       );
 
   bool get questsComplete =>
@@ -58,6 +61,7 @@ class PlayerMeta {
         unlockedDiscs: unlockedDiscs,
         unlockedBoards: unlockedBoards,
         lastAdReward: lastAdReward,
+        vip: vip,
       );
 }
 
@@ -283,6 +287,22 @@ class MetaApi {
             Uri.parse('$apiBaseUrl/iap/grant'),
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode({'uid': uid, 'amount': amount}),
+          )
+          .timeout(const Duration(seconds: 8));
+      return res.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// VIP paketi — sunucuda kalıcı vip bayrağı + özel VIP pulu açılır.
+  static Future<bool> unlockVip(String uid) async {
+    try {
+      final res = await http
+          .post(
+            Uri.parse('$apiBaseUrl/iap/premium'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'uid': uid}),
           )
           .timeout(const Duration(seconds: 8));
       return res.statusCode == 200;

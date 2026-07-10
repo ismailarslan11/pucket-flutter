@@ -238,6 +238,17 @@ class AppLocalizations {
   String get buyTokens => _t('buyTokens');
   String get restorePurchases => _t('restorePurchases');
   String get iapUnavailable => _t('iapUnavailable');
+  String get menuPremium => _t('menuPremium');
+  String get vipTitle => _t('vipTitle');
+  String get vipSubtitle => _t('vipSubtitle');
+  String get vipPerkNoAds => _t('vipPerkNoAds');
+  String get vipPerkDisc => _t('vipPerkDisc');
+  String get vipPerkTokens => _t('vipPerkTokens');
+  String get vipActive => _t('vipActive');
+  String get buyVip => _t('buyVip');
+  String get tokenPacksTitle => _t('tokenPacksTitle');
+  String get bestValue => _t('bestValue');
+  String get premiumPending => _t('premiumPending');
   String get tournament => _t('tournament');
   String get tournamentJoined => _t('tournamentJoined');
   String get tournamentPrizes => _t('tournamentPrizes');
@@ -551,6 +562,18 @@ const _tr = {
   'buyTokens': 'Jeton Paketi',
   'restorePurchases': 'Satın Alımları Geri Yükle',
   'iapUnavailable': 'Mağaza şu an kullanılamıyor',
+  'menuPremium': 'Premium',
+  'vipTitle': 'PUCKET VIP',
+  'vipSubtitle': 'Tek seferlik satın alım — kalıcı ayrıcalıklar',
+  'vipPerkNoAds': 'Tüm reklamlar kalkar',
+  'vipPerkDisc': 'Özel altın taç pulu 👑',
+  'vipPerkTokens': 'Her galibiyette +%50 jeton',
+  'vipActive': 'VIP AKTİF ✓',
+  'buyVip': 'VIP OL',
+  'tokenPacksTitle': 'Jeton Paketleri',
+  'bestValue': 'EN AVANTAJLI',
+  'premiumPending': 'Ürünler mağazada tanımlanınca satışa açılır',
+  'disc_vip_gold': 'VIP Taç',
   'tournamentJoined': 'Katıldın! Ranked kazanınca puan topla.',
   'tournamentPrizes': 'Haftalık Ödüller',
   'battlePassClaim': 'Al',
@@ -856,6 +879,18 @@ const _en = {
   'buyTokens': 'Token Pack',
   'restorePurchases': 'Restore Purchases',
   'iapUnavailable': 'Store unavailable right now',
+  'menuPremium': 'Premium',
+  'vipTitle': 'PUCKET VIP',
+  'vipSubtitle': 'One-time purchase — permanent perks',
+  'vipPerkNoAds': 'All ads removed',
+  'vipPerkDisc': 'Exclusive golden crown disc 👑',
+  'vipPerkTokens': '+50% tokens on every win',
+  'vipActive': 'VIP ACTIVE ✓',
+  'buyVip': 'GO VIP',
+  'tokenPacksTitle': 'Token Packs',
+  'bestValue': 'BEST VALUE',
+  'premiumPending': 'Items go on sale once configured in the store',
+  'disc_vip_gold': 'VIP Crown',
   'tournamentJoined': 'Joined! Earn points by winning ranked.',
   'tournamentPrizes': 'Weekly Prizes',
   'battlePassClaim': 'Claim',

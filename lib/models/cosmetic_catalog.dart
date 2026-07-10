@@ -40,15 +40,18 @@ class CosmeticCatalog {
     CosmeticItem(id: 'emoji_trophy', price: 35, emoji: '🏆', bgArgb: 0xFF403010),
   ];
 
+  /// VIP pulu — sadece VIP paketi (gerçek para) ile açılır, jetonla satılmaz.
+  static const vipDisc = CosmeticItem(id: 'vip_gold', price: 0, emoji: '👑', bgArgb: 0xFF4A3808);
+
   static const premiumBoards = [
     CosmeticItem(id: 'neon', price: 120),
     CosmeticItem(id: 'wood', price: 150),
   ];
 
   static bool isPremiumDisc(String id) =>
-      premiumDiscs.any((d) => d.id == id) || emojiDiscs.any((d) => d.id == id);
+      premiumDiscs.any((d) => d.id == id) || emojiDiscs.any((d) => d.id == id) || id == vipDisc.id;
 
-  static bool isEmojiDisc(String id) => emojiDiscs.any((d) => d.id == id);
+  static bool isEmojiDisc(String id) => emojiDiscs.any((d) => d.id == id) || id == vipDisc.id;
 
   static bool isImageDisc(String id) => premiumDiscs.any((d) => d.id == id);
 
@@ -72,7 +75,8 @@ class CosmeticCatalog {
 
   static String? discAsset(String id) => premiumDiscs.where((d) => d.id == id).map((d) => d.asset).firstOrNull;
 
-  static CosmeticItem? emojiDisc(String id) => emojiDiscs.where((d) => d.id == id).firstOrNull;
+  static CosmeticItem? emojiDisc(String id) =>
+      id == vipDisc.id ? vipDisc : emojiDiscs.where((d) => d.id == id).firstOrNull;
 
   /// Galibiyet jetonu — ELO kademesine göre artar.
   static int winTokenReward(int elo) {

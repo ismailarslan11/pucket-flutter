@@ -120,6 +120,15 @@ void _handlePurchase(
     case ProductIds.tokens500:
       unawaited(MetaApi.grantIapTokens(auth.getUid(), 550).then((_) => meta.load(auth.getUid())));
       break;
+    case ProductIds.tokens1200:
+      unawaited(MetaApi.grantIapTokens(auth.getUid(), 1200).then((_) => meta.load(auth.getUid())));
+      break;
+    case ProductIds.vip:
+      // VIP: reklamsız + sunucuda vip bayrağı (+%50 jeton) + özel pul.
+      ads.adsRemoved = true;
+      unawaited(settings.setAdsRemoved(true));
+      unawaited(MetaApi.unlockVip(auth.getUid()).then((_) => meta.load(auth.getUid())));
+      break;
     case ProductIds.battlePassPremium:
       unawaited(BattlePassApi.unlockPremium(auth.getUid()));
       break;
