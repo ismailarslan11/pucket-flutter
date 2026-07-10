@@ -242,13 +242,32 @@ class AppLocalizations {
   String get vipTitle => _t('vipTitle');
   String get vipSubtitle => _t('vipSubtitle');
   String get vipPerkNoAds => _t('vipPerkNoAds');
+  String get vipPerkNoAdsSub => _t('vipPerkNoAdsSub');
   String get vipPerkDisc => _t('vipPerkDisc');
+  String get vipPerkDiscSub => _t('vipPerkDiscSub');
   String get vipPerkTokens => _t('vipPerkTokens');
+  String get vipPerkTokensSub => _t('vipPerkTokensSub');
   String get vipActive => _t('vipActive');
   String get buyVip => _t('buyVip');
   String get tokenPacksTitle => _t('tokenPacksTitle');
   String get bestValue => _t('bestValue');
   String get premiumPending => _t('premiumPending');
+  String get compareTitle => _t('compareTitle');
+  String get compareFree => _t('compareFree');
+  String get compareVip => _t('compareVip');
+  String get compareAds => _t('compareAds');
+  String get compareAdsFree => _t('compareAdsFree');
+  String get compareAdsVip => _t('compareAdsVip');
+  String get compareWinTokens => _t('compareWinTokens');
+  String get compareFirstWin => _t('compareFirstWin');
+  String get compareCrown => _t('compareCrown');
+  String get removeAdsSub => _t('removeAdsSub');
+  String get tokenGuide => _t('tokenGuide');
+  String get bonus10 => _t('bonus10');
+  String get bonus20 => _t('bonus20');
+  String get bpCardSub => _t('bpCardSub');
+  String get premiumNotes => _t('premiumNotes');
+  String get openLabel => _t('openLabel');
   String get tournament => _t('tournament');
   String get tournamentJoined => _t('tournamentJoined');
   String get tournamentPrizes => _t('tournamentPrizes');
@@ -566,13 +585,32 @@ const _tr = {
   'vipTitle': 'PUCKET VIP',
   'vipSubtitle': 'Tek seferlik satın alım — kalıcı ayrıcalıklar',
   'vipPerkNoAds': 'Tüm reklamlar kalkar',
+  'vipPerkNoAdsSub': 'Banner ve maç arası reklamlar tamamen kapanır',
   'vipPerkDisc': 'Özel altın taç pulu 👑',
+  'vipPerkDiscSub': 'Jetonla satın alınamaz — rakibin de maçta görür',
   'vipPerkTokens': 'Her galibiyette +%50 jeton',
+  'vipPerkTokensSub': 'Günün ilk galibiyeti 2x ile birleşince 3x kazanırsın',
   'vipActive': 'VIP AKTİF ✓',
   'buyVip': 'VIP OL',
   'tokenPacksTitle': 'Jeton Paketleri',
   'bestValue': 'EN AVANTAJLI',
   'premiumPending': 'Ürünler mağazada tanımlanınca satışa açılır',
+  'compareTitle': 'Ücretsiz vs VIP',
+  'compareFree': 'ÜCRETSİZ',
+  'compareVip': 'VIP',
+  'compareAds': 'Reklamlar',
+  'compareAdsFree': 'Var',
+  'compareAdsVip': 'Yok',
+  'compareWinTokens': 'Galibiyet jetonu',
+  'compareFirstWin': 'Günün ilk galibiyeti',
+  'compareCrown': 'VIP taç pulu',
+  'removeAdsSub': 'Banner + maç arası reklamlar kalkar. Jeton için reklam izleme istersen kalır.',
+  'tokenGuide': 'Premium pullar 100–300 jeton · Emoji pullar 15–35 jeton',
+  'bonus10': '+%10 BONUS',
+  'bonus20': '+%20 BONUS',
+  'bpCardSub': 'Sezonluk ödül yolunun premium kolunu açar — ekstra jeton ve kozmetikler',
+  'premiumNotes': 'Satın alımlar hesabına bağlıdır. Cihaz değiştirirsen "Satın Alımları Geri Yükle" yeterli. Jetonların sunucuda güvende tutulur.',
+  'openLabel': 'İncele',
   'disc_vip_gold': 'VIP Taç',
   'tournamentJoined': 'Katıldın! Ranked kazanınca puan topla.',
   'tournamentPrizes': 'Haftalık Ödüller',
@@ -883,13 +921,32 @@ const _en = {
   'vipTitle': 'PUCKET VIP',
   'vipSubtitle': 'One-time purchase — permanent perks',
   'vipPerkNoAds': 'All ads removed',
+  'vipPerkNoAdsSub': 'Banners and between-match ads disappear entirely',
   'vipPerkDisc': 'Exclusive golden crown disc 👑',
+  'vipPerkDiscSub': 'Cannot be bought with tokens — opponents see it too',
   'vipPerkTokens': '+50% tokens on every win',
+  'vipPerkTokensSub': 'Stacks with the daily first-win 2x for a total of 3x',
   'vipActive': 'VIP ACTIVE ✓',
   'buyVip': 'GO VIP',
   'tokenPacksTitle': 'Token Packs',
   'bestValue': 'BEST VALUE',
   'premiumPending': 'Items go on sale once configured in the store',
+  'compareTitle': 'Free vs VIP',
+  'compareFree': 'FREE',
+  'compareVip': 'VIP',
+  'compareAds': 'Ads',
+  'compareAdsFree': 'Yes',
+  'compareAdsVip': 'None',
+  'compareWinTokens': 'Win tokens',
+  'compareFirstWin': 'First win of the day',
+  'compareCrown': 'VIP crown disc',
+  'removeAdsSub': 'Removes banners + between-match ads. Optional reward ads for tokens stay.',
+  'tokenGuide': 'Premium discs cost 100–300 tokens · Emoji discs 15–35',
+  'bonus10': '+10% BONUS',
+  'bonus20': '+20% BONUS',
+  'bpCardSub': 'Unlocks the premium reward track — extra tokens and cosmetics',
+  'premiumNotes': 'Purchases are tied to your account. On a new device just tap "Restore Purchases". Your tokens are stored safely on the server.',
+  'openLabel': 'View',
   'disc_vip_gold': 'VIP Crown',
   'tournamentJoined': 'Joined! Earn points by winning ranked.',
   'tournamentPrizes': 'Weekly Prizes',

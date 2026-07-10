@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../l10n/app_localizations.dart';
 import '../l10n/l10n_extension.dart';
 import '../services/player_meta_service.dart';
 import '../services/purchase_service.dart';
@@ -8,8 +9,10 @@ import '../services/settings_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/yesa_background.dart';
 import '../widgets/yesa_effects.dart';
+import 'app_router.dart';
 
-/// Premium mağaza — VIP paketi, reklam kaldırma ve jeton paketleri.
+/// Premium mağaza — VIP paketi, karşılaştırma, reklam kaldırma,
+/// jeton paketleri ve Battle Pass premium.
 class PremiumScreen extends StatelessWidget {
   const PremiumScreen({super.key});
 
@@ -22,6 +25,7 @@ class PremiumScreen extends StatelessWidget {
 
     final vipProduct = purchases.productFor(ProductIds.vip);
     final removeAdsProduct = purchases.productFor(ProductIds.removeAds);
+    final bpProduct = purchases.productFor(ProductIds.battlePassPremium);
 
     return Scaffold(
       body: YesaBackground(
@@ -71,8 +75,10 @@ class PremiumScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 14),
+                    StaggerIn(index: 1, child: _CompareTable(l10n: l10n)),
+                    const SizedBox(height: 14),
                     StaggerIn(
-                      index: 1,
+                      index: 2,
                       child: _RemoveAdsCard(
                         owned: settings.adsRemoved,
                         price: removeAdsProduct?.price,
@@ -89,8 +95,9 @@ class PremiumScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 10),
                     StaggerIn(
-                      index: 2,
+                      index: 3,
                       child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Expanded(
                             child: _TokenPack(
@@ -103,6 +110,7 @@ class PremiumScreen extends StatelessWidget {
                           Expanded(
                             child: _TokenPack(
                               amount: 550,
+                              bonusBadge: l10n.bonus10,
                               price: purchases.productFor(ProductIds.tokens500)?.price,
                               onBuy: () => purchases.buy(ProductIds.tokens500),
                             ),
@@ -111,12 +119,37 @@ class PremiumScreen extends StatelessWidget {
                           Expanded(
                             child: _TokenPack(
                               amount: 1200,
-                              badge: l10n.bestValue,
+                              bonusBadge: l10n.bonus20,
+                              highlight: l10n.bestValue,
                               price: purchases.productFor(ProductIds.tokens1200)?.price,
                               onBuy: () => purchases.buy(ProductIds.tokens1200),
                             ),
                           ),
                         ],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        const Icon(Icons.info_outline_rounded,
+                            color: AppColors.textMuted, size: 13),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            l10n.tokenGuide,
+                            style: const TextStyle(color: AppColors.textMuted, fontSize: 11),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 18),
+                    StaggerIn(
+                      index: 4,
+                      child: _BattlePassCard(
+                        price: bpProduct?.price,
+                        onBuy: bpProduct == null
+                            ? null
+                            : () => purchases.buy(ProductIds.battlePassPremium),
                       ),
                     ),
                     const SizedBox(height: 18),
@@ -145,6 +178,18 @@ class PremiumScreen extends StatelessWidget {
                         ),
                       ),
                     ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: Text(
+                        l10n.premiumNotes,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: AppColors.textMuted,
+                          fontSize: 10.5,
+                          height: 1.5,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -155,6 +200,8 @@ class PremiumScreen extends StatelessWidget {
     );
   }
 }
+
+// ── VIP kartı ──────────────────────────────────────────────────────────
 
 class _VipCard extends StatelessWidget {
   const _VipCard({required this.owned, required this.price, required this.onBuy});
@@ -186,23 +233,9 @@ class _VipCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                Container(
-                  width: 46,
-                  height: 46,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: const RadialGradient(
-                      center: Alignment(-0.35, -0.42),
-                      radius: 1.2,
-                      colors: [Color(0xFFFFE9A0), Color(0xFFF6C444), Color(0xFF8A6410)],
-                      stops: [0.0, 0.55, 1.0],
-                    ),
-                    border: Border.all(color: Colors.white24, width: 1.5),
-                  ),
-                  child: const Text('👑', style: TextStyle(fontSize: 22)),
-                ),
-                const SizedBox(width: 12),
+                // VIP taç pulu önizlemesi — oyundaki 3D pul görünümüyle aynı.
+                const _CrownDiscPreview(size: 64),
+                const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -210,9 +243,9 @@ class _VipCard extends StatelessWidget {
                       Text(
                         l10n.vipTitle,
                         style: AppTextStyles.glow(AppColors.sariAna)
-                            .copyWith(fontSize: 17, letterSpacing: 1.5),
+                            .copyWith(fontSize: 18, letterSpacing: 1.5),
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: 3),
                       Text(
                         l10n.vipSubtitle,
                         style: const TextStyle(color: AppColors.textMuted, fontSize: 11),
@@ -222,11 +255,11 @@ class _VipCard extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            _perk(l10n.vipPerkNoAds),
-            _perk(l10n.vipPerkDisc),
-            _perk(l10n.vipPerkTokens),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
+            _perk(l10n.vipPerkNoAds, l10n.vipPerkNoAdsSub, Icons.block_rounded),
+            _perk(l10n.vipPerkDisc, l10n.vipPerkDiscSub, Icons.workspace_premium_rounded),
+            _perk(l10n.vipPerkTokens, l10n.vipPerkTokensSub, Icons.monetization_on_rounded),
+            const SizedBox(height: 14),
             SizedBox(
               width: double.infinity,
               child: owned
@@ -277,26 +310,226 @@ class _VipCard extends StatelessWidget {
     );
   }
 
-  Widget _perk(String text) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 3),
+  Widget _perk(String title, String sub, IconData icon) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 5),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Icon(Icons.check_circle_rounded, color: AppColors.sariAna, size: 16),
-            const SizedBox(width: 8),
+            Container(
+              width: 28,
+              height: 28,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: AppColors.sariAna.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, color: AppColors.sariAna, size: 16),
+            ),
+            const SizedBox(width: 10),
             Expanded(
-              child: Text(
-                text,
-                style: const TextStyle(
-                  color: AppColors.beyaz,
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w600,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      color: AppColors.beyaz,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 1),
+                  Text(
+                    sub,
+                    style: const TextStyle(color: AppColors.textMuted, fontSize: 11, height: 1.3),
+                  ),
+                ],
               ),
             ),
           ],
         ),
       );
 }
+
+/// Oyundaki 3D pul stiliyle altın taç pulu önizlemesi.
+class _CrownDiscPreview extends StatelessWidget {
+  const _CrownDiscPreview({required this.size});
+
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    const base = Color(0xFFF6C444);
+    final light = Color.lerp(base, Colors.white, 0.42)!;
+    final dark = Color.lerp(base, Colors.black, 0.38)!;
+    final rim = Color.lerp(base, Colors.black, 0.52)!;
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: RadialGradient(
+          center: const Alignment(-0.35, -0.42),
+          radius: 1.25,
+          colors: [light, base, dark],
+          stops: const [0.0, 0.55, 1.0],
+        ),
+        border: Border.all(color: Colors.white24, width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: dark.withValues(alpha: 0.7),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Container(
+            width: size * 0.84,
+            height: size * 0.84,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: rim.withValues(alpha: 0.85), width: size * 0.06),
+            ),
+          ),
+          Text('👑', style: TextStyle(fontSize: size * 0.42)),
+          Align(
+            alignment: const Alignment(-0.45, -0.5),
+            child: Container(
+              width: size * 0.38,
+              height: size * 0.38,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    Colors.white.withValues(alpha: 0.45),
+                    Colors.white.withValues(alpha: 0.0),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Ücretsiz vs VIP karşılaştırma tablosu ──────────────────────────────
+
+class _CompareTable extends StatelessWidget {
+  const _CompareTable({required this.l10n});
+
+  final AppLocalizations l10n;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 6),
+      decoration: BoxDecoration(
+        color: AppColors.morDahaKoyu.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.beyaz.withValues(alpha: 0.12)),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                flex: 5,
+                child: Text(
+                  l10n.compareTitle,
+                  style: const TextStyle(
+                    color: AppColors.beyaz,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 12.5,
+                  ),
+                ),
+              ),
+              Expanded(
+                flex: 3,
+                child: Text(
+                  l10n.compareFree,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: AppColors.textMuted,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 10,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+              Expanded(
+                flex: 3,
+                child: Text(
+                  l10n.compareVip,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: AppColors.sariAna,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 10,
+                    letterSpacing: 0.5,
+                    shadows: [Shadow(color: AppColors.sariAna.withValues(alpha: 0.6), blurRadius: 6)],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          _row(l10n.compareAds, l10n.compareAdsFree, l10n.compareAdsVip, goodVip: true, badFree: true),
+          _row(l10n.compareWinTokens, 'x1', 'x1.5', goodVip: true),
+          _row(l10n.compareFirstWin, '2x', '3x', goodVip: true),
+          _row(l10n.compareCrown, '—', '✓', goodVip: true),
+        ],
+      ),
+    );
+  }
+
+  Widget _row(String label, String free, String vip, {bool goodVip = false, bool badFree = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 5,
+            child: Text(
+              label,
+              style: const TextStyle(color: AppColors.beyaz, fontSize: 12, fontWeight: FontWeight.w600),
+            ),
+          ),
+          Expanded(
+            flex: 3,
+            child: Text(
+              free,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: badFree ? AppColors.turuncuAna : AppColors.textMuted,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          Expanded(
+            flex: 3,
+            child: Text(
+              vip,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: goodVip ? AppColors.neonYesil : AppColors.beyaz,
+                fontSize: 12,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Reklamları Kaldır ──────────────────────────────────────────────────
 
 class _RemoveAdsCard extends StatelessWidget {
   const _RemoveAdsCard({required this.owned, required this.price, required this.onBuy});
@@ -317,18 +550,38 @@ class _RemoveAdsCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.block_rounded, color: AppColors.turuncuAna, size: 22),
+          Container(
+            width: 38,
+            height: 38,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: AppColors.turuncuAna.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(Icons.block_rounded, color: AppColors.turuncuAna, size: 20),
+          ),
           const SizedBox(width: 10),
           Expanded(
-            child: Text(
-              owned ? l10n.adsAlreadyRemoved : l10n.removeAds,
-              style: const TextStyle(
-                color: AppColors.beyaz,
-                fontWeight: FontWeight.w700,
-                fontSize: 13,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  owned ? l10n.adsAlreadyRemoved : l10n.removeAds,
+                  style: const TextStyle(
+                    color: AppColors.beyaz,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  l10n.removeAdsSub,
+                  style: const TextStyle(color: AppColors.textMuted, fontSize: 10.5, height: 1.3),
+                ),
+              ],
             ),
           ),
+          const SizedBox(width: 8),
           if (!owned)
             ScalePress(
               onTap: onBuy ?? () {},
@@ -349,85 +602,205 @@ class _RemoveAdsCard extends StatelessWidget {
               ),
             )
           else
-            const Icon(Icons.check_circle_rounded, color: AppColors.neonYesil, size: 20),
+            const Icon(Icons.check_circle_rounded, color: AppColors.neonYesil, size: 22),
         ],
       ),
     );
   }
 }
 
+// ── Jeton paketi kartı ─────────────────────────────────────────────────
+
 class _TokenPack extends StatelessWidget {
   const _TokenPack({
     required this.amount,
     required this.price,
     required this.onBuy,
-    this.badge,
+    this.bonusBadge,
+    this.highlight,
   });
 
   final int amount;
   final String? price;
-  final String? badge;
+  final String? bonusBadge;
+  final String? highlight;
   final VoidCallback onBuy;
 
   @override
   Widget build(BuildContext context) {
+    final highlighted = highlight != null;
     return ScalePress(
       onTap: onBuy,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
         decoration: BoxDecoration(
-          color: AppColors.morDahaKoyu.withValues(alpha: 0.6),
+          gradient: highlighted
+              ? const LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color(0xFF3A2E08), Color(0xFF251A05)],
+                )
+              : null,
+          color: highlighted ? null : AppColors.morDahaKoyu.withValues(alpha: 0.6),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: badge != null
-                ? AppColors.sariAna.withValues(alpha: 0.8)
+            color: highlighted
+                ? AppColors.sariAna.withValues(alpha: 0.85)
                 : AppColors.beyaz.withValues(alpha: 0.12),
-            width: badge != null ? 1.5 : 1,
+            width: highlighted ? 1.6 : 1,
           ),
+          boxShadow: highlighted ? AppShadows.neon(AppColors.sariAna, blur: 8) : null,
         ),
         child: Column(
           children: [
-            if (badge != null) ...[
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: AppColors.sariAna,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  badge!,
-                  style: const TextStyle(
-                    color: Color(0xFF201505),
-                    fontSize: 8,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 6),
-            ] else
-              const SizedBox(height: 20),
-            const Icon(Icons.monetization_on_rounded, color: AppColors.sariAna, size: 26),
+            SizedBox(
+              height: 16,
+              child: highlight != null
+                  ? _chip(highlight!, AppColors.sariAna, const Color(0xFF201505))
+                  : (bonusBadge != null
+                      ? _chip(bonusBadge!, AppColors.neonYesil.withValues(alpha: 0.2), AppColors.neonYesil)
+                      : null),
+            ),
+            const SizedBox(height: 8),
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                Icon(Icons.monetization_on_rounded,
+                    color: AppColors.sariAna.withValues(alpha: 0.25), size: 40),
+                const Icon(Icons.monetization_on_rounded, color: AppColors.sariAna, size: 28),
+              ],
+            ),
             const SizedBox(height: 4),
             Text(
               '$amount',
               style: const TextStyle(
                 color: AppColors.beyaz,
                 fontWeight: FontWeight.w900,
-                fontSize: 16,
+                fontSize: 17,
               ),
             ),
-            const SizedBox(height: 4),
-            Text(
-              price ?? '—',
-              style: const TextStyle(
-                color: AppColors.textMuted,
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
+            if (bonusBadge != null)
+              Text(
+                bonusBadge!,
+                style: const TextStyle(
+                  color: AppColors.neonYesil,
+                  fontSize: 8.5,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            const SizedBox(height: 6),
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: highlighted
+                    ? AppColors.sariAna
+                    : AppColors.beyaz.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                price ?? '—',
+                style: TextStyle(
+                  color: highlighted ? const Color(0xFF201505) : AppColors.beyaz,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w900,
+                ),
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _chip(String text, Color bg, Color fg) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(6)),
+        child: Text(
+          text,
+          style: TextStyle(color: fg, fontSize: 8, fontWeight: FontWeight.w900, letterSpacing: 0.4),
+        ),
+      );
+}
+
+// ── Battle Pass premium kartı ──────────────────────────────────────────
+
+class _BattlePassCard extends StatelessWidget {
+  const _BattlePassCard({required this.price, required this.onBuy});
+
+  final String? price;
+  final VoidCallback? onBuy;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppColors.vurguMoru.withValues(alpha: 0.25),
+            AppColors.morDahaKoyu.withValues(alpha: 0.6),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.vurguMoru.withValues(alpha: 0.5)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: AppColors.vurguMoru.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(Icons.military_tech_rounded, color: AppColors.vurguMoru, size: 22),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${l10n.battlePass} — ${l10n.battlePassPremium}',
+                  style: const TextStyle(
+                    color: AppColors.beyaz,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  l10n.bpCardSub,
+                  style: const TextStyle(color: AppColors.textMuted, fontSize: 10.5, height: 1.3),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          ScalePress(
+            onTap: () => AppRouter.goBattlePass(context),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                gradient: AppGradients.neonPurple,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                price ?? l10n.openLabel,
+                style: const TextStyle(
+                  color: AppColors.beyaz,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
