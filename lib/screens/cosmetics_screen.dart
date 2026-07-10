@@ -441,6 +441,10 @@ class _DiscChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final base = color ?? AppColors.neonYesil;
+    final light = Color.lerp(base, Colors.white, 0.42)!;
+    final dark = Color.lerp(base, Colors.black, 0.38)!;
+    final rim = Color.lerp(base, Colors.black, 0.52)!;
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -448,21 +452,72 @@ class _DiscChip extends StatelessWidget {
         height: 52,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: color,
+          // Oyundaki 3D pul görünümüyle aynı: üst-soldan ışık.
+          gradient: RadialGradient(
+            center: const Alignment(-0.35, -0.42),
+            radius: 1.25,
+            colors: [light, base, dark],
+            stops: const [0.0, 0.55, 1.0],
+          ),
           border: Border.all(
             color: selected ? AppColors.gold : Colors.white24,
             width: selected ? 3 : 1.5,
           ),
+          boxShadow: [
+            BoxShadow(
+              color: dark.withValues(alpha: 0.6),
+              blurRadius: 6,
+              offset: const Offset(0, 3),
+            ),
+          ],
         ),
-        child: locked
-            ? Container(
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            // Jant + iç oluk halkası.
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: rim.withValues(alpha: 0.85), width: 3),
+              ),
+            ),
+            Container(
+              width: 28,
+              height: 28,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: dark.withValues(alpha: 0.55), width: 1.6),
+              ),
+            ),
+            // Cam parlaması.
+            Align(
+              alignment: const Alignment(-0.45, -0.5),
+              child: Container(
+                width: 20,
+                height: 20,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      Colors.white.withValues(alpha: 0.45),
+                      Colors.white.withValues(alpha: 0.0),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            if (locked)
+              Container(
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: Colors.black.withValues(alpha: 0.55),
                 ),
                 child: const Icon(Icons.lock, color: Colors.white70, size: 18),
-              )
-            : null,
+              ),
+          ],
+        ),
       ),
     );
   }

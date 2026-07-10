@@ -36,14 +36,13 @@ class GamePainter extends CustomPainter {
   static String? _fieldBoardTheme;
   static int? _fieldVersionCached;
 
-  static final _redFill = Paint()..color = AppColors.red;
-  static final _blueFill = Paint()..color = AppColors.blue;
   static final _discStroke = Paint()
     ..color = Color(0x59FFFFFF)
     ..style = PaintingStyle.stroke
     ..strokeWidth = 1.2;
   static final _premiumPaint = Paint()..filterQuality = FilterQuality.low;
   static final _emojiPictureCache = <String, ui.Picture>{};
+  static final _fancyDiscCache = <String, ui.Picture>{};
   static final _slingLow = Paint()
     ..color = AppColors.fieldBlue
     ..strokeWidth = 2
@@ -291,18 +290,92 @@ class GamePainter extends CustomPainter {
       return;
     }
 
-    if (fast) {
-      canvas.drawCircle(pos, r, d.owner == 0 ? _redFill : _blueFill);
-      return;
-    }
-
     final defaultColor = d.owner == 0 ? AppColors.red : AppColors.blue;
-    final color = localDuo
+    final color = (localDuo || fast)
         ? defaultColor
         : (isMine ? CosmeticsTheme.discColor(discColor) : defaultColor);
 
-    canvas.drawCircle(pos, r, Paint()..color = color);
-    canvas.drawCircle(pos, r, _discStroke);
+    _drawFancyDisc(canvas, pos, r, color);
+  }
+
+  /// Düz renkli pulları 3D görünümle çizer: radyal parlaklık, jant halkası,
+  /// iç oluk ve cam parlaması. Sonuç Picture olarak önbelleklenir.
+  void _drawFancyDisc(Canvas canvas, Offset pos, double r, Color color) {
+    final bucket = (r * 2).round() / 2;
+    final key = '${color.toARGB32()}@$bucket';
+    final picture = _fancyDiscCache.putIfAbsent(key, () {
+      final recorder = ui.PictureRecorder();
+      final c = Canvas(recorder);
+      const center = Offset.zero;
+      final rr = bucket;
+
+      Color mix(Color a, Color b, double t) => Color.lerp(a, b, t)!;
+      final light = mix(color, Colors.white, 0.42);
+      final dark = mix(color, Colors.black, 0.38);
+      final rim = mix(color, Colors.black, 0.52);
+
+      // Gövde: üst-soldan ışık alan radyal geçiş (3D kubbe hissi).
+      c.drawCircle(
+        center,
+        rr,
+        Paint()
+          ..shader = ui.Gradient.radial(
+            Offset(-rr * 0.35, -rr * 0.42),
+            rr * 1.9,
+            [light, color, dark],
+            [0.0, 0.55, 1.0],
+          ),
+      );
+
+      // Jant: dış kenarda koyu makine halkası.
+      c.drawCircle(
+        center,
+        rr * 0.93,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = rr * 0.13
+          ..color = rim.withValues(alpha: 0.85),
+      );
+
+      // İç oluk: dama pulu oyuğu (koyu ince halka + hemen içinde açık halka).
+      c.drawCircle(
+        center,
+        rr * 0.60,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = rr * 0.07
+          ..color = dark.withValues(alpha: 0.55),
+      );
+      c.drawCircle(
+        center,
+        rr * 0.50,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = rr * 0.045
+          ..color = light.withValues(alpha: 0.35),
+      );
+
+      // Cam parlaması: üst-solda yumuşak beyaz leke.
+      c.drawCircle(
+        Offset(-rr * 0.34, -rr * 0.40),
+        rr * 0.52,
+        Paint()
+          ..shader = ui.Gradient.radial(
+            Offset(-rr * 0.34, -rr * 0.40),
+            rr * 0.52,
+            [Colors.white.withValues(alpha: 0.42), Colors.white.withValues(alpha: 0.0)],
+          ),
+      );
+
+      // Dış kontur — mevcut ince beyaz çizgi korunur.
+      c.drawCircle(center, rr, _discStroke);
+      return recorder.endRecording();
+    });
+
+    canvas.save();
+    canvas.translate(pos.dx, pos.dy);
+    canvas.drawPicture(picture);
+    canvas.restore();
   }
 
   void _drawEmojiDisc(Canvas canvas, Offset pos, double r, CosmeticItem item) {
