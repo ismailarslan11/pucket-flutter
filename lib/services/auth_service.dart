@@ -201,7 +201,7 @@ class AuthService extends ChangeNotifier {
 
     try {
       final ref = _db!.collection('users').doc(fbUser.uid);
-      final snap = await ref.get();
+      final snap = await ref.get().timeout(const Duration(seconds: 6));
 
       if (snap.exists) {
         user = UserProfile.fromFirestore(snap.data()!, fbUser.uid);
@@ -218,8 +218,15 @@ class AuthService extends ChangeNotifier {
         authState = AuthState.needsUsername;
       }
     } catch (e) {
-      lastError = 'Profil yüklenemedi';
-      authState = AuthState.unauthenticated;
+      // Firestore erişilemese bile (yeni proje / kilitli kurallar / ağ)
+      // girişi engelleme — yerel profil oluştur ve devam et.
+      user ??= UserProfile(
+        uid: fbUser.uid,
+        name: fbUser.displayName?.split(' ').first ?? '',
+        photoUrl: fbUser.photoURL,
+        isAnonymous: fbUser.isAnonymous,
+      );
+      authState = _needsUsernamePick() ? AuthState.needsUsername : AuthState.authenticated;
     } finally {
       loading = false;
       notifyListeners();
@@ -407,7 +414,8 @@ class AuthService extends ChangeNotifier {
     }
 
     try {
-      await _auth!.signInAnonymously();
+      // Anonim sağlayıcı kapalıysa veya takılırsa yerel misafire düş.
+      await _auth!.signInAnonymously().timeout(const Duration(seconds: 8));
     } catch (_) {
       await _loadGuestProfile();
       authState = _needsUsernamePick() ? AuthState.needsUsername : AuthState.authenticated;
