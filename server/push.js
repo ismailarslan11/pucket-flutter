@@ -46,6 +46,8 @@ async function sendPush(token, title, body, data = {}, opts = {}) {
       msg.android.notification = { imageUrl };
       msg.apns.fcmOptions = { imageUrl };
       msg.apns.payload.aps['mutable-content'] = 1;
+      // Uygulama açıkken client kendisi gösterir — data'dan okur.
+      msg.data.image = imageUrl;
     }
     await messagingFn().send(msg);
     return true;

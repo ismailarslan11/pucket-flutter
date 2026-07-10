@@ -5,6 +5,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:http/http.dart' as http;
 
 import 'deep_link_service.dart';
 import 'firebase_init.dart';
@@ -315,9 +316,54 @@ class PushService {
     final title = n?.title ?? message.data['title'] as String? ?? 'PUCKET';
     final body = n?.body ?? message.data['body'] as String? ?? '';
 
-    const iosDetails = DarwinNotificationDetails();
-    const details = NotificationDetails(android: _androidDetails, iOS: iosDetails);
+    // Resimli bildirim: FCM image alanı veya data.image.
+    final imageUrl = n?.android?.imageUrl ??
+        n?.apple?.imageUrl ??
+        (message.data['image'] as String?);
 
-    await _local.show(message.hashCode, title, body, details);
+    AndroidNotificationDetails androidDetails = _androidDetails;
+    DarwinNotificationDetails iosDetails = const DarwinNotificationDetails();
+
+    if (imageUrl != null && imageUrl.isNotEmpty) {
+      final path = await _downloadImage(imageUrl);
+      if (path != null) {
+        androidDetails = AndroidNotificationDetails(
+          channelId,
+          channelName,
+          importance: Importance.max,
+          priority: Priority.high,
+          icon: '@drawable/ic_stat_notify',
+          largeIcon: _androidLargeIcon,
+          color: AppColors.brandBlue,
+          styleInformation: BigPictureStyleInformation(FilePathAndroidBitmap(path)),
+        );
+        iosDetails = DarwinNotificationDetails(
+          attachments: [DarwinNotificationAttachment(path)],
+        );
+      }
+    }
+
+    await _local.show(
+      message.hashCode,
+      title,
+      body,
+      NotificationDetails(android: androidDetails, iOS: iosDetails),
+    );
+  }
+
+  /// Push resmi geçici dosyaya indirilir (bildirim eki dosya yolu ister).
+  static Future<String?> _downloadImage(String url) async {
+    try {
+      final resp = await http.get(Uri.parse(url)).timeout(const Duration(seconds: 8));
+      if (resp.statusCode != 200) return null;
+      final ext = url.toLowerCase().contains('.png') ? 'png' : 'jpg';
+      final file = File(
+        '${Directory.systemTemp.path}/push_${DateTime.now().millisecondsSinceEpoch}.$ext',
+      );
+      await file.writeAsBytes(resp.bodyBytes);
+      return file.path;
+    } catch (_) {
+      return null;
+    }
   }
 }
