@@ -20,10 +20,11 @@ function initPush() {
   }
 }
 
-async function sendPush(token, title, body, data = {}) {
+async function sendPush(token, title, body, data = {}, opts = {}) {
   if (!messagingFn || !token) return false;
   try {
-    await messagingFn().send({
+    const imageUrl = opts.imageUrl || null;
+    const msg = {
       token,
       notification: { title, body },
       data: Object.fromEntries(Object.entries(data).map(([k, v]) => [k, String(v)])),
@@ -37,7 +38,16 @@ async function sendPush(token, title, body, data = {}) {
         },
         payload: { aps: { sound: 'default' } },
       },
-    });
+    };
+    if (imageUrl) {
+      // Android'de bildirim büyük resimli görünür; iOS'ta ek uygulama
+      // bileşeni (Notification Service Extension) gerektirir.
+      msg.notification.image = imageUrl;
+      msg.android.notification = { imageUrl };
+      msg.apns.fcmOptions = { imageUrl };
+      msg.apns.payload.aps['mutable-content'] = 1;
+    }
+    await messagingFn().send(msg);
     return true;
   } catch (e) {
     // Geçersiz/expired token — çağıran tarafça temizlenebilir.

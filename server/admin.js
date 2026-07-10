@@ -152,7 +152,11 @@ function sendNotification(ctx, params) {
   const title = (params.title || '').trim();
   const body = (params.body || '').trim();
   const target = (params.target || '').trim(); // boş = herkes
+  const imageUrl = (params.image || '').trim(); // opsiyonel resim (https URL)
   if (!title || !body) return { ok: false, error: 'Başlık ve mesaj gerekli' };
+  if (imageUrl && !/^https:\/\//.test(imageUrl)) {
+    return { ok: false, error: 'Resim adresi https:// ile başlamalı' };
+  }
   if (!ctx.push || !ctx.push.enabled) {
     return { ok: false, error: 'Push kapalı (FIREBASE_SERVICE_ACCOUNT_JSON ayarlı değil)' };
   }
@@ -169,7 +173,7 @@ function sendNotification(ctx, params) {
   }
   if (tokens.length === 0) return { ok: false, error: 'Gönderilecek cihaz yok' };
   // Fire-and-forget (anlık); sonucu beklemeden yanıt ver.
-  tokens.forEach((t) => ctx.push.sendPush(t, title, body, { type: 'admin' }));
+  tokens.forEach((t) => ctx.push.sendPush(t, title, body, { type: 'admin' }, { imageUrl }));
   return { ok: true, message: `${tokens.length} cihaza gönderildi` };
 }
 
@@ -378,6 +382,8 @@ function renderAdminHtml(data, flash) {
         <textarea name="body" placeholder="Mesaj" required rows="2"
           style="padding:10px;border-radius:8px;border:1px solid #333;background:#111;color:#fff;"></textarea>
         <input name="target" placeholder="Hedef UID (boş bırak = HERKESE)"
+          style="padding:10px;border-radius:8px;border:1px solid #333;background:#111;color:#fff;">
+        <input name="image" placeholder="Resim URL (opsiyonel, https://... — Android'de görünür)"
           style="padding:10px;border-radius:8px;border:1px solid #333;background:#111;color:#fff;">
         <button type="submit"
           style="padding:12px;border-radius:8px;border:0;background:#22c55e;color:#062;font-weight:800;cursor:pointer;">
