@@ -272,39 +272,39 @@ function defaultQuests() {
 }
 
 const DISC_PRICES = {
-  dragon: 200,
-  diamond: 250,
-  goldcoin: 100,
-  frost: 150,
-  tiger: 175,
-  robot: 125,
-  swan: 120,
-  alien: 300,
-  pirate: 225,
-  nature: 160,
-  emoji_fire: 15,
-  emoji_basketball: 15,
-  emoji_ice: 18,
-  emoji_lightning: 18,
-  emoji_clover: 20,
-  emoji_cry: 20,
-  emoji_star: 22,
-  emoji_skull: 25,
-  emoji_ghost: 25,
-  emoji_rocket: 28,
-  emoji_devil: 30,
-  emoji_crown: 32,
-  emoji_trophy: 35,
+  dragon: 500,
+  diamond: 620,
+  goldcoin: 250,
+  frost: 380,
+  tiger: 440,
+  robot: 320,
+  swan: 300,
+  alien: 750,
+  pirate: 560,
+  nature: 400,
+  emoji_fire: 40,
+  emoji_basketball: 40,
+  emoji_ice: 45,
+  emoji_lightning: 45,
+  emoji_clover: 50,
+  emoji_cry: 50,
+  emoji_star: 55,
+  emoji_skull: 60,
+  emoji_ghost: 65,
+  emoji_rocket: 70,
+  emoji_devil: 75,
+  emoji_crown: 80,
+  emoji_trophy: 90,
 };
-const BOARD_PRICES = { neon: 120, wood: 150, lava: 180, ocean: 220, royal: 260 };
+const BOARD_PRICES = { neon: 300, wood: 380, lava: 450, ocean: 550, royal: 650 };
 
 // Jetonla alınan maç içi emote'lar (id → fiyat; emoji karşılığı istemcide).
 const EMOTE_PRICES = {
-  clown: 40, flex: 45, freeze: 50, devil: 55, mindblown: 60, goat: 80,
+  clown: 100, flex: 110, freeze: 125, devil: 140, mindblown: 150, goat: 200,
 };
 
 // Zafer efektleri (maç sonu konfeti stili). 'classic' ücretsizdir.
-const WINFX_PRICES = { gold: 150, neon: 200 };
+const WINFX_PRICES = { gold: 380, neon: 500 };
 const FREE_WINFX = new Set(['classic']);
 const FREE_DISCS = new Set(['green', 'gold', 'blue', 'red', 'purple']);
 const FREE_BOARDS = new Set(['classic']);
