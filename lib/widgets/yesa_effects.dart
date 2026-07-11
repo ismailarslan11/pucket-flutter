@@ -327,9 +327,12 @@ class _RadarPainter extends CustomPainter {
 
 /// Konfeti yağmuru — zafer anları için döngülü, hafif parçacıklar.
 class ConfettiRain extends StatefulWidget {
-  const ConfettiRain({super.key, this.count = 42});
+  const ConfettiRain({super.key, this.count = 42, this.colors});
 
   final int count;
+
+  /// Özel renk paleti (zafer efekti kozmetiği); null = klasik karışım.
+  final List<Color>? colors;
 
   @override
   State<ConfettiRain> createState() => _ConfettiRainState();
@@ -358,7 +361,7 @@ class _ConfettiRainState extends State<ConfettiRain> with SingleTickerProviderSt
         animation: _ctrl,
         builder: (_, _) => CustomPaint(
           size: Size.infinite,
-          painter: _ConfettiPainter(t: _ctrl.value, count: widget.count),
+          painter: _ConfettiPainter(t: _ctrl.value, count: widget.count, colors: widget.colors),
         ),
       ),
     );
@@ -366,10 +369,11 @@ class _ConfettiRainState extends State<ConfettiRain> with SingleTickerProviderSt
 }
 
 class _ConfettiPainter extends CustomPainter {
-  _ConfettiPainter({required this.t, required this.count});
+  _ConfettiPainter({required this.t, required this.count, this.colors});
 
   final double t;
   final int count;
+  final List<Color>? colors;
 
   static const _colors = [
     AppColors.sariAna,
@@ -391,7 +395,8 @@ class _ConfettiPainter extends CustomPainter {
       final sway = 0.02 + rng.nextDouble() * 0.04;
       final w = 4.0 + rng.nextDouble() * 4;
       final h = 6.0 + rng.nextDouble() * 5;
-      final color = _colors[i % _colors.length];
+      final palette = colors ?? _colors;
+      final color = palette[i % palette.length];
       final spin = rng.nextDouble() * math.pi * 2;
 
       final p = (t * speed + phase) % 1.15;

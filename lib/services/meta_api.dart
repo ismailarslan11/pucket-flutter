@@ -15,6 +15,8 @@ class PlayerMeta {
   final List<String> unlockedBoards;
   final int lastAdReward;
   final bool vip;
+  final List<String> unlockedEmotes;
+  final List<String> unlockedWinFx;
 
   PlayerMeta({
     required this.quests,
@@ -27,6 +29,8 @@ class PlayerMeta {
     required this.unlockedBoards,
     required this.lastAdReward,
     this.vip = false,
+    this.unlockedEmotes = const [],
+    this.unlockedWinFx = const [],
   });
 
   factory PlayerMeta.fromJson(Map<String, dynamic> j) => PlayerMeta(
@@ -42,6 +46,8 @@ class PlayerMeta {
         unlockedBoards: (j['unlockedBoards'] as List?)?.map((e) => e.toString()).toList() ?? [],
         lastAdReward: (j['lastAdReward'] as num?)?.toInt() ?? 0,
         vip: j['vip'] == true,
+        unlockedEmotes: (j['unlockedEmotes'] as List?)?.map((e) => e.toString()).toList() ?? [],
+        unlockedWinFx: (j['unlockedWinFx'] as List?)?.map((e) => e.toString()).toList() ?? [],
       );
 
   bool get questsComplete =>
@@ -62,6 +68,8 @@ class PlayerMeta {
         unlockedBoards: unlockedBoards,
         lastAdReward: lastAdReward,
         vip: vip,
+        unlockedEmotes: unlockedEmotes,
+        unlockedWinFx: unlockedWinFx,
       );
 }
 

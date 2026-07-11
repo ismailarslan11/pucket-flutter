@@ -24,12 +24,13 @@ class CosmeticsScreen extends StatefulWidget {
 class _CosmeticsScreenState extends State<CosmeticsScreen> {
   String _disc = 'green';
   String _board = 'classic';
+  String _winFx = 'classic';
   bool _saving = false;
   bool _watchingAd = false;
   Timer? _cooldownTimer;
 
   static const _freeDiscs = CosmeticsTheme.discColors;
-  static const _allBoards = ['classic', 'neon', 'wood'];
+  static const _allBoards = ['classic', 'neon', 'wood', 'lava', 'ocean', 'royal'];
 
   @override
   void initState() {
@@ -37,6 +38,7 @@ class _CosmeticsScreenState extends State<CosmeticsScreen> {
     final meta = context.read<PlayerMetaService>().meta;
     _disc = meta?.cosmetics['discColor'] ?? 'green';
     _board = meta?.cosmetics['boardTheme'] ?? 'classic';
+    _winFx = meta?.cosmetics['winFx'] ?? 'classic';
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final ads = context.read<AdService>();
       final auth = context.read<AuthService>();
@@ -149,13 +151,16 @@ class _CosmeticsScreenState extends State<CosmeticsScreen> {
     if (ok) {
       final newDisc = type == 'disc' ? id : _disc;
       final newBoard = type == 'board' ? id : _board;
+      final newWinFx = type == 'winfx' ? id : _winFx;
       setState(() {
         _disc = newDisc;
         _board = newBoard;
+        _winFx = newWinFx;
       });
       await metaSvc.setCosmetics(auth.getUid(), {
         'discColor': newDisc,
         'boardTheme': newBoard,
+        'winFx': newWinFx,
       });
       if (!mounted) return;
       _snack(l10n.tokensPurchased);
@@ -308,13 +313,70 @@ class _CosmeticsScreenState extends State<CosmeticsScreen> {
               onTap: unlocked ? () => setState(() => _board = t) : null,
             );
           }),
+          const SizedBox(height: 24),
+          // ── Maç içi emote'lar — rakip de görür.
+          YesaSectionLabel(l10n.cosmeticsEmotes),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: CosmeticCatalog.premiumEmotes.map((e) {
+              final unlocked = metaSvc.isEmoteUnlocked(e.id);
+              return _EmoteChip(
+                emoji: e.emoji,
+                price: e.price,
+                unlocked: unlocked,
+                onBuy: unlocked ? null : () => _purchase('emote', e.id, e.price),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 24),
+          // ── Zafer efekti — maç sonu konfeti stili.
+          YesaSectionLabel(l10n.cosmeticsWinFx),
+          const SizedBox(height: 10),
+          ...CosmeticCatalog.winFxItems.map((fx) {
+            final price = fx.price;
+            final unlocked = metaSvc.isWinFxUnlocked(fx.id);
+            final selected = _winFx == fx.id;
+            return ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Text(fx.emoji, style: const TextStyle(fontSize: 22)),
+              title: Text(l10n.winFxName(fx.id)),
+              subtitle: unlocked || price == 0
+                  ? null
+                  : Text(
+                      l10n.tokensPrice(price),
+                      style: const TextStyle(color: AppColors.gold, fontSize: 12),
+                    ),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (!unlocked)
+                    TextButton(
+                      onPressed: () => _purchase('winfx', fx.id, price),
+                      child: Text(l10n.tokensBuy),
+                    ),
+                  if (selected)
+                    const Icon(Icons.check_circle, color: AppColors.green)
+                  else if (unlocked)
+                    IconButton(
+                      icon: const Icon(Icons.circle_outlined, color: AppColors.textMuted),
+                      onPressed: () => setState(() => _winFx = fx.id),
+                    ),
+                ],
+              ),
+              onTap: unlocked ? () => setState(() => _winFx = fx.id) : null,
+            );
+          }),
           const SizedBox(height: 20),
           PucketButton(
             label: _saving ? '...' : l10n.save,
             onPressed: _saving
                 ? () {}
                 : () async {
-                    if (!metaSvc.isDiscUnlocked(_disc) || !metaSvc.isBoardUnlocked(_board)) {
+                    if (!metaSvc.isDiscUnlocked(_disc) ||
+                        !metaSvc.isBoardUnlocked(_board) ||
+                        !metaSvc.isWinFxUnlocked(_winFx)) {
                       _snack(l10n.tokensLocked);
                       return;
                     }
@@ -322,6 +384,7 @@ class _CosmeticsScreenState extends State<CosmeticsScreen> {
                     await metaSvc.setCosmetics(auth.getUid(), {
                       'discColor': _disc,
                       'boardTheme': _board,
+                      'winFx': _winFx,
                     });
                     if (mounted) {
                       setState(() => _saving = false);
@@ -684,6 +747,70 @@ class _EmojiDiscTile extends StatelessWidget {
             ),
           ),
       ],
+    );
+  }
+}
+
+
+/// Satın alınabilir emote çipi — kilitliyken fiyat gösterir.
+class _EmoteChip extends StatelessWidget {
+  const _EmoteChip({
+    required this.emoji,
+    required this.price,
+    required this.unlocked,
+    required this.onBuy,
+  });
+
+  final String emoji;
+  final int price;
+  final bool unlocked;
+  final VoidCallback? onBuy;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onBuy,
+      child: Container(
+        width: 74,
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        decoration: BoxDecoration(
+          color: AppColors.morDahaKoyu.withValues(alpha: 0.6),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: unlocked
+                ? AppColors.neonYesil.withValues(alpha: 0.6)
+                : AppColors.beyaz.withValues(alpha: 0.15),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Opacity(
+              opacity: unlocked ? 1 : 0.75,
+              child: Text(emoji, style: const TextStyle(fontSize: 26)),
+            ),
+            const SizedBox(height: 4),
+            if (unlocked)
+              const Icon(Icons.check_circle, color: AppColors.neonYesil, size: 14)
+            else
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.monetization_on_rounded, color: AppColors.gold, size: 12),
+                  const SizedBox(width: 2),
+                  Text(
+                    '$price',
+                    style: const TextStyle(
+                      color: AppColors.gold,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              ),
+          ],
+        ),
+      ),
     );
   }
 }

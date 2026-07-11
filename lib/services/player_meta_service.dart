@@ -22,6 +22,8 @@ class PlayerMetaService extends ChangeNotifier {
   bool get vip => meta?.vip ?? false;
   List<String> get unlockedDiscs => meta?.unlockedDiscs ?? const [];
   List<String> get unlockedBoards => meta?.unlockedBoards ?? const [];
+  List<String> get unlockedEmotes => meta?.unlockedEmotes ?? const [];
+  List<String> get unlockedWinFx => meta?.unlockedWinFx ?? const [];
 
   // Bir jeton işleminin (kazanma / satın alma / reklam) yetkili yanıtından
   // sonra kısa bir süre, eşzamanlı bir yenileme bu değeri ezmesin.
@@ -59,6 +61,12 @@ class PlayerMetaService extends ChangeNotifier {
       CosmeticCatalog.freeForTesting ||
       CosmeticCatalog.freeBoards.contains(id) ||
       unlockedBoards.contains(id);
+
+  bool isEmoteUnlocked(String id) =>
+      CosmeticCatalog.freeForTesting || unlockedEmotes.contains(id);
+
+  bool isWinFxUnlocked(String id) =>
+      CosmeticCatalog.freeForTesting || id == 'classic' || unlockedWinFx.contains(id);
 
   Future<void> onMatchPlayed(String uid, {required bool won, required bool ranked}) async {
     await load(uid);

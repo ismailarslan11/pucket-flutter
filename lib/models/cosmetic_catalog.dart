@@ -46,7 +46,37 @@ class CosmeticCatalog {
   static const premiumBoards = [
     CosmeticItem(id: 'neon', price: 120),
     CosmeticItem(id: 'wood', price: 150),
+    CosmeticItem(id: 'lava', price: 180),
+    CosmeticItem(id: 'ocean', price: 220),
+    CosmeticItem(id: 'royal', price: 260),
   ];
+
+  /// Jetonla alınan maç içi emote'lar — rakip de görür (sosyal gösteriş).
+  static const premiumEmotes = [
+    CosmeticItem(id: 'clown', price: 40, emoji: '🤡'),
+    CosmeticItem(id: 'flex', price: 45, emoji: '💪'),
+    CosmeticItem(id: 'freeze', price: 50, emoji: '🥶'),
+    CosmeticItem(id: 'devil', price: 55, emoji: '😈'),
+    CosmeticItem(id: 'mindblown', price: 60, emoji: '🤯'),
+    CosmeticItem(id: 'goat', price: 80, emoji: '🐐'),
+  ];
+
+  /// Zafer efektleri — maç sonu konfeti stili. 'classic' ücretsiz.
+  static const winFxItems = [
+    CosmeticItem(id: 'classic', price: 0, emoji: '🎊'),
+    CosmeticItem(id: 'gold', price: 150, emoji: '🏆'),
+    CosmeticItem(id: 'neon', price: 200, emoji: '⚡'),
+  ];
+
+  static int? emotePrice(String id) {
+    if (freeForTesting) return 0;
+    return premiumEmotes.where((e) => e.id == id).map((e) => e.price).firstOrNull;
+  }
+
+  static int? winFxPrice(String id) {
+    if (freeForTesting) return 0;
+    return winFxItems.where((e) => e.id == id).map((e) => e.price).firstOrNull;
+  }
 
   static bool isPremiumDisc(String id) =>
       premiumDiscs.any((d) => d.id == id) || emojiDiscs.any((d) => d.id == id) || id == vipDisc.id;

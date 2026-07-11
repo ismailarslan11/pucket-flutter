@@ -296,7 +296,16 @@ const DISC_PRICES = {
   emoji_crown: 32,
   emoji_trophy: 35,
 };
-const BOARD_PRICES = { neon: 120, wood: 150 };
+const BOARD_PRICES = { neon: 120, wood: 150, lava: 180, ocean: 220, royal: 260 };
+
+// Jetonla alınan maç içi emote'lar (id → fiyat; emoji karşılığı istemcide).
+const EMOTE_PRICES = {
+  clown: 40, flex: 45, freeze: 50, devil: 55, mindblown: 60, goat: 80,
+};
+
+// Zafer efektleri (maç sonu konfeti stili). 'classic' ücretsizdir.
+const WINFX_PRICES = { gold: 150, neon: 200 };
+const FREE_WINFX = new Set(['classic']);
 const FREE_DISCS = new Set(['green', 'gold', 'blue', 'red', 'purple']);
 const FREE_BOARDS = new Set(['classic']);
 /** Test: tüm kozmetikler ücretsiz — yayın öncesi false yap */
@@ -937,6 +946,12 @@ const server = http.createServer((req, res) => {
               res.end(JSON.stringify({ ok: false, error: 'Kilitli kozmetik' }));
               return;
             }
+            const winFx = next.winFx;
+            if (winFx && !COSMETICS_FREE_FOR_TESTING && !FREE_WINFX.has(winFx) && !(meta.unlockedWinFx || []).includes(winFx)) {
+              res.writeHead(403, cors);
+              res.end(JSON.stringify({ ok: false, error: 'Kilitli kozmetik' }));
+              return;
+            }
             db.set(`playerMeta.${uid}.cosmetics`, next).write();
           }
           if (data.action === 'earn_win') {
@@ -1038,6 +1053,52 @@ const server = http.createServer((req, res) => {
               const cosmetics = { ...(meta.cosmetics || {}), boardTheme: itemId };
               db.set(`playerMeta.${uid}.tokens`, meta.tokens).write();
               db.set(`playerMeta.${uid}.unlockedBoards`, meta.unlockedBoards).write();
+              db.set(`playerMeta.${uid}.cosmetics`, cosmetics).write();
+            } else if (type === 'emote') {
+              price = EMOTE_PRICES[itemId];
+              if (!price) {
+                res.writeHead(400, cors);
+                res.end(JSON.stringify({ ok: false, error: 'Geçersiz emote' }));
+                return;
+              }
+              meta.unlockedEmotes = meta.unlockedEmotes || [];
+              if (meta.unlockedEmotes.includes(itemId)) {
+                res.writeHead(409, cors);
+                res.end(JSON.stringify({ ok: false, error: 'Zaten açık' }));
+                return;
+              }
+              if (meta.tokens < price) {
+                res.writeHead(402, cors);
+                res.end(JSON.stringify({ ok: false, error: 'Yetersiz jeton' }));
+                return;
+              }
+              meta.tokens -= price;
+              meta.unlockedEmotes.push(itemId);
+              db.set(`playerMeta.${uid}.tokens`, meta.tokens).write();
+              db.set(`playerMeta.${uid}.unlockedEmotes`, meta.unlockedEmotes).write();
+            } else if (type === 'winfx') {
+              price = WINFX_PRICES[itemId];
+              if (!price) {
+                res.writeHead(400, cors);
+                res.end(JSON.stringify({ ok: false, error: 'Geçersiz efekt' }));
+                return;
+              }
+              meta.unlockedWinFx = meta.unlockedWinFx || [];
+              if (meta.unlockedWinFx.includes(itemId)) {
+                res.writeHead(409, cors);
+                res.end(JSON.stringify({ ok: false, error: 'Zaten açık' }));
+                return;
+              }
+              if (meta.tokens < price) {
+                res.writeHead(402, cors);
+                res.end(JSON.stringify({ ok: false, error: 'Yetersiz jeton' }));
+                return;
+              }
+              meta.tokens -= price;
+              meta.unlockedWinFx.push(itemId);
+              const cosmetics = { ...(meta.cosmetics || {}), winFx: itemId };
+              db.set(`playerMeta.${uid}.tokens`, meta.tokens).write();
+              db.set(`playerMeta.${uid}.unlockedWinFx`, meta.unlockedWinFx).write();
               db.set(`playerMeta.${uid}.cosmetics`, cosmetics).write();
             } else {
               res.writeHead(400, cors);

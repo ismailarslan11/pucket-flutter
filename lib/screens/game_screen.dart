@@ -13,6 +13,7 @@ import '../services/audio_service.dart';
 import '../services/auth_service.dart';
 import '../services/career_service.dart';
 import '../services/meta_api.dart';
+import '../models/cosmetic_catalog.dart';
 import '../services/player_meta_service.dart';
 import '../services/settings_service.dart';
 import '../services/battle_pass_api.dart';
@@ -421,6 +422,14 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   void _openEmotePicker(GameController game) {
+    // Ücretsizler + jetonla açılan premium emote'lar.
+    final metaSvc = context.read<PlayerMetaService>();
+    final emotes = [
+      ...GameController.emotes,
+      ...CosmeticCatalog.premiumEmotes
+          .where((e) => metaSvc.isEmoteUnlocked(e.id))
+          .map((e) => e.emoji),
+    ];
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: AppColors.cardElevated,
@@ -433,7 +442,7 @@ class _GameScreenState extends State<GameScreen> {
           alignment: WrapAlignment.center,
           spacing: 8,
           runSpacing: 8,
-          children: GameController.emotes.map((e) {
+          children: emotes.map((e) {
             return GestureDetector(
               onTap: () {
                 game.sendEmote(e);
@@ -800,12 +809,37 @@ class _GameScreenState extends State<GameScreen> {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          if (celebrate) const ConfettiRain(),
+          if (celebrate) ConfettiRain(colors: _winFxColors()),
           _overlayBody(game, l10n,
               title: title, sub: sub, primaryLabel: primaryLabel, onPrimary: onPrimary),
         ],
       ),
     );
+  }
+
+  /// Seçili zafer efektinin konfeti paleti (kozmetik).
+  List<Color>? _winFxColors() {
+    final fx = context.read<PlayerMetaService>().meta?.cosmetics['winFx'] ?? 'classic';
+    switch (fx) {
+      case 'gold':
+        return const [
+          AppColors.sariAna,
+          Color(0xFFFFE9A0),
+          AppColors.turuncuAcik,
+          AppColors.turuncuAna,
+          Color(0xFFF6C444),
+        ];
+      case 'neon':
+        return const [
+          AppColors.camgobegi,
+          AppColors.acikCamgobegi,
+          AppColors.acikMor,
+          AppColors.pembe,
+          AppColors.neonYesil,
+        ];
+      default:
+        return null; // klasik karışım
+    }
   }
 
   Widget _overlayBody(

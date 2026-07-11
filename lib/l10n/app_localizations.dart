@@ -275,6 +275,18 @@ class AppLocalizations {
   String get noInternetBody => _t('noInternetBody');
   String get noInternetRetry => _t('noInternetRetry');
   String get noInternetChecking => _t('noInternetChecking');
+  String get cosmeticsEmotes => _t('cosmeticsEmotes');
+  String get cosmeticsWinFx => _t('cosmeticsWinFx');
+  String winFxName(String id) {
+    switch (id) {
+      case 'gold':
+        return _t('winFxGold');
+      case 'neon':
+        return _t('winFxNeon');
+      default:
+        return _t('winFxClassic');
+    }
+  }
   String get tournament => _t('tournament');
   String get tournamentJoined => _t('tournamentJoined');
   String get tournamentPrizes => _t('tournamentPrizes');
@@ -342,6 +354,12 @@ class AppLocalizations {
         return _t('boardThemeNeon');
       case 'wood':
         return _t('boardThemeWood');
+      case 'lava':
+        return _t('boardThemeLava');
+      case 'ocean':
+        return _t('boardThemeOcean');
+      case 'royal':
+        return _t('boardThemeRoyal');
       default:
         return _t('boardThemeClassic');
     }
@@ -622,6 +640,14 @@ const _tr = {
   'noInternetBody': 'PUCKET çevrimiçi bir oyundur.\nDevam etmek için Wi-Fi veya mobil veriyi aç.',
   'noInternetRetry': 'TEKRAR DENE',
   'noInternetChecking': 'Bağlantı kontrol ediliyor…',
+  'boardThemeLava': 'Lav',
+  'boardThemeOcean': 'Okyanus',
+  'boardThemeRoyal': 'Kraliyet',
+  'cosmeticsEmotes': 'Maç İçi Emoteler',
+  'cosmeticsWinFx': 'Zafer Efekti',
+  'winFxClassic': 'Klasik Konfeti',
+  'winFxGold': 'Altın Yağmuru',
+  'winFxNeon': 'Neon Fırtına',
   'premiumHeroSub': 'Ayrıcalıklarını aç, kazancını katla',
   'bestOffer': 'EN İYİ TEKLİF',
   'securePayments': 'Ödemeler Google Play / App Store üzerinden güvenle işlenir',
@@ -965,6 +991,14 @@ const _en = {
   'noInternetBody': 'PUCKET is an online game.\nTurn on Wi-Fi or mobile data to continue.',
   'noInternetRetry': 'TRY AGAIN',
   'noInternetChecking': 'Checking connection…',
+  'boardThemeLava': 'Lava',
+  'boardThemeOcean': 'Ocean',
+  'boardThemeRoyal': 'Royal',
+  'cosmeticsEmotes': 'Match Emotes',
+  'cosmeticsWinFx': 'Victory Effect',
+  'winFxClassic': 'Classic Confetti',
+  'winFxGold': 'Gold Rain',
+  'winFxNeon': 'Neon Storm',
   'premiumHeroSub': 'Unlock perks, multiply your rewards',
   'bestOffer': 'BEST OFFER',
   'securePayments': 'Payments are processed securely by Google Play / App Store',
