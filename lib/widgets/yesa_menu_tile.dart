@@ -60,6 +60,7 @@ class YesaMenuTile extends StatelessWidget {
         child: SizedBox(
           height: 92,
           child: Stack(
+            fit: StackFit.expand,
             children: [
               // Cam parlaması — üst yarıda çapraz beyaz süzülme.
               Positioned(

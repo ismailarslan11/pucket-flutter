@@ -48,62 +48,94 @@ class MenuScreen extends StatelessWidget {
                       StaggerIn(index: 2, child: const DailyQuestsPanel()),
                       const SizedBox(height: 16),
                       YesaSectionLabel('Oyna'),
-                      YesaMenuGrid(
-                        columns: 3,
-                        spacing: 10,
+                      // Amiral gemisi: tam genişlik RANKED afişi.
+                      StaggerIn(
+                        index: 3,
+                        child: _HeroPlayCard(
+                          title: l10n.menuRanked,
+                          subtitle: l10n.menuRankedSub,
+                          onPressed: () => _goRanked(context, auth),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      // İki orta kart: hızlı eşleşme + kariyer.
+                      Row(
                         children: [
-                          YesaMenuTile(
-                            label: l10n.menuRanked,
-                            icon: Icons.emoji_events_rounded,
-                            featured: true,
-                            staggerIndex: 3,
-                            onPressed: () => _goRanked(context, auth),
+                          Expanded(
+                            child: StaggerIn(
+                              index: 4,
+                              child: _MediumPlayCard(
+                                label: l10n.menuQuick,
+                                icon: Icons.bolt_rounded,
+                                color: AppColors.camgobegi,
+                                onPressed: () =>
+                                    AppRouter.goLobby(context, quickMatch: true),
+                              ),
+                            ),
                           ),
-                          YesaMenuTile(
-                            label: l10n.menuQuick,
-                            icon: Icons.bolt_rounded,
-                            staggerIndex: 4,
-                            onPressed: () => AppRouter.goLobby(context, quickMatch: true),
-                          ),
-                          YesaMenuTile(
-                            label: l10n.menuCreateRoom,
-                            icon: Icons.add_box_rounded,
-                            staggerIndex: 5,
-                            onPressed: () => AppRouter.goLobby(context, createRoom: true),
-                          ),
-                          YesaMenuTile(
-                            label: l10n.menuJoinRoom,
-                            icon: Icons.login_rounded,
-                            staggerIndex: 6,
-                            onPressed: () => AppRouter.goJoin(context),
-                          ),
-                          YesaMenuTile(
-                            label: l10n.menuCareer,
-                            icon: Icons.military_tech_rounded,
-                            accent: true,
-                            subtitle: '${career.careerPoints}p',
-                            staggerIndex: 7,
-                            onPressed: () => AppRouter.goCareer(context),
-                          ),
-                          YesaMenuTile(
-                            label: l10n.menuTraining,
-                            icon: Icons.fitness_center_rounded,
-                            staggerIndex: 8,
-                            onPressed: () => AppRouter.goTraining(context),
-                          ),
-                          YesaMenuTile(
-                            label: l10n.menuVsBot,
-                            icon: Icons.smart_toy_rounded,
-                            staggerIndex: 9,
-                            onPressed: () => AppRouter.goDifficulty(context),
-                          ),
-                          YesaMenuTile(
-                            label: l10n.menuLocalDuo,
-                            icon: Icons.people_alt_rounded,
-                            staggerIndex: 10,
-                            onPressed: () => AppRouter.goLocalDuo(context),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: StaggerIn(
+                              index: 5,
+                              child: _MediumPlayCard(
+                                label: l10n.menuCareer,
+                                icon: Icons.military_tech_rounded,
+                                color: AppColors.pembe,
+                                badge: '${career.careerPoints}p',
+                                onPressed: () => AppRouter.goCareer(context),
+                              ),
+                            ),
                           ),
                         ],
+                      ),
+                      const SizedBox(height: 10),
+                      // Beş mini kutu: oda / katıl / antrenman / bot / 2 kişilik.
+                      StaggerIn(
+                        index: 6,
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: _MiniPlayTile(
+                                label: l10n.menuCreateRoom,
+                                icon: Icons.add_box_rounded,
+                                onPressed: () =>
+                                    AppRouter.goLobby(context, createRoom: true),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: _MiniPlayTile(
+                                label: l10n.menuJoinRoom,
+                                icon: Icons.login_rounded,
+                                onPressed: () => AppRouter.goJoin(context),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: _MiniPlayTile(
+                                label: l10n.menuTraining,
+                                icon: Icons.fitness_center_rounded,
+                                onPressed: () => AppRouter.goTraining(context),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: _MiniPlayTile(
+                                label: l10n.menuVsBot,
+                                icon: Icons.smart_toy_rounded,
+                                onPressed: () => AppRouter.goDifficulty(context),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: _MiniPlayTile(
+                                label: l10n.menuLocalDuo,
+                                icon: Icons.people_alt_rounded,
+                                onPressed: () => AppRouter.goLocalDuo(context),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                       const SizedBox(height: 18),
                       YesaSectionLabel(l10n.more),
@@ -154,7 +186,7 @@ class MenuScreen extends StatelessWidget {
                           ),
                           YesaMenuTile(
                             label: l10n.menuCosmetics,
-                            icon: Icons.palette_rounded,
+                            icon: Icons.storefront_rounded,
                             staggerIndex: 15,
                             onPressed: () => AppRouter.goCosmetics(context),
                           ),
@@ -300,6 +332,264 @@ class _ProfileCard extends StatelessWidget {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Tam genişlik RANKED afişi — turuncu gradyan, süzülen kupa, ok ucu.
+class _HeroPlayCard extends StatelessWidget {
+  const _HeroPlayCard({
+    required this.title,
+    required this.subtitle,
+    required this.onPressed,
+  });
+
+  final String title;
+  final String subtitle;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return GlowPulse(
+      color: AppColors.sariAna,
+      min: 0.25,
+      max: 0.55,
+      child: ScalePress(
+        onTap: onPressed,
+        child: Container(
+          height: 78,
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            gradient: AppGradients.heroPlay,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: AppColors.beyaz.withValues(alpha: 0.55), width: 2),
+          ),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // Cam parlaması.
+              Positioned(
+                top: -26,
+                left: -20,
+                right: -20,
+                height: 52,
+                child: IgnorePointer(
+                  child: Transform.rotate(
+                    angle: -0.10,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            AppColors.beyaz.withValues(alpha: 0.30),
+                            AppColors.beyaz.withValues(alpha: 0.0),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              // Sağda kocaman soluk kupa — derinlik.
+              Positioned(
+                right: -6,
+                top: -10,
+                child: Icon(
+                  Icons.emoji_events_rounded,
+                  size: 96,
+                  color: AppColors.morDahaKoyu.withValues(alpha: 0.15),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                child: Row(
+                  children: [
+                    FloatY(
+                      amplitude: 3,
+                      child: Container(
+                        width: 46,
+                        height: 46,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: AppColors.beyaz.withValues(alpha: 0.35),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: AppColors.beyaz.withValues(alpha: 0.4)),
+                        ),
+                        child: const Icon(Icons.emoji_events_rounded,
+                            size: 26, color: AppColors.morDahaKoyu),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            title.toUpperCase(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: AppColors.morDahaKoyu,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 17,
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            subtitle,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: AppColors.morDahaKoyu.withValues(alpha: 0.75),
+                              fontWeight: FontWeight.w700,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(Icons.arrow_forward_ios_rounded,
+                        size: 18, color: AppColors.morDahaKoyu),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Orta boy yatay oyun kartı — renkli ikon rozeti + etiket.
+class _MediumPlayCard extends StatelessWidget {
+  const _MediumPlayCard({
+    required this.label,
+    required this.icon,
+    required this.color,
+    required this.onPressed,
+    this.badge,
+  });
+
+  final String label;
+  final IconData icon;
+  final Color color;
+  final VoidCallback onPressed;
+  final String? badge;
+
+  @override
+  Widget build(BuildContext context) {
+    return ScalePress(
+      onTap: onPressed,
+      child: Container(
+        height: 58,
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        decoration: BoxDecoration(
+          gradient: AppGradients.tileSoft,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: color.withValues(alpha: 0.55), width: 1.3),
+          boxShadow: [
+            BoxShadow(color: color.withValues(alpha: 0.25), blurRadius: 10),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.18),
+                borderRadius: BorderRadius.circular(11),
+                border: Border.all(color: color.withValues(alpha: 0.5)),
+              ),
+              child: Icon(icon, size: 20, color: color),
+            ),
+            const SizedBox(width: 9),
+            Expanded(
+              child: Text(
+                label.toUpperCase(),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: AppColors.beyaz,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 11.5,
+                  height: 1.15,
+                  letterSpacing: 0.4,
+                ),
+              ),
+            ),
+            if (badge != null)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  badge!,
+                  style: TextStyle(
+                    color: color,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 9,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Mini kare oyun kutusu — ikon üstte, kısa etiket altta.
+class _MiniPlayTile extends StatelessWidget {
+  const _MiniPlayTile({
+    required this.label,
+    required this.icon,
+    required this.onPressed,
+  });
+
+  final String label;
+  final IconData icon;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return ScalePress(
+      onTap: onPressed,
+      child: Container(
+        height: 64,
+        padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 6),
+        decoration: BoxDecoration(
+          color: AppColors.morDahaKoyu.withValues(alpha: 0.55),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.lavanta.withValues(alpha: 0.28)),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 20, color: AppColors.sariAna),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: AppColors.pusluBeyaz,
+                fontWeight: FontWeight.w700,
+                fontSize: 7.5,
+                height: 1.1,
+              ),
+            ),
+          ],
         ),
       ),
     );

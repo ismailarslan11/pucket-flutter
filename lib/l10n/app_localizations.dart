@@ -239,6 +239,7 @@ class AppLocalizations {
   String get restorePurchases => _t('restorePurchases');
   String get iapUnavailable => _t('iapUnavailable');
   String get menuPremium => _t('menuPremium');
+  String get menuRankedSub => _t('menuRankedSub');
   String get vipTitle => _t('vipTitle');
   String get vipSubtitle => _t('vipSubtitle');
   String get vipPerkNoAds => _t('vipPerkNoAds');
@@ -612,6 +613,7 @@ const _tr = {
   'restorePurchases': 'Satın Alımları Geri Yükle',
   'iapUnavailable': 'Mağaza şu an kullanılamıyor',
   'menuPremium': 'Premium',
+  'menuRankedSub': 'ELO kazan · Ligde yüksel',
   'vipTitle': 'PUCKET VIP',
   'vipSubtitle': 'Tek seferlik satın alım — kalıcı ayrıcalıklar',
   'vipPerkNoAds': 'Tüm reklamlar kalkar',
@@ -696,7 +698,7 @@ const _tr = {
   'localDuoWinner': '{name} kazandı!',
   'localDuoRoundWin': '{name} turu kazandı',
   'menuTournament': 'HAFTALIK KUPA',
-  'menuCosmetics': 'KOZMETİK',
+  'menuCosmetics': 'MAĞAZA',
   'menuInvite': 'ARKADAŞ DAVET',
   'dailyQuests': 'Günlük Görevler',
   'questPlay3': '3 maç oyna',
@@ -967,6 +969,7 @@ const _en = {
   'restorePurchases': 'Restore Purchases',
   'iapUnavailable': 'Store unavailable right now',
   'menuPremium': 'Premium',
+  'menuRankedSub': 'Earn ELO · Climb the league',
   'vipTitle': 'PUCKET VIP',
   'vipSubtitle': 'One-time purchase — permanent perks',
   'vipPerkNoAds': 'All ads removed',
@@ -1051,7 +1054,7 @@ const _en = {
   'localDuoWinner': '{name} wins!',
   'localDuoRoundWin': '{name} wins the round',
   'menuTournament': 'WEEKLY CUP',
-  'menuCosmetics': 'COSMETICS',
+  'menuCosmetics': 'SHOP',
   'menuInvite': 'INVITE FRIEND',
   'dailyQuests': 'Daily Quests',
   'questPlay3': 'Play 3 matches',
@@ -1356,7 +1359,7 @@ const _de = {
   'localDuoWinner': '{name} gewinnt!',
   'localDuoRoundWin': '{name} gewinnt die Runde',
   'menuTournament': 'WOCHENPOKAL',
-  'menuCosmetics': 'KOSMETIK',
+  'menuCosmetics': 'SHOP',
   'menuInvite': 'FREUND EINLADEN',
   'dailyQuests': 'Tägliche Quests',
   'questPlay3': '3 Spiele spielen',
@@ -1661,7 +1664,7 @@ const _es = {
   'localDuoWinner': '¡{name} gana!',
   'localDuoRoundWin': '{name} gana la ronda',
   'menuTournament': 'COPA SEMANAL',
-  'menuCosmetics': 'COSMÉTICOS',
+  'menuCosmetics': 'TIENDA',
   'menuInvite': 'INVITAR AMIGO',
   'dailyQuests': 'Misiones diarias',
   'questPlay3': 'Jugar 3 partidas',
@@ -1966,7 +1969,7 @@ const _ar = {
   'localDuoWinner': '{name} فاز!',
   'localDuoRoundWin': '{name} فاز بالجولة',
   'menuTournament': 'كأس أسبوعي',
-  'menuCosmetics': 'مظهر',
+  'menuCosmetics': 'المتجر',
   'menuInvite': 'دعوة صديق',
   'dailyQuests': 'مهام يومية',
   'questPlay3': 'العب 3 مباريات',
@@ -2271,7 +2274,7 @@ const _fr = {
   'localDuoWinner': '{name} gagne !',
   'localDuoRoundWin': '{name} gagne la manche',
   'menuTournament': 'COUPE HEBDO',
-  'menuCosmetics': 'COSMÉTIQUES',
+  'menuCosmetics': 'BOUTIQUE',
   'menuInvite': 'INVITER',
   'dailyQuests': 'Quêtes quotidiennes',
   'questPlay3': 'Jouer 3 matchs',
