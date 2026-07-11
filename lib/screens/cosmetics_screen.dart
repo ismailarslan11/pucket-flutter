@@ -13,6 +13,8 @@ import '../theme/app_theme.dart';
 import '../widgets/pucket_button.dart';
 import '../widgets/yesa_background.dart';
 import '../widgets/yesa_menu_tile.dart';
+import '../widgets/yesa_effects.dart';
+import 'app_router.dart';
 
 class CosmeticsScreen extends StatefulWidget {
   const CosmeticsScreen({super.key});
@@ -137,7 +139,7 @@ class _CosmeticsScreenState extends State<CosmeticsScreen> {
       await metaSvc.load(auth.getUid());
       if (!mounted) return;
       if (metaSvc.tokens < price) {
-        _snack(l10n.tokensNotEnough);
+        _showNeedTokensSheet(price);
         return;
       }
     }
@@ -148,6 +150,11 @@ class _CosmeticsScreenState extends State<CosmeticsScreen> {
       itemId: id,
     );
     if (!mounted) return;
+    // Sunucu "yetersiz" derse de satış panelini aç (yarış durumu).
+    if (!ok && (metaSvc.lastMessage ?? '').contains('Yetersiz')) {
+      _showNeedTokensSheet(price);
+      return;
+    }
     if (ok) {
       final newDisc = type == 'disc' ? id : _disc;
       final newBoard = type == 'board' ? id : _board;
@@ -171,6 +178,115 @@ class _CosmeticsScreenState extends State<CosmeticsScreen> {
 
   void _snack(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+  }
+
+  /// Jeton yetmeyince: eksiği göster + Jeton Al (Premium) / Reklam İzle sun.
+  void _showNeedTokensSheet(int price) {
+    final l10n = context.l10n;
+    final metaSvc = context.read<PlayerMetaService>();
+    final elo = context.read<AuthService>().user?.elo ?? 1000;
+    final adGain = metaSvc.previewAdTokens(elo);
+    final have = metaSvc.tokens;
+
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: AppColors.cardElevated,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.fromLTRB(24, 20, 24, 30),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 58,
+              height: 58,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.gold.withValues(alpha: 0.15),
+                border: Border.all(color: AppColors.gold.withValues(alpha: 0.5)),
+              ),
+              child: const Icon(Icons.monetization_on_rounded, color: AppColors.gold, size: 30),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              l10n.needTokensTitle,
+              style: AppTextStyles.glow(AppColors.gold).copyWith(fontSize: 17, letterSpacing: 1),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              l10n.needTokensBody(price, have),
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: AppColors.textMuted, fontSize: 12.5, height: 1.5),
+            ),
+            const SizedBox(height: 18),
+            // Ana aksiyon: gerçek parayla jeton — Premium ekranına götürür.
+            SizedBox(
+              width: double.infinity,
+              child: ScalePress(
+                onTap: () {
+                  Navigator.pop(ctx);
+                  AppRouter.goPremium(context);
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 13),
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFFFD75E), Color(0xFFF0A818)],
+                    ),
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: AppShadows.neon(AppColors.gold, blur: 10),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.shopping_bag_rounded, color: Color(0xFF201505), size: 18),
+                      const SizedBox(width: 8),
+                      Text(
+                        l10n.needTokensBuy,
+                        style: const TextStyle(
+                          color: Color(0xFF201505),
+                          fontWeight: FontWeight.w900,
+                          fontSize: 14,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            if (AdConfig.supported) ...[
+              const SizedBox(height: 10),
+              // İkincil: reklam izle, bedava jeton kazan.
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    _watchAdForTokens();
+                  },
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.neonYesil,
+                    side: BorderSide(color: AppColors.neonYesil.withValues(alpha: 0.55)),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                  icon: const Icon(Icons.ondemand_video_rounded, size: 18),
+                  label: Text(
+                    l10n.needTokensAd(adGain),
+                    style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 
   @override

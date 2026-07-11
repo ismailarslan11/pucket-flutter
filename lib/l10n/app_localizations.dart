@@ -276,6 +276,11 @@ class AppLocalizations {
   String get noInternetRetry => _t('noInternetRetry');
   String get noInternetChecking => _t('noInternetChecking');
   String get cosmeticsEmotes => _t('cosmeticsEmotes');
+  String get needTokensTitle => _t('needTokensTitle');
+  String needTokensBody(int price, int have) =>
+      _t('needTokensBody').replaceAll('{price}', '$price').replaceAll('{have}', '$have');
+  String get needTokensBuy => _t('needTokensBuy');
+  String needTokensAd(int amount) => _t('needTokensAd').replaceAll('{amount}', '$amount');
   String get cosmeticsWinFx => _t('cosmeticsWinFx');
   String winFxName(String id) {
     switch (id) {
@@ -644,6 +649,10 @@ const _tr = {
   'boardThemeOcean': 'Okyanus',
   'boardThemeRoyal': 'Kraliyet',
   'cosmeticsEmotes': 'Maç İçi Emoteler',
+  'needTokensTitle': 'Yetersiz Jeton',
+  'needTokensBody': 'Bu ürün {price} jeton — sende {have} var.',
+  'needTokensBuy': 'JETON AL',
+  'needTokensAd': 'Reklam İzle (+{amount})',
   'cosmeticsWinFx': 'Zafer Efekti',
   'winFxClassic': 'Klasik Konfeti',
   'winFxGold': 'Altın Yağmuru',
@@ -995,6 +1004,10 @@ const _en = {
   'boardThemeOcean': 'Ocean',
   'boardThemeRoyal': 'Royal',
   'cosmeticsEmotes': 'Match Emotes',
+  'needTokensTitle': 'Not Enough Tokens',
+  'needTokensBody': 'This item costs {price} tokens — you have {have}.',
+  'needTokensBuy': 'GET TOKENS',
+  'needTokensAd': 'Watch Ad (+{amount})',
   'cosmeticsWinFx': 'Victory Effect',
   'winFxClassic': 'Classic Confetti',
   'winFxGold': 'Gold Rain',
