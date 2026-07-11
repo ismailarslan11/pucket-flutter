@@ -345,7 +345,7 @@ class _CosmeticsScreenState extends State<CosmeticsScreen> {
               crossAxisCount: 3,
               mainAxisSpacing: 12,
               crossAxisSpacing: 12,
-              childAspectRatio: 0.82,
+              childAspectRatio: 0.68,
             ),
             itemCount: CosmeticCatalog.premiumDiscs.length,
             itemBuilder: (context, i) {
@@ -372,7 +372,7 @@ class _CosmeticsScreenState extends State<CosmeticsScreen> {
               crossAxisCount: 4,
               mainAxisSpacing: 12,
               crossAxisSpacing: 10,
-              childAspectRatio: 0.78,
+              childAspectRatio: 0.66,
             ),
             // VIP pulu yalnızca (IAP ile) açıldıysa listede görünür.
             itemCount: CosmeticCatalog.emojiDiscs.length +
@@ -765,7 +765,7 @@ class _PremiumDiscTile extends StatelessWidget {
         Text(
           name,
           textAlign: TextAlign.center,
-          maxLines: 2,
+          maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w600, height: 1.1),
         ),
@@ -845,7 +845,7 @@ class _EmojiDiscTile extends StatelessWidget {
         Text(
           name,
           textAlign: TextAlign.center,
-          maxLines: 2,
+          maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w600, height: 1.1),
         ),
