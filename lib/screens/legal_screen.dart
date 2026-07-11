@@ -16,7 +16,7 @@ class LegalScreen extends StatelessWidget {
   final String? url;
 
   static void showPrivacy(BuildContext context) {
-    final l10n = context.l10n;
+    final l10n = context.l10nRead;
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -30,7 +30,7 @@ class LegalScreen extends StatelessWidget {
   }
 
   static void showTerms(BuildContext context) {
-    final l10n = context.l10n;
+    final l10n = context.l10nRead;
     Navigator.push(
       context,
       MaterialPageRoute(

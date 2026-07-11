@@ -53,7 +53,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
     final uid = context.read<AuthService>().getUid();
     final err = await FriendsApi.add(uid, name);
     if (!mounted) return;
-    final l10n = context.l10n;
+    final l10n = context.l10nRead;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(err ?? l10n.friendAdded)),
     );

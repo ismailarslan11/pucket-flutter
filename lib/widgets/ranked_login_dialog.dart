@@ -6,7 +6,7 @@ import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
 
 Future<void> showRankedLoginDialog(BuildContext context) {
-  final l10n = context.l10n;
+  final l10n = context.l10nRead;
   final auth = context.read<AuthService>();
 
   return showDialog<void>(

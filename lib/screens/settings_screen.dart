@@ -214,7 +214,7 @@ class SettingsScreen extends StatelessWidget {
   }
 
   Future<void> _confirmDeleteAccount(BuildContext context) async {
-    final l10n = context.l10n;
+    final l10n = context.l10nRead;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(

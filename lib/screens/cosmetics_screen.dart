@@ -74,7 +74,7 @@ class _CosmeticsScreenState extends State<CosmeticsScreen> {
     final auth = context.read<AuthService>();
     final metaSvc = context.read<PlayerMetaService>();
     final ads = context.read<AdService>();
-    final l10n = context.l10n;
+    final l10n = context.l10nRead;
 
     if (!AdConfig.supported) {
       _snack(l10n.tokensAdUnavailable);
@@ -132,7 +132,7 @@ class _CosmeticsScreenState extends State<CosmeticsScreen> {
   Future<void> _purchase(String type, String id, int price) async {
     final auth = context.read<AuthService>();
     final metaSvc = context.read<PlayerMetaService>();
-    final l10n = context.l10n;
+    final l10n = context.l10nRead;
 
     if (metaSvc.tokens < price) {
       // Yerel sayaç sunucudan sapmış olabilir; taze değerle tekrar dene.
@@ -182,7 +182,7 @@ class _CosmeticsScreenState extends State<CosmeticsScreen> {
 
   /// Jeton yetmeyince: eksiği göster + Jeton Al (Premium) / Reklam İzle sun.
   void _showNeedTokensSheet(int price) {
-    final l10n = context.l10n;
+    final l10n = context.l10nRead;
     final metaSvc = context.read<PlayerMetaService>();
     final elo = context.read<AuthService>().user?.elo ?? 1000;
     final adGain = metaSvc.previewAdTokens(elo);

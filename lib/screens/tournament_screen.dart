@@ -39,7 +39,7 @@ class _TournamentScreenState extends State<TournamentScreen> {
     if (_joining) return;
     setState(() => _joining = true);
     final auth = context.read<AuthService>();
-    final l10n = context.l10n;
+    final l10n = context.l10nRead;
     await MetaApi.joinTournament(auth.getUid(), auth.getName());
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.tournamentJoined)));
