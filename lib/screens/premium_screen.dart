@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -11,7 +13,7 @@ import '../widgets/yesa_background.dart';
 import '../widgets/yesa_effects.dart';
 import 'app_router.dart';
 
-/// Premium mağaza — VIP paketi, karşılaştırma, reklam kaldırma,
+/// Premium mağaza — vitrin, VIP paketi, karşılaştırma, reklam kaldırma,
 /// jeton paketleri ve Battle Pass premium.
 class PremiumScreen extends StatelessWidget {
   const PremiumScreen({super.key});
@@ -64,10 +66,12 @@ class PremiumScreen extends StatelessWidget {
               ),
               Expanded(
                 child: ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
                   children: [
+                    StaggerIn(index: 0, child: _PremiumHero(l10n: l10n)),
+                    const SizedBox(height: 6),
                     StaggerIn(
-                      index: 0,
+                      index: 1,
                       child: _VipCard(
                         owned: metaSvc.vip,
                         price: vipProduct?.price,
@@ -75,10 +79,10 @@ class PremiumScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 14),
-                    StaggerIn(index: 1, child: _CompareTable(l10n: l10n)),
+                    StaggerIn(index: 2, child: _CompareTable(l10n: l10n)),
                     const SizedBox(height: 14),
                     StaggerIn(
-                      index: 2,
+                      index: 3,
                       child: _RemoveAdsCard(
                         owned: settings.adsRemoved,
                         price: removeAdsProduct?.price,
@@ -88,20 +92,20 @@ class PremiumScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 22),
-                    Text(
-                      l10n.tokenPacksTitle.toUpperCase(),
-                      style: AppTextStyles.glow(AppColors.sariAna)
-                          .copyWith(fontSize: 13, letterSpacing: 1.5),
+                    _SectionHeader(
+                      icon: Icons.monetization_on_rounded,
+                      label: l10n.tokenPacksTitle.toUpperCase(),
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 12),
                     StaggerIn(
-                      index: 3,
+                      index: 4,
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Expanded(
                             child: _TokenPack(
                               amount: 100,
+                              coins: 1,
                               price: purchases.productFor(ProductIds.tokens100)?.price,
                               onBuy: () => purchases.buy(ProductIds.tokens100),
                             ),
@@ -110,6 +114,7 @@ class PremiumScreen extends StatelessWidget {
                           Expanded(
                             child: _TokenPack(
                               amount: 550,
+                              coins: 2,
                               bonusBadge: l10n.bonus10,
                               price: purchases.productFor(ProductIds.tokens500)?.price,
                               onBuy: () => purchases.buy(ProductIds.tokens500),
@@ -119,6 +124,7 @@ class PremiumScreen extends StatelessWidget {
                           Expanded(
                             child: _TokenPack(
                               amount: 1200,
+                              coins: 3,
                               bonusBadge: l10n.bonus20,
                               highlight: l10n.bestValue,
                               price: purchases.productFor(ProductIds.tokens1200)?.price,
@@ -142,9 +148,15 @@ class PremiumScreen extends StatelessWidget {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 18),
+                    const SizedBox(height: 20),
+                    _SectionHeader(
+                      icon: Icons.military_tech_rounded,
+                      label: l10n.battlePass.toUpperCase(),
+                      color: AppColors.vurguMoru,
+                    ),
+                    const SizedBox(height: 12),
                     StaggerIn(
-                      index: 4,
+                      index: 5,
                       child: _BattlePassCard(
                         price: bpProduct?.price,
                         onBuy: bpProduct == null
@@ -166,9 +178,10 @@ class PremiumScreen extends StatelessWidget {
                         style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
                       ),
                     Center(
-                      child: TextButton(
+                      child: TextButton.icon(
                         onPressed: () => purchases.restore(),
-                        child: Text(
+                        icon: const Icon(Icons.restore_rounded, color: AppColors.sariAna, size: 16),
+                        label: Text(
                           l10n.restorePurchases,
                           style: const TextStyle(
                             color: AppColors.sariAna,
@@ -178,6 +191,22 @@ class PremiumScreen extends StatelessWidget {
                         ),
                       ),
                     ),
+                    // Güven satırı — ödemeler mağaza üzerinden.
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.lock_rounded, color: AppColors.textMuted, size: 12),
+                        const SizedBox(width: 5),
+                        Flexible(
+                          child: Text(
+                            l10n.securePayments,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(color: AppColors.textMuted, fontSize: 10),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 8),
                       child: Text(
@@ -201,6 +230,199 @@ class PremiumScreen extends StatelessWidget {
   }
 }
 
+// ── Vitrin (hero) ──────────────────────────────────────────────────────
+
+class _PremiumHero extends StatelessWidget {
+  const _PremiumHero({required this.l10n});
+
+  final AppLocalizations l10n;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 150,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // Arka plan altın ışıma.
+          Container(
+            width: 240,
+            height: 140,
+            decoration: BoxDecoration(
+              gradient: RadialGradient(
+                colors: [
+                  AppColors.sariAna.withValues(alpha: 0.16),
+                  AppColors.sariAna.withValues(alpha: 0.0),
+                ],
+              ),
+            ),
+          ),
+          // Parıldayan yıldızlar.
+          const Positioned(left: 42, top: 22, child: _Twinkle(size: 13, phase: 0.0)),
+          const Positioned(right: 52, top: 14, child: _Twinkle(size: 10, phase: 0.35)),
+          const Positioned(right: 30, bottom: 38, child: _Twinkle(size: 15, phase: 0.6)),
+          const Positioned(left: 60, bottom: 26, child: _Twinkle(size: 9, phase: 0.85)),
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _FloatY(
+                amplitude: 5,
+                child: Container(
+                  width: 64,
+                  height: 64,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: const RadialGradient(
+                      center: Alignment(-0.35, -0.42),
+                      radius: 1.2,
+                      colors: [Color(0xFFFFE9A0), Color(0xFFF6C444), Color(0xFF8A6410)],
+                      stops: [0.0, 0.55, 1.0],
+                    ),
+                    border: Border.all(color: Colors.white30, width: 1.5),
+                    boxShadow: AppShadows.neon(AppColors.sariAna, blur: 18),
+                  ),
+                  child: const Icon(Icons.workspace_premium_rounded,
+                      color: Color(0xFF3A2A05), size: 34),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                l10n.premiumHeroSub,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: AppColors.textMuted,
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.3,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Yumuşak aşağı-yukarı süzülme animasyonu.
+class _FloatY extends StatefulWidget {
+  const _FloatY({required this.child, this.amplitude = 4});
+
+  final Widget child;
+  final double amplitude;
+
+  @override
+  State<_FloatY> createState() => _FloatYState();
+}
+
+class _FloatYState extends State<_FloatY> with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 2600))
+      ..repeat();
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _ctrl,
+      builder: (_, child) => Transform.translate(
+        offset: Offset(0, math.sin(_ctrl.value * 2 * math.pi) * widget.amplitude),
+        child: child,
+      ),
+      child: widget.child,
+    );
+  }
+}
+
+/// Parıldayan yıldız — faz kaydırmalı opaklık nabzı.
+class _Twinkle extends StatefulWidget {
+  const _Twinkle({required this.size, this.phase = 0});
+
+  final double size;
+  final double phase;
+
+  @override
+  State<_Twinkle> createState() => _TwinkleState();
+}
+
+class _TwinkleState extends State<_Twinkle> with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1800))
+      ..repeat();
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _ctrl,
+      builder: (_, _) {
+        final t = (_ctrl.value + widget.phase) % 1.0;
+        final a = 0.25 + 0.75 * (0.5 + 0.5 * math.sin(t * 2 * math.pi));
+        return Opacity(
+          opacity: a,
+          child: Icon(Icons.auto_awesome, color: AppColors.sariAna, size: widget.size),
+        );
+      },
+    );
+  }
+}
+
+// ── Bölüm başlığı ──────────────────────────────────────────────────────
+
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({required this.icon, required this.label, this.color = AppColors.sariAna});
+
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, color: color, size: 16),
+        const SizedBox(width: 7),
+        Text(
+          label,
+          style: AppTextStyles.glow(color).copyWith(fontSize: 13, letterSpacing: 1.5),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Container(
+            height: 1.2,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [color.withValues(alpha: 0.55), color.withValues(alpha: 0.0)],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 // ── VIP kartı ──────────────────────────────────────────────────────────
 
 class _VipCard extends StatelessWidget {
@@ -213,100 +435,140 @@ class _VipCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    return GlowPulse(
-      color: AppColors.sariAna,
-      min: 0.25,
-      max: 0.55,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF3A2E08), Color(0xFF201505)],
-          ),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: AppColors.sariAna.withValues(alpha: 0.7), width: 1.6),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        GlowPulse(
+          color: AppColors.sariAna,
+          min: 0.25,
+          max: 0.55,
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(16, 22, 16, 16),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF3A2E08), Color(0xFF201505)],
+              ),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: AppColors.sariAna.withValues(alpha: 0.7), width: 1.6),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // VIP taç pulu önizlemesi — oyundaki 3D pul görünümüyle aynı.
-                const _CrownDiscPreview(size: 64),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        l10n.vipTitle,
-                        style: AppTextStyles.glow(AppColors.sariAna)
-                            .copyWith(fontSize: 18, letterSpacing: 1.5),
+                Row(
+                  children: [
+                    // VIP taç pulu önizlemesi — oyundaki 3D pul görünümüyle aynı.
+                    _FloatY(amplitude: 3, child: const _CrownDiscPreview(size: 64)),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            l10n.vipTitle,
+                            style: AppTextStyles.glow(AppColors.sariAna)
+                                .copyWith(fontSize: 18, letterSpacing: 1.5),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            l10n.vipSubtitle,
+                            style: const TextStyle(color: AppColors.textMuted, fontSize: 11),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 3),
-                      Text(
-                        l10n.vipSubtitle,
-                        style: const TextStyle(color: AppColors.textMuted, fontSize: 11),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                _perk(l10n.vipPerkNoAds, l10n.vipPerkNoAdsSub, Icons.block_rounded),
+                _perk(l10n.vipPerkDisc, l10n.vipPerkDiscSub, Icons.workspace_premium_rounded),
+                _perk(l10n.vipPerkTokens, l10n.vipPerkTokensSub, Icons.monetization_on_rounded),
+                const SizedBox(height: 14),
+                SizedBox(
+                  width: double.infinity,
+                  child: owned
+                      ? Container(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: AppColors.sariAna.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: AppColors.sariAna),
+                          ),
+                          child: Text(
+                            l10n.vipActive,
+                            style: const TextStyle(
+                              color: AppColors.sariAna,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                        )
+                      : ScalePress(
+                          onTap: onBuy ?? () {},
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 13),
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFFFFD75E), Color(0xFFF0A818)],
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: AppShadows.neon(AppColors.sariAna, blur: 10),
+                            ),
+                            child: Text(
+                              price == null ? l10n.buyVip : '${l10n.buyVip} — $price',
+                              style: const TextStyle(
+                                color: Color(0xFF201505),
+                                fontWeight: FontWeight.w900,
+                                fontSize: 14,
+                                letterSpacing: 1,
+                              ),
+                            ),
+                          ),
+                        ),
                 ),
               ],
             ),
-            const SizedBox(height: 14),
-            _perk(l10n.vipPerkNoAds, l10n.vipPerkNoAdsSub, Icons.block_rounded),
-            _perk(l10n.vipPerkDisc, l10n.vipPerkDiscSub, Icons.workspace_premium_rounded),
-            _perk(l10n.vipPerkTokens, l10n.vipPerkTokensSub, Icons.monetization_on_rounded),
-            const SizedBox(height: 14),
-            SizedBox(
-              width: double.infinity,
-              child: owned
-                  ? Container(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: AppColors.sariAna.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppColors.sariAna),
-                      ),
-                      child: Text(
-                        l10n.vipActive,
-                        style: const TextStyle(
-                          color: AppColors.sariAna,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 1.2,
-                        ),
-                      ),
-                    )
-                  : ScalePress(
-                      onTap: onBuy ?? () {},
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 13),
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFFFFD75E), Color(0xFFF0A818)],
-                          ),
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: AppShadows.neon(AppColors.sariAna, blur: 10),
-                        ),
-                        child: Text(
-                          price == null ? l10n.buyVip : '${l10n.buyVip} — $price',
-                          style: const TextStyle(
-                            color: Color(0xFF201505),
-                            fontWeight: FontWeight.w900,
-                            fontSize: 14,
-                            letterSpacing: 1,
-                          ),
-                        ),
+          ),
+        ),
+        // "EN İYİ TEKLİF" kurdelesi — kartın üstüne biner.
+        if (!owned)
+          Positioned(
+            top: -9,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFFFD75E), Color(0xFFF0A818)],
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: AppShadows.neon(AppColors.sariAna, blur: 8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.star_rounded, color: Color(0xFF201505), size: 12),
+                    const SizedBox(width: 4),
+                    Text(
+                      l10n.bestOffer,
+                      style: const TextStyle(
+                        color: Color(0xFF201505),
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0.8,
                       ),
                     ),
+                  ],
+                ),
+              ),
             ),
-          ],
-        ),
-      ),
+          ),
+      ],
     );
   }
 
@@ -614,6 +876,7 @@ class _RemoveAdsCard extends StatelessWidget {
 class _TokenPack extends StatelessWidget {
   const _TokenPack({
     required this.amount,
+    required this.coins,
     required this.price,
     required this.onBuy,
     this.bonusBadge,
@@ -621,6 +884,7 @@ class _TokenPack extends StatelessWidget {
   });
 
   final int amount;
+  final int coins; // görsel yığın boyutu (1-3)
   final String? price;
   final String? bonusBadge;
   final String? highlight;
@@ -662,15 +926,28 @@ class _TokenPack extends StatelessWidget {
                       : null),
             ),
             const SizedBox(height: 8),
-            Stack(
-              alignment: Alignment.center,
-              children: [
-                Icon(Icons.monetization_on_rounded,
-                    color: AppColors.sariAna.withValues(alpha: 0.25), size: 40),
-                const Icon(Icons.monetization_on_rounded, color: AppColors.sariAna, size: 28),
-              ],
+            // Paket büyüdükçe büyüyen jeton yığını.
+            SizedBox(
+              height: 34,
+              width: 14.0 * coins + 22,
+              child: Stack(
+                children: [
+                  for (var i = 0; i < coins; i++)
+                    Positioned(
+                      left: 14.0 * i,
+                      top: coins == 1 ? 3 : (i.isEven ? 6 : 0),
+                      child: Icon(
+                        Icons.monetization_on_rounded,
+                        color: i == coins - 1
+                            ? AppColors.sariAna
+                            : AppColors.sariAna.withValues(alpha: 0.55),
+                        size: 28,
+                      ),
+                    ),
+                ],
+              ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 2),
             Text(
               '$amount',
               style: const TextStyle(

@@ -268,6 +268,9 @@ class AppLocalizations {
   String get bpCardSub => _t('bpCardSub');
   String get premiumNotes => _t('premiumNotes');
   String get openLabel => _t('openLabel');
+  String get premiumHeroSub => _t('premiumHeroSub');
+  String get bestOffer => _t('bestOffer');
+  String get securePayments => _t('securePayments');
   String get tournament => _t('tournament');
   String get tournamentJoined => _t('tournamentJoined');
   String get tournamentPrizes => _t('tournamentPrizes');
@@ -611,6 +614,9 @@ const _tr = {
   'bpCardSub': 'Sezonluk ödül yolunun premium kolunu açar — ekstra jeton ve kozmetikler',
   'premiumNotes': 'Satın alımlar hesabına bağlıdır. Cihaz değiştirirsen "Satın Alımları Geri Yükle" yeterli. Jetonların sunucuda güvende tutulur.',
   'openLabel': 'İncele',
+  'premiumHeroSub': 'Ayrıcalıklarını aç, kazancını katla',
+  'bestOffer': 'EN İYİ TEKLİF',
+  'securePayments': 'Ödemeler Google Play / App Store üzerinden güvenle işlenir',
   'disc_vip_gold': 'VIP Taç',
   'tournamentJoined': 'Katıldın! Ranked kazanınca puan topla.',
   'tournamentPrizes': 'Haftalık Ödüller',
@@ -947,6 +953,9 @@ const _en = {
   'bpCardSub': 'Unlocks the premium reward track — extra tokens and cosmetics',
   'premiumNotes': 'Purchases are tied to your account. On a new device just tap "Restore Purchases". Your tokens are stored safely on the server.',
   'openLabel': 'View',
+  'premiumHeroSub': 'Unlock perks, multiply your rewards',
+  'bestOffer': 'BEST OFFER',
+  'securePayments': 'Payments are processed securely by Google Play / App Store',
   'disc_vip_gold': 'VIP Crown',
   'tournamentJoined': 'Joined! Earn points by winning ranked.',
   'tournamentPrizes': 'Weekly Prizes',
