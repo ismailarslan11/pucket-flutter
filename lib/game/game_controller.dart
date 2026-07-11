@@ -243,6 +243,25 @@ class GameController extends ChangeNotifier {
     uiSync.bump();
   }
 
+  // Bot insanlaştırma: gizli bot ara sıra insan gibi emote atar.
+  Timer? _botEmoteTimer;
+  final _botEmoteRng = math.Random();
+
+  void _maybeBotEmote(List<String> pool, {double chance = 0.35}) {
+    if (!aiMode) return;
+    if (_botEmoteRng.nextDouble() > chance) return;
+    _botEmoteTimer?.cancel();
+    // İnsan gecikmesi: hemen değil, 0.8-2.2 sn sonra.
+    _botEmoteTimer = Timer(
+      Duration(milliseconds: 800 + _botEmoteRng.nextInt(1400)),
+      () {
+        if (phase == GamePhase.playing || phase == GamePhase.gameover) {
+          _showOppEmote(pool[_botEmoteRng.nextInt(pool.length)]);
+        }
+      },
+    );
+  }
+
   void Function(int ms)? onPingUpdate;
   void Function(String message)? onToast;
   void Function()? onOpponentLeft;
@@ -548,6 +567,10 @@ class GameController extends ChangeNotifier {
     }
     resetMatch();
     startCountdown();
+    // Gizli bot: maç başında bazen insan gibi selamlar.
+    if (botFallback) {
+      _maybeBotEmote(const ['👍', '🤝', '😎'], chance: 0.45);
+    }
   }
 
   void startCareerGame(CareerOpponent opponent) {
@@ -1153,8 +1176,12 @@ class GameController extends ChangeNotifier {
     );
     if (winner == mySeat) {
       audio?.playWin();
+      // Bot kaybetti — bazen insan gibi hayıflanır/alkışlar.
+      _maybeBotEmote(const ['😅', '😮', '👏']);
     } else {
       audio?.playLose();
+      // Bot kazandı — bazen sevinir.
+      _maybeBotEmote(const ['🔥', '😎', '🎯']);
     }
 
     if (broadcast) {
@@ -1497,6 +1524,7 @@ class GameController extends ChangeNotifier {
     _matchStartTimer?.cancel();
     _myEmoteTimer?.cancel();
     _oppEmoteTimer?.cancel();
+    _botEmoteTimer?.cancel();
     ws.disconnect();
     super.dispose();
   }
