@@ -1,4 +1,4 @@
-const SUPPORT = 'support@pucket.app';
+const SUPPORT = 'yesastudioo@gmail.com';
 const UPDATED = '30 Haziran 2026';
 
 function page(title, body) {
@@ -56,8 +56,9 @@ function privacyHtml() {
     <h2>Reklamlar ve AB kullanıcıları</h2>
     <p>Avrupa Ekonomik Alanı'ndaki kullanıcılara Google UMP üzerinden rıza formu gösterilebilir. Reklam tercihlerinizi uygulama ayarlarından değiştirebilirsiniz.</p>
 
-    <h2>Veri saklama</h2>
-    <p>Oyun verileri hesabınız aktif olduğu sürece sunucuda saklanır. Hesap silme talebi için bize yazın.</p>
+    <h2>Veri saklama ve hesap silme</h2>
+    <p>Oyun verileri hesabınız aktif olduğu sürece sunucuda saklanır. Hesabınızı ve tüm verilerinizi
+    uygulama içinden (Ayarlar → Hesabı Sil) veya <a href="/account-deletion">hesap silme sayfasından</a> silebilirsiniz.</p>
 
     <h2>Çocuklar</h2>
     <p>Uygulama 13 yaş ve üzeri içindir. Bilerek 13 yaş altından veri toplamıyoruz.</p>
@@ -95,4 +96,34 @@ function termsHtml() {
   `);
 }
 
-module.exports = { privacyHtml, termsHtml };
+/// Google Play "hesap silme" gereksinimi: mağaza formuna verilecek web sayfası.
+function accountDeletionHtml() {
+  return page('Hesap Silme', `
+    <p><strong>PUCKET</strong> hesabınızı ve tüm verilerinizi kalıcı olarak silmek için iki yol vardır:</p>
+
+    <h2>1) Uygulama içinden (önerilen, anında)</h2>
+    <ul>
+      <li>PUCKET'i açın</li>
+      <li><strong>Ayarlar</strong> ekranına gidin</li>
+      <li>En alttaki <strong>"Hesabı Sil"</strong> düğmesine basın ve onaylayın</li>
+    </ul>
+    <p>Bu işlem anında gerçekleşir ve geri alınamaz.</p>
+
+    <h2>2) E-posta ile talep</h2>
+    <p><a href="mailto:${SUPPORT}?subject=Hesap%20Silme%20Talebi">${SUPPORT}</a> adresine
+    uygulama içindeki kullanıcı adınızla birlikte "Hesap silme talebi" yazın.
+    Talebiniz en geç 7 gün içinde işleme alınır.</p>
+
+    <h2>Silinen veriler</h2>
+    <ul>
+      <li>Hesap kimliği ve kullanıcı adı</li>
+      <li>ELO, lig, maç geçmişi, sezon ilerlemesi</li>
+      <li>Jetonlar ve kozmetikler</li>
+      <li>Arkadaş listesi ve bildirim kaydı (push token)</li>
+    </ul>
+    <p>Sunucu yedeklerindeki kopyalar en geç 30 gün içinde temizlenir.
+    Yasal zorunluluk gerektiren kayıtlar (ör. ödeme itirazları) yasal süre boyunca tutulabilir.</p>
+  `);
+}
+
+module.exports = { privacyHtml, termsHtml, accountDeletionHtml };

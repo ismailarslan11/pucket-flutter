@@ -4,7 +4,7 @@ const crypto = require('crypto');
 
 const { createStore } = require('./store');
 const { handleAdmin } = require('./admin');
-const { privacyHtml, termsHtml } = require('./legal_pages');
+const { privacyHtml, termsHtml, accountDeletionHtml } = require('./legal_pages');
 const {
   initFirebaseAuth,
   resolveLoginIdentity,
@@ -158,10 +158,37 @@ function settleRankedMatch(room, winnerSeat) {
   return true;
 }
 
+// Kullanıcı adı küfür filtresi (mağaza UGC gereksinimi). Leet yazımlar da
+// normalize edilir (0→o, 1→i, 3→e, 4→a, 5→s, 7→t, 8→b, @→a, $→s).
+// Not: 'sik' ve 'pic' gibi kısa kökler bilerek yok — 'klasik', 'epic' gibi
+// masum adları engellerdi. Sadece net biçimleri listede.
+const BANNED_NAME_WORDS = [
+  // Türkçe
+  'amk', 'amcik', 'sikik', 'sikis', 'sikeyim', 'sikerim', 'siktir', 'sittir',
+  'orospu', 'oruspu', 'picsin', 'yarrak', 'yarak', 'yavsak', 'kahpe',
+  'pezevenk', 'ibne', 'ipne', 'gavat', 'kaltak', 'serefsiz',
+  'gotveren', 'ananisik', 'sokarim', 'tasak', 'amina', 'aminako',
+  // İngilizce
+  'fuck', 'fck', 'shit', 'bitch', 'cunt', 'nigger', 'nigga', 'faggot',
+  'dickhead', 'cock', 'pussy', 'whore', 'slut', 'rapist', 'hitler', 'nazi',
+  'porno', 'penis', 'vagina',
+];
+
+function containsBannedWord(name) {
+  const leet = name
+    .toLowerCase()
+    .replace(/0/g, 'o').replace(/1/g, 'i').replace(/3/g, 'e')
+    .replace(/4/g, 'a').replace(/5/g, 's').replace(/7/g, 't')
+    .replace(/8/g, 'b').replace(/@/g, 'a').replace(/\$/g, 's')
+    .replace(/[^a-z]/g, ''); // alt çizgi vb. ayırıcıları at (s_i_k gibi)
+  return BANNED_NAME_WORDS.some((w) => leet.includes(w));
+}
+
 function validateUsername(name) {
   const trimmed = (name || '').trim();
   if (trimmed.length < 2 || trimmed.length > 16) return null;
   if (!/^[a-zA-Z0-9_]+$/.test(trimmed)) return null;
+  if (containsBannedWord(trimmed)) return null;
   return trimmed;
 }
 
@@ -755,6 +782,16 @@ const server = http.createServer((req, res) => {
       'Cache-Control': 'public, max-age=3600',
     });
     res.end(privacyHtml());
+    return;
+  }
+
+  // Google Play "hesap silme URL'si" gereksinimi.
+  if (url.pathname === '/account-deletion') {
+    res.writeHead(200, {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'public, max-age=3600',
+    });
+    res.end(accountDeletionHtml());
     return;
   }
 

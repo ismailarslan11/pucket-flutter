@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:app_tracking_transparency/app_tracking_transparency.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -137,6 +139,18 @@ void _handlePurchase(
 
 Future<void> _warmUpDeferred(AdService ads) async {
   if (AdConfig.supported) {
+    // iOS: App Store zorunluluğu — reklam kişiselleştirme için ATT izni.
+    // Kullanıcı reddetse de oyun ve reklamlar (kişiselleştirilmemiş) çalışır.
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
+      try {
+        final status = await AppTrackingTransparency.trackingAuthorizationStatus;
+        if (status == TrackingStatus.notDetermined) {
+          // Splash animasyonunun üstüne binmesin diye kısa bekleme.
+          await Future<void>.delayed(const Duration(milliseconds: 600));
+          await AppTrackingTransparency.requestTrackingAuthorization();
+        }
+      } catch (_) {}
+    }
     await ConsentService.ensureConsent();
     await ads.init();
   }
