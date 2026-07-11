@@ -271,6 +271,10 @@ class AppLocalizations {
   String get premiumHeroSub => _t('premiumHeroSub');
   String get bestOffer => _t('bestOffer');
   String get securePayments => _t('securePayments');
+  String get noInternetTitle => _t('noInternetTitle');
+  String get noInternetBody => _t('noInternetBody');
+  String get noInternetRetry => _t('noInternetRetry');
+  String get noInternetChecking => _t('noInternetChecking');
   String get tournament => _t('tournament');
   String get tournamentJoined => _t('tournamentJoined');
   String get tournamentPrizes => _t('tournamentPrizes');
@@ -614,6 +618,10 @@ const _tr = {
   'bpCardSub': 'Sezonluk ödül yolunun premium kolunu açar — ekstra jeton ve kozmetikler',
   'premiumNotes': 'Satın alımlar hesabına bağlıdır. Cihaz değiştirirsen "Satın Alımları Geri Yükle" yeterli. Jetonların sunucuda güvende tutulur.',
   'openLabel': 'İncele',
+  'noInternetTitle': 'İnternet Bağlantısı Yok',
+  'noInternetBody': 'PUCKET çevrimiçi bir oyundur.\nDevam etmek için Wi-Fi veya mobil veriyi aç.',
+  'noInternetRetry': 'TEKRAR DENE',
+  'noInternetChecking': 'Bağlantı kontrol ediliyor…',
   'premiumHeroSub': 'Ayrıcalıklarını aç, kazancını katla',
   'bestOffer': 'EN İYİ TEKLİF',
   'securePayments': 'Ödemeler Google Play / App Store üzerinden güvenle işlenir',
@@ -953,6 +961,10 @@ const _en = {
   'bpCardSub': 'Unlocks the premium reward track — extra tokens and cosmetics',
   'premiumNotes': 'Purchases are tied to your account. On a new device just tap "Restore Purchases". Your tokens are stored safely on the server.',
   'openLabel': 'View',
+  'noInternetTitle': 'No Internet Connection',
+  'noInternetBody': 'PUCKET is an online game.\nTurn on Wi-Fi or mobile data to continue.',
+  'noInternetRetry': 'TRY AGAIN',
+  'noInternetChecking': 'Checking connection…',
   'premiumHeroSub': 'Unlock perks, multiply your rewards',
   'bestOffer': 'BEST OFFER',
   'securePayments': 'Payments are processed securely by Google Play / App Store',

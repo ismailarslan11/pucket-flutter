@@ -14,6 +14,7 @@ import 'config/ad_config.dart';
 import 'l10n/app_language.dart';
 import 'screens/auth_screen.dart';
 import 'screens/brand_splash.dart';
+import 'screens/offline_gate.dart';
 import 'screens/menu_screen.dart';
 import 'screens/tutorial_screen.dart';
 import 'screens/username_screen.dart';
@@ -169,6 +170,13 @@ class _RootAppState extends State<RootApp> {
   bool _showBrand = true;
 
   @override
+  void initState() {
+    super.initState();
+    // İnternet kontrolünü marka animasyonu sırasında önden başlat.
+    OfflineGate.prewarm();
+  }
+
+  @override
   Widget build(BuildContext context) {
     if (_showBrand) {
       return MaterialApp(
@@ -178,7 +186,8 @@ class _RootAppState extends State<RootApp> {
         }),
       );
     }
-    return const PucketApp();
+    // İnternet yoksa oyuna sokma — bağlanınca kendiliğinden devam eder.
+    return const OfflineGate(child: PucketApp());
   }
 }
 
