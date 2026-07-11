@@ -88,6 +88,18 @@ class AuthService extends ChangeNotifier {
   /// Android: önce Firebase OAuth (Credential Manager SHA sorunlarını atlar),
   /// olmazsa native Google Sign-In dener. İptalde true döner.
   Future<bool> _signInWithGoogleOnAndroid() async {
+    // Önce yerel hesap seçici (SHA-1 Firebase'e kayıtlı olmalı) — tarayıcı
+    // gerektirmez, BlueStacks dahil her yerde en güvenilir yol. Yerel akış
+    // kurulum hatası verirse web (Custom Tab) akışına düşülür.
+    try {
+      await _signInWithGoogleNative();
+      return false;
+    } on GoogleSignInException catch (e) {
+      if (e.code == GoogleSignInExceptionCode.canceled) return true;
+      // Yapılandırma sorunları web akışıyla telafi edilebilir — devam.
+    } catch (_) {
+      // Yerel akış patladı — web akışını dene.
+    }
     final provider = GoogleAuthProvider();
     try {
       await _auth!.signInWithProvider(provider);
@@ -96,9 +108,8 @@ class AuthService extends ChangeNotifier {
       if (e.code == 'web-context-canceled' || e.code == 'cancelled-popup-request') {
         return true;
       }
+      rethrow;
     }
-    await _signInWithGoogleNative();
-    return false;
   }
 
   Future<void> _signInWithGoogleNative() async {
