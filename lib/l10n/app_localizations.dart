@@ -448,7 +448,7 @@ const _tr = {
   'menuJoinRoom': 'ODAYA KATIL',
   'menuCareer': 'KARİYER MODU',
   'menuVsBot': 'BİLGİSAYARA KARŞI',
-  'menuLeaderboard': 'SIRALAMALAR',
+  'menuLeaderboard': 'SIRALAMA',
   'menuTutorial': 'NASIL OYNANIR?',
   'menuProfile': 'PROFİLİM',
   'menuSettings': 'AYARLAR',
