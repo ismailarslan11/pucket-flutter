@@ -89,14 +89,18 @@ class AuthService extends ChangeNotifier {
   /// olmazsa native Google Sign-In dener. İptalde true döner.
   Future<bool> _signInWithGoogleOnAndroid() async {
     // Önce yerel hesap seçici (SHA-1 Firebase'e kayıtlı olmalı) — tarayıcı
-    // gerektirmez, BlueStacks dahil her yerde en güvenilir yol. Yerel akış
-    // kurulum hatası verirse web (Custom Tab) akışına düşülür.
+    // gerektirmez. Cihazda Google hesabı yoksa (ör. BlueStacks) seçici
+    // AÇILAMADAN "canceled" fırlatır; bunu gerçek kullanıcı iptalinden
+    // süreyle ayırt ederiz: panel görünmeden gelen iptal → web akışına düş.
+    final sw = Stopwatch()..start();
     try {
       await _signInWithGoogleNative();
       return false;
     } on GoogleSignInException catch (e) {
-      if (e.code == GoogleSignInExceptionCode.canceled) return true;
-      // Yapılandırma sorunları web akışıyla telafi edilebilir — devam.
+      if (e.code == GoogleSignInExceptionCode.canceled && sw.elapsedMilliseconds > 1500) {
+        return true; // Kullanıcı paneli gördü ve vazgeçti.
+      }
+      // Anında iptal / yapılandırma sorunu → web akışıyla telafi et.
     } catch (_) {
       // Yerel akış patladı — web akışını dene.
     }
