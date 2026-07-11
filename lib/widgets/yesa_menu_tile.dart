@@ -56,40 +56,69 @@ class YesaMenuTile extends StatelessWidget {
       onTap: onPressed,
       child: Container(
         decoration: YesaDecor.menuTile(featured: featured, accent: accent),
+        clipBehavior: Clip.antiAlias,
         child: SizedBox(
           height: 92,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: 38,
-                  height: 38,
-                  decoration: YesaDecor.iconTile(
-                    color: featured ? AppColors.beyaz.withValues(alpha: 0.35) : null,
-                    gradient: iconGradient,
+          child: Stack(
+            children: [
+              // Cam parlaması — üst yarıda çapraz beyaz süzülme.
+              Positioned(
+                top: -30,
+                left: -20,
+                right: -20,
+                height: 62,
+                child: IgnorePointer(
+                  child: Transform.rotate(
+                    angle: -0.12,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            AppColors.beyaz.withValues(alpha: featured ? 0.22 : 0.10),
+                            AppColors.beyaz.withValues(alpha: 0.0),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
-                  child: Icon(icon, size: 20, color: icColor),
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  label,
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: titleStyle,
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 38,
+                      height: 38,
+                      decoration: YesaDecor.iconTile(
+                        color: featured ? AppColors.beyaz.withValues(alpha: 0.35) : null,
+                        gradient: iconGradient,
+                      ),
+                      child: Icon(icon, size: 20, color: icColor),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      label,
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: titleStyle,
+                    ),
+                    if (subtitle != null && subtitle!.isNotEmpty)
+                      Text(
+                        subtitle!,
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(color: subColor, fontSize: 8, fontWeight: FontWeight.w700),
+                      ),
+                  ],
                 ),
-                if (subtitle != null && subtitle!.isNotEmpty)
-                  Text(
-                    subtitle!,
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(color: subColor, fontSize: 8, fontWeight: FontWeight.w700),
-                  ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

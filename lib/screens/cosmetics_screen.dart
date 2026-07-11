@@ -12,6 +12,7 @@ import '../theme/cosmetics_theme.dart';
 import '../theme/app_theme.dart';
 import '../widgets/pucket_button.dart';
 import '../widgets/yesa_background.dart';
+import '../widgets/yesa_menu_tile.dart';
 
 class CosmeticsScreen extends StatefulWidget {
   const CosmeticsScreen({super.key});
@@ -198,7 +199,7 @@ class _CosmeticsScreenState extends State<CosmeticsScreen> {
                 : (metaSvc.adCooldownRemainingMs / 1000).ceil(),
           ),
           const SizedBox(height: 24),
-          Text(l10n.cosmeticsDiscFree, style: _sectionStyle),
+          YesaSectionLabel(l10n.cosmeticsDiscFree),
           const SizedBox(height: 10),
           Wrap(
             spacing: 10,
@@ -214,7 +215,7 @@ class _CosmeticsScreenState extends State<CosmeticsScreen> {
             }).toList(),
           ),
           const SizedBox(height: 24),
-          Text(l10n.cosmeticsDiscPremium, style: _sectionStyle),
+          YesaSectionLabel(l10n.cosmeticsDiscPremium),
           const SizedBox(height: 10),
           GridView.builder(
             shrinkWrap: true,
@@ -241,7 +242,7 @@ class _CosmeticsScreenState extends State<CosmeticsScreen> {
             },
           ),
           const SizedBox(height: 24),
-          Text(l10n.cosmeticsDiscEmoji, style: _sectionStyle),
+          YesaSectionLabel(l10n.cosmeticsDiscEmoji),
           const SizedBox(height: 10),
           GridView.builder(
             shrinkWrap: true,
@@ -272,7 +273,7 @@ class _CosmeticsScreenState extends State<CosmeticsScreen> {
             },
           ),
           const SizedBox(height: 24),
-          Text(l10n.cosmeticsBoard, style: _sectionStyle),
+          YesaSectionLabel(l10n.cosmeticsBoard),
           const SizedBox(height: 10),
           ..._allBoards.map((t) {
             final price = CosmeticCatalog.boardPrice(t) ?? 0;
@@ -334,7 +335,6 @@ class _CosmeticsScreenState extends State<CosmeticsScreen> {
     );
   }
 
-  TextStyle get _sectionStyle => const TextStyle(fontWeight: FontWeight.w800, fontSize: 15);
 }
 
 class _TokenHeader extends StatelessWidget {

@@ -11,6 +11,7 @@ import '../services/auth_service.dart';
 import '../services/settings_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/yesa_background.dart';
+import '../widgets/yesa_effects.dart';
 import '../widgets/pucket_button.dart';
 import 'app_router.dart';
 
@@ -218,12 +219,8 @@ class _QueueScreenState extends State<QueueScreen> {
                       children: [
                         Text(
                           l10n.queueRankedTitle,
-                          style: const TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w900,
-                            color: AppColors.brandBlue,
-                            letterSpacing: 3,
-                          ),
+                          style: AppTextStyles.glow(AppColors.camgobegi)
+                              .copyWith(fontSize: 22, letterSpacing: 3),
                         ),
                         const SizedBox(height: 18),
                         SizedBox(
@@ -231,31 +228,48 @@ class _QueueScreenState extends State<QueueScreen> {
                           child: Container(
                             width: double.infinity,
                             padding: const EdgeInsets.all(22),
-                            decoration: BoxDecoration(
-                              color: AppColors.card,
-                              borderRadius: BorderRadius.circular(14),
-                              border: Border.all(color: AppColors.border),
-                            ),
+                            decoration: YesaDecor.card(radius: 20),
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                if (_spinning)
-                                  const Padding(
-                                    padding: EdgeInsets.only(bottom: 14),
-                                    child: SizedBox(
-                                      width: 32,
-                                      height: 32,
-                                      child: CircularProgressIndicator(strokeWidth: 3, color: AppColors.green),
+                                // Radar dalgası içinde ELO — "rakip aranıyor" hissi.
+                                RadarPulse(
+                                  size: 132,
+                                  active: _spinning,
+                                  color: AppColors.camgobegi,
+                                  child: Container(
+                                    width: 88,
+                                    height: 88,
+                                    alignment: Alignment.center,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      gradient: AppGradients.neonPurple,
+                                      border: Border.all(
+                                          color: AppColors.beyaz.withValues(alpha: 0.3), width: 1.5),
+                                      boxShadow: AppShadows.neon(AppColors.anaMor, blur: 16),
+                                    ),
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Text(
+                                          l10n.queueYourElo,
+                                          style: const TextStyle(
+                                              fontSize: 7,
+                                              color: AppColors.pusluBeyaz,
+                                              letterSpacing: 2),
+                                        ),
+                                        Text(
+                                          '${user?.elo ?? 1000}',
+                                          style: const TextStyle(
+                                              fontSize: 26,
+                                              fontWeight: FontWeight.w900,
+                                              color: AppColors.gold),
+                                        ),
+                                      ],
                                     ),
                                   ),
-                                Text(
-                                  l10n.queueYourElo,
-                                  style: const TextStyle(fontSize: 9, color: AppColors.textDim, letterSpacing: 3),
                                 ),
-                                Text(
-                                  '${user?.elo ?? 1000}',
-                                  style: const TextStyle(fontSize: 44, fontWeight: FontWeight.w900, color: AppColors.gold),
-                                ),
+                                const SizedBox(height: 6),
                                 Container(
                                   margin: const EdgeInsets.only(top: 8),
                                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),

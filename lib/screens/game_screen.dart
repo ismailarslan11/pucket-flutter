@@ -760,6 +760,10 @@ class _GameScreenState extends State<GameScreen> {
           }
         : game.continueToNextRound;
 
+    // Zafer kutlaması: maç bitti ve (yerel modda herhangi biri) kazandı.
+    final celebrate = game.matchFinished &&
+        (game.localDuoMode || winnerSeat == game.mySeat);
+
     return _buildOverlayContent(
       game,
       l10n,
@@ -767,6 +771,7 @@ class _GameScreenState extends State<GameScreen> {
       sub: sub,
       primaryLabel: primaryLabel,
       onPrimary: onPrimary,
+      celebrate: celebrate,
     );
   }
 
@@ -788,9 +793,30 @@ class _GameScreenState extends State<GameScreen> {
     required String sub,
     String? primaryLabel,
     VoidCallback? onPrimary,
+    bool celebrate = false,
   }) {
     return Container(
       color: Colors.black.withValues(alpha: 0.82),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          if (celebrate) const ConfettiRain(),
+          _overlayBody(game, l10n,
+              title: title, sub: sub, primaryLabel: primaryLabel, onPrimary: onPrimary),
+        ],
+      ),
+    );
+  }
+
+  Widget _overlayBody(
+    GameController game,
+    l10n, {
+    required String title,
+    required String sub,
+    String? primaryLabel,
+    VoidCallback? onPrimary,
+  }) {
+    return SizedBox.expand(
       child: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),

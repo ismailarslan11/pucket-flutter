@@ -271,6 +271,8 @@ class _ProfileCard extends StatelessWidget {
                         '${user.elo} ELO · ${user.wins}${l10n.winsLosses}${user.losses}',
                         style: const TextStyle(color: AppColors.textMuted, fontSize: 10, fontWeight: FontWeight.w600),
                       ),
+                      const SizedBox(height: 5),
+                      _TierProgress(elo: user.elo, tier: tier),
                     ],
                   ),
                 ),
@@ -299,6 +301,67 @@ class _ProfileCard extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Bir sonraki lige ilerleme çubuğu — ince, tier renkli, parlayan uç.
+class _TierProgress extends StatelessWidget {
+  const _TierProgress({required this.elo, required this.tier});
+
+  final int elo;
+  final RankTier tier;
+
+  @override
+  Widget build(BuildContext context) {
+    // Mevcut ve sonraki ligin ELO eşiği.
+    final idx = RankTier.tiers.indexOf(tier);
+    final isMax = idx >= RankTier.tiers.length - 1;
+    final start = tier.minElo;
+    final end = isMax ? (elo < start + 300 ? start + 300 : elo) : RankTier.tiers[idx + 1].minElo;
+    final p = ((elo - start) / (end - start)).clamp(0.0, 1.0);
+
+    return SizedBox(
+      width: 150,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(3),
+            child: SizedBox(
+              height: 5,
+              child: Stack(
+                children: [
+                  Container(color: AppColors.morDahaKoyu.withValues(alpha: 0.8)),
+                  FractionallySizedBox(
+                    widthFactor: p == 0 ? 0.02 : p,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [tier.color.withValues(alpha: 0.7), tier.color],
+                        ),
+                        boxShadow: [
+                          BoxShadow(color: tier.color.withValues(alpha: 0.7), blurRadius: 6),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            isMax ? '★ MAX' : '${RankTier.tiers[idx + 1].minElo - elo} ELO → ${RankTier.tiers[idx + 1].name}',
+            style: TextStyle(
+              color: tier.color.withValues(alpha: 0.9),
+              fontSize: 8,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.3,
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -258,14 +256,14 @@ class _PremiumHero extends StatelessWidget {
             ),
           ),
           // Parıldayan yıldızlar.
-          const Positioned(left: 42, top: 22, child: _Twinkle(size: 13, phase: 0.0)),
-          const Positioned(right: 52, top: 14, child: _Twinkle(size: 10, phase: 0.35)),
-          const Positioned(right: 30, bottom: 38, child: _Twinkle(size: 15, phase: 0.6)),
-          const Positioned(left: 60, bottom: 26, child: _Twinkle(size: 9, phase: 0.85)),
+          const Positioned(left: 42, top: 22, child: Twinkle(size: 13, phase: 0.0)),
+          const Positioned(right: 52, top: 14, child: Twinkle(size: 10, phase: 0.35)),
+          const Positioned(right: 30, bottom: 38, child: Twinkle(size: 15, phase: 0.6)),
+          const Positioned(left: 60, bottom: 26, child: Twinkle(size: 9, phase: 0.85)),
           Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _FloatY(
+              FloatY(
                 amplitude: 5,
                 child: Container(
                   width: 64,
@@ -301,89 +299,6 @@ class _PremiumHero extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-/// Yumuşak aşağı-yukarı süzülme animasyonu.
-class _FloatY extends StatefulWidget {
-  const _FloatY({required this.child, this.amplitude = 4});
-
-  final Widget child;
-  final double amplitude;
-
-  @override
-  State<_FloatY> createState() => _FloatYState();
-}
-
-class _FloatYState extends State<_FloatY> with SingleTickerProviderStateMixin {
-  late final AnimationController _ctrl;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 2600))
-      ..repeat();
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _ctrl,
-      builder: (_, child) => Transform.translate(
-        offset: Offset(0, math.sin(_ctrl.value * 2 * math.pi) * widget.amplitude),
-        child: child,
-      ),
-      child: widget.child,
-    );
-  }
-}
-
-/// Parıldayan yıldız — faz kaydırmalı opaklık nabzı.
-class _Twinkle extends StatefulWidget {
-  const _Twinkle({required this.size, this.phase = 0});
-
-  final double size;
-  final double phase;
-
-  @override
-  State<_Twinkle> createState() => _TwinkleState();
-}
-
-class _TwinkleState extends State<_Twinkle> with SingleTickerProviderStateMixin {
-  late final AnimationController _ctrl;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1800))
-      ..repeat();
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _ctrl,
-      builder: (_, _) {
-        final t = (_ctrl.value + widget.phase) % 1.0;
-        final a = 0.25 + 0.75 * (0.5 + 0.5 * math.sin(t * 2 * math.pi));
-        return Opacity(
-          opacity: a,
-          child: Icon(Icons.auto_awesome, color: AppColors.sariAna, size: widget.size),
-        );
-      },
     );
   }
 }
@@ -459,7 +374,7 @@ class _VipCard extends StatelessWidget {
                 Row(
                   children: [
                     // VIP taç pulu önizlemesi — oyundaki 3D pul görünümüyle aynı.
-                    _FloatY(amplitude: 3, child: const _CrownDiscPreview(size: 64)),
+                    FloatY(amplitude: 3, child: const _CrownDiscPreview(size: 64)),
                     const SizedBox(width: 14),
                     Expanded(
                       child: Column(
