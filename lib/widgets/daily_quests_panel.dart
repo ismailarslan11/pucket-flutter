@@ -45,9 +45,17 @@ class DailyQuestsPanel extends StatelessWidget {
                   borderRadius: BorderRadius.circular(10),
                   boxShadow: AppShadows.neon(AppColors.sariAna, blur: 8),
                 ),
-                child: Text(
-                  '🔥 $streak',
-                  style: AppTextStyles.tileFeatured.copyWith(fontSize: 11),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.local_fire_department_rounded,
+                        size: 13, color: AppColors.morDahaKoyu),
+                    const SizedBox(width: 3),
+                    Text(
+                      '$streak',
+                      style: AppTextStyles.tileFeatured.copyWith(fontSize: 11),
+                    ),
+                  ],
                 ),
               ),
             ],

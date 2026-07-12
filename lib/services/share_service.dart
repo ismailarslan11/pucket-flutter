@@ -14,20 +14,20 @@ class ShareService {
         ? '\n${eloChange >= 0 ? '+' : ''}$eloChange ELO → ${newElo ?? ''} ($league)'
         : '';
     await SharePlus.instance.share(ShareParams(text:
-      'PUCKET 🏒\n$playerName — $result ($score)$eloPart\n\nSen de PUCKET indir, bana meydan oku!',
+      'PUCKET\n$playerName — $result ($score)$eloPart\n\nSen de PUCKET indir, bana meydan oku!',
     ));
   }
 
   static Future<void> shareRoomInvite(String roomCode) async {
     await SharePlus.instance.share(ShareParams(text:
-      'PUCKET\'ta seni bekliyorum! 🏒\nOda kodu: $roomCode\n\nPUCKET\'i aç → Odaya Katıl → kodu gir. '
+      'PUCKET\'ta seni bekliyorum!\nOda kodu: $roomCode\n\nPUCKET\'i aç → Odaya Katıl → kodu gir. '
       'Telefonunda kuruluysa direkt katıl: pucket://join/$roomCode',
     ));
   }
 
   static Future<void> shareInviteLink() async {
     await SharePlus.instance.share(ShareParams(text:
-      'PUCKET — online pul fırlatma düellosu! 🏒\nİndir, bana meydan oku.',
+      'PUCKET — online pul fırlatma düellosu!\nİndir, bana meydan oku.',
     ));
   }
 }

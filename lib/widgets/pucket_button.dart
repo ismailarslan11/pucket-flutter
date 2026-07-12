@@ -16,6 +16,7 @@ class PucketButton extends StatelessWidget {
     this.subtitle,
     this.width = 270,
     this.enabled = true,
+    this.pulse = false,
   });
 
   final String label;
@@ -28,6 +29,8 @@ class PucketButton extends StatelessWidget {
   final String? subtitle;
   final double width;
   final bool enabled;
+  /// Önemli buton: yumuşak nabız animasyonuyla öne çıkar.
+  final bool pulse;
 
   @override
   Widget build(BuildContext context) {
@@ -49,6 +52,7 @@ class PucketButton extends StatelessWidget {
               boxShadow: AppShadows.depth(AppColors.morDahaKoyu),
             ),
             padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 22),
+            alignment: Alignment.center,
             child: Text(
               label.toUpperCase(),
               textAlign: TextAlign.center,
@@ -73,7 +77,9 @@ class PucketButton extends StatelessWidget {
       child: ScalePress(
         onTap: enabled ? onPressed : null,
         scale: enabled ? 0.95 : 1,
-        child: GlowPulse(
+        child: PulseScale(
+          enabled: pulse && enabled,
+          child: GlowPulse(
           color: glowColor,
           min: enabled ? 0.3 : 0,
           max: enabled ? 0.7 : 0,
@@ -89,6 +95,7 @@ class PucketButton extends StatelessWidget {
               boxShadow: enabled ? AppShadows.depth(glowColor) : null,
             ),
             child: Stack(
+              alignment: Alignment.center,
               children: [
                 // Üst parlaklık — 3D derinlik
                 Positioned(
@@ -155,6 +162,7 @@ class PucketButton extends StatelessWidget {
                 ),
               ],
             ),
+          ),
           ),
         ),
       ),

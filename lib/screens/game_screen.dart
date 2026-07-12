@@ -824,10 +824,10 @@ class _GameScreenState extends State<GameScreen> {
       case 'gold':
         return const [
           AppColors.sariAna,
-          Color(0xFFFFE9A0),
+          Color(0xFFF3DFA0),
           AppColors.turuncuAcik,
           AppColors.turuncuAna,
-          Color(0xFFF6C444),
+          Color(0xFFDAAD31),
         ];
       case 'neon':
         return const [
@@ -878,6 +878,7 @@ class _GameScreenState extends State<GameScreen> {
                 const SizedBox(height: 20),
                 PucketButton(
                   label: primaryLabel,
+                  pulse: true,
                   width: 260,
                   onPressed: () {
                     onPrimary();

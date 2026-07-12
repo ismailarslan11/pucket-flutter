@@ -225,7 +225,8 @@ class _CosmeticsScreenState extends State<CosmeticsScreen> {
             // Ana aksiyon: gerçek parayla jeton — Premium ekranına götürür.
             SizedBox(
               width: double.infinity,
-              child: ScalePress(
+              child: PulseScale(
+                child: ScalePress(
                 onTap: () {
                   Navigator.pop(ctx);
                   AppRouter.goPremium(context);
@@ -235,7 +236,7 @@ class _CosmeticsScreenState extends State<CosmeticsScreen> {
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                      colors: [Color(0xFFFFD75E), Color(0xFFF0A818)],
+                      colors: [Color(0xFFDAAD31), Color(0xFFCB9103)],
                     ),
                     borderRadius: BorderRadius.circular(14),
                     boxShadow: AppShadows.neon(AppColors.gold, blur: 10),
@@ -257,6 +258,7 @@ class _CosmeticsScreenState extends State<CosmeticsScreen> {
                     ],
                   ),
                 ),
+              ),
               ),
             ),
             if (AdConfig.supported) ...[
@@ -456,7 +458,15 @@ class _CosmeticsScreenState extends State<CosmeticsScreen> {
             final selected = _winFx == fx.id;
             return ListTile(
               contentPadding: EdgeInsets.zero,
-              leading: Text(fx.emoji, style: const TextStyle(fontSize: 22)),
+              leading: Icon(
+                fx.id == 'gold'
+                    ? Icons.emoji_events_rounded
+                    : fx.id == 'neon'
+                        ? Icons.bolt_rounded
+                        : Icons.celebration_rounded,
+                color: fx.id == 'neon' ? AppColors.pembe : AppColors.gold,
+                size: 24,
+              ),
               title: Text(l10n.winFxName(fx.id)),
               subtitle: unlocked || price == 0
                   ? null

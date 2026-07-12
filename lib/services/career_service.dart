@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -137,17 +138,29 @@ class CareerService extends ChangeNotifier {
       return;
     }
     try {
-      careerPoints = (remote['points'] as num?)?.toInt() ?? careerPoints;
-      careerWins = (remote['wins'] as num?)?.toInt() ?? careerWins;
-      careerLosses = (remote['losses'] as num?)?.toInt() ?? careerLosses;
-      currentLeagueIndex = (remote['league'] as num?)?.toInt() ?? currentLeagueIndex;
-      final ids = remote['defeated'] as List?;
-      if (ids != null) {
-        _defeatedIds
-          ..clear()
-          ..addAll(ids.map((e) => e.toString()));
-      }
+      // BİRLEŞTİR — asla geri gitme. Bulut kopyası bayat olabilir (önceki
+      // kayıt denemesi başarısız kalmış olabilir); misafir dahil kimsenin
+      // yerel ilerlemesi silinmemeli.
+      final rPoints = (remote['points'] as num?)?.toInt() ?? 0;
+      final rWins = (remote['wins'] as num?)?.toInt() ?? 0;
+      final rLosses = (remote['losses'] as num?)?.toInt() ?? 0;
+      final rLeague = (remote['league'] as num?)?.toInt() ?? 0;
+      final rIds = ((remote['defeated'] as List?) ?? const [])
+          .map((e) => e.toString())
+          .toSet();
+
+      final localAhead = careerPoints > rPoints ||
+          currentLeagueIndex > rLeague ||
+          _defeatedIds.difference(rIds).isNotEmpty;
+
+      careerPoints = math.max(careerPoints, rPoints);
+      careerWins = math.max(careerWins, rWins);
+      careerLosses = math.max(careerLosses, rLosses);
+      currentLeagueIndex = math.max(currentLeagueIndex, rLeague);
+      _defeatedIds.addAll(rIds);
+
       await _save();
+      if (localAhead) await syncToCloud(uid);
       notifyListeners();
     } catch (_) {}
   }

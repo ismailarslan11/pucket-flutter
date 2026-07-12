@@ -325,15 +325,135 @@ class GameController extends ChangeNotifier {
     _visualGeneration++;
   }
 
-  /// Client: host state paketleri arasında sadece hız ile tahmin (çarpışma yok).
-  void _clientIntegrateDiscs() {
-    for (final d in discs) {
-      d.vx += d.vvx;
-      d.vy += d.vvy;
-      d.vvx *= GameConstants.friction;
-      d.vvy *= GameConstants.friction;
-      if (d.vvx.abs() < 0.03) d.vvx = 0;
-      if (d.vvy.abs() < 0.03) d.vvy = 0;
+  /// Client: paket yokken tek pulu hızıyla ilerlet (çarpışma yok).
+  void _integrateOne(Disc d) {
+    d.vx += d.vvx;
+    d.vy += d.vvy;
+    d.vvx *= GameConstants.friction;
+    d.vvy *= GameConstants.friction;
+    if (d.vvx.abs() < 0.03) d.vvx = 0;
+    if (d.vvy.abs() < 0.03) d.vvy = 0;
+  }
+
+  // ── İstemci ağ senkronu: anlık görüntü arabelleği (snapshot interpolation) ──
+  // Host'tan gelen durumlar geldiği anda uygulanmaz; ~110 ms "geçmişten",
+  // iki paket arasında yumuşak geçişle oynatılır. Böylece ağ titremesi
+  // (jitter) ışınlanma/zıplama yerine akıcı harekete dönüşür.
+  static const _interpDelayMs = 110.0;
+  final List<_Snap> _snapBuf = [];
+  double _starvedBaseRx = -1;
+
+  bool _bufferSnapshot(List states) {
+    final n = states.length;
+    final s = _Snap(
+      rxMs: DateTime.now().millisecondsSinceEpoch.toDouble(),
+      xs: List<double>.filled(n, 0),
+      ys: List<double>.filled(n, 0),
+      vxs: List<double>.filled(n, 0),
+      vys: List<double>.filled(n, 0),
+    );
+    for (var i = 0; i < n; i++) {
+      final e = states[i] as List;
+      s.xs[i] = (e[0] as num).toDouble();
+      s.ys[i] = (e[1] as num).toDouble();
+      s.vxs[i] = (e[2] as num).toDouble();
+      s.vys[i] = (e[3] as num).toDouble();
+    }
+    _snapBuf.add(s);
+    if (_snapBuf.length > 16) _snapBuf.removeAt(0);
+    return true;
+  }
+
+  /// Oynatılacak arabellek verisi var mı? (ticker uyanık kalsın)
+  bool get _clientSnapPending {
+    if (_snapBuf.isEmpty) return false;
+    final renderMs =
+        DateTime.now().millisecondsSinceEpoch - _interpDelayMs;
+    return renderMs < _snapBuf.last.rxMs + 250;
+  }
+
+  /// Pozisyon+hızı doğrudan bir kareden uygula (sert geçiş anları için).
+  void _applySnap(_Snap s, int? skipIdx) {
+    final n = math.min(discs.length, s.xs.length);
+    for (var i = 0; i < n; i++) {
+      if (i == skipIdx) continue;
+      final d = discs[i];
+      d.vx = s.xs[i];
+      d.vy = s.ys[i];
+      d.vvx = s.vxs[i];
+      d.vvy = s.vys[i];
+      if (i < _prevVx.length) {
+        _prevVx[i] = d.vx;
+        _prevVy[i] = d.vy;
+      }
+    }
+  }
+
+  /// Client fizik adımı: arabellekten geçmişe dönük yumuşak oynatma.
+  void _clientNetAdvance() {
+    final nowMs = DateTime.now().millisecondsSinceEpoch.toDouble();
+    final localIdx =
+        (nowMs < _localShotUntilMs) ? _localShotDisc : null;
+
+    // Kendi atışın: host yankısı gelene dek yerel tahminle aksın.
+    if (localIdx != null && localIdx < discs.length) {
+      _integrateOne(discs[localIdx]);
+    }
+
+    if (_snapBuf.length < 2) {
+      // Arabellek daha dolmadı: eski hafif tahmin (skip: atış zaten aktı).
+      for (var i = 0; i < discs.length; i++) {
+        if (i == localIdx) continue;
+        _integrateOne(discs[i]);
+      }
+      return;
+    }
+
+    final renderMs = nowMs - _interpDelayMs;
+
+    // Geride kalan kareleri düş — s0 olarak bir öncekini tut.
+    while (_snapBuf.length >= 2 && _snapBuf[1].rxMs <= renderMs) {
+      _snapBuf.removeAt(0);
+    }
+
+    final s0 = _snapBuf[0];
+    if (renderMs <= s0.rxMs) {
+      // Henüz oynatma zamanı gelmedi: ilk kareye sabitle.
+      if (_starvedBaseRx != s0.rxMs) {
+        _applySnap(s0, localIdx);
+        _starvedBaseRx = s0.rxMs;
+      }
+      return;
+    }
+
+    if (_snapBuf.length == 1) {
+      // Arabellek açlığı (paket gecikti): son kare + hafif tahmin.
+      if (_starvedBaseRx != s0.rxMs) {
+        _applySnap(s0, localIdx);
+        _starvedBaseRx = s0.rxMs;
+      }
+      for (var i = 0; i < discs.length; i++) {
+        if (i == localIdx) continue;
+        _integrateOne(discs[i]);
+      }
+      return;
+    }
+
+    _starvedBaseRx = -1;
+    final s1 = _snapBuf[1];
+    final span = (s1.rxMs - s0.rxMs).clamp(1.0, 1000.0);
+    final t = ((renderMs - s0.rxMs) / span).clamp(0.0, 1.0);
+    final stepsInSpan = span / _physicsStepMs;
+    final n = math.min(
+        discs.length, math.min(s0.xs.length, s1.xs.length));
+    for (var i = 0; i < n; i++) {
+      if (i == localIdx) continue;
+      final d = discs[i];
+      d.vx = s0.xs[i] + (s1.xs[i] - s0.xs[i]) * t;
+      d.vy = s0.ys[i] + (s1.ys[i] - s0.ys[i]) * t;
+      // Hareket algısı ve render ara-karesi için adım başına hız.
+      d.vvx = (s1.xs[i] - s0.xs[i]) / stepsInSpan;
+      d.vvy = (s1.ys[i] - s0.ys[i]) / stepsInSpan;
     }
   }
 
@@ -355,7 +475,8 @@ class GameController extends ChangeNotifier {
         _lastTickWallMs = 0;
         return false;
       }
-      final clientDrifting = discs.any((d) => d.vvx.abs() > 0.02 || d.vvy.abs() > 0.02);
+      final clientDrifting = discs.any((d) => d.vvx.abs() > 0.02 || d.vvy.abs() > 0.02) ||
+          _clientSnapPending;
       if (!clientDrifting) {
         _lastTickWallMs = 0;
         return false;
@@ -441,7 +562,7 @@ class GameController extends ChangeNotifier {
       _frameCount++;
       if (aiMode && aiBot.shouldThink(_frameCount * _physicsStepMs, aiLevel)) {
         if (aiBot.think(discs, aiLevel)) _haptic(25);
-      } else if (!aiMode && isOnlineHost && _frameCount % 5 == 0) {
+      } else if (!aiMode && isOnlineHost && _frameCount % 3 == 0) {
         _sendState();
       }
 
@@ -455,8 +576,8 @@ class GameController extends ChangeNotifier {
         return true;
       }
     } else if (!aiMode && !isOnlineHost) {
-      // Online client: tam fizik yok — host state + hafif extrapolasyon
-      _clientIntegrateDiscs();
+      // Online client: tam fizik yok — arabellekten geçmişe dönük oynatma.
+      _clientNetAdvance();
     }
     return false;
   }
@@ -480,6 +601,8 @@ class GameController extends ChangeNotifier {
     _lastStateSentMs = 0;
     _localShotDisc = null;
     _localShotUntilMs = 0;
+    _snapBuf.clear();
+    _starvedBaseRx = -1;
     aiBot.reset();
     discs = trainingMode
         ? PhysicsEngine.initTrainingDiscs(trainingLayout)
@@ -858,7 +981,7 @@ class GameController extends ChangeNotifier {
         var boardChanged = false;
         var uiChanged = false;
         if (msg['discs'] is List && phase == GamePhase.playing) {
-          boardChanged = _applyDiscStates(msg['discs'] as List);
+          boardChanged = _bufferSnapshot(msg['discs'] as List);
         }
         if (msg['roundWins'] is List) {
           final rw = msg['roundWins'] as List;
@@ -1038,66 +1161,13 @@ class GameController extends ChangeNotifier {
     notifyListeners();
   }
 
-  bool _applyDiscStates(List states) {
-    var changed = false;
-    final nowMs = DateTime.now().millisecondsSinceEpoch;
-    for (var i = 0; i < states.length && i < discs.length; i++) {
-      if (_localShotDisc == i && nowMs < _localShotUntilMs) continue;
-
-      final s = states[i] as List;
-      final nx = (s[0] as num).toDouble();
-      final ny = (s[1] as num).toDouble();
-      final nvx = (s[2] as num).toDouble();
-      final nvy = (s[3] as num).toDouble();
-      final d = discs[i];
-      final dx = nx - d.vx;
-      final dy = ny - d.vy;
-      final posErrSq = dx * dx + dy * dy;
-
-      if (posErrSq > 24 * 24) {
-        d.vx = nx;
-        d.vy = ny;
-        d.vvx = nvx;
-        d.vvy = nvy;
-        if (i < _prevVx.length) {
-          _prevVx[i] = nx;
-          _prevVy[i] = ny;
-        }
-        changed = true;
-      } else {
-        final posBlend = posErrSq > 64 ? 0.35 : 0.18;
-        if (posErrSq > 0.08 * 0.08) {
-          final shiftX = dx * posBlend;
-          final shiftY = dy * posBlend;
-          d.vx += shiftX;
-          d.vy += shiftY;
-          // Render interpolasyonu bozulmasın diye önceki kare tamponunu da
-          // aynı miktarda kaydır — yoksa ağ düzeltmeleri titreme yaratır.
-          if (i < _prevVx.length) {
-            _prevVx[i] += shiftX;
-            _prevVy[i] += shiftY;
-          }
-          changed = true;
-        }
-        final dvx = nvx - d.vvx;
-        final dvy = nvy - d.vvy;
-        if (dvx.abs() > 0.012 || dvy.abs() > 0.012) {
-          d.vvx += dvx * 0.5;
-          d.vvy += dvy * 0.5;
-          changed = true;
-        }
-      }
-    }
-    return changed;
-  }
-
   void _sendState({bool force = false}) {
     if (aiMode || !isOnlineHost) return;
     if (!force) {
       final anyMoving = discs.any((d) => d.vvx.abs() > 0.01 || d.vvy.abs() > 0.01);
       if (!anyMoving) return;
       final now = DateTime.now().millisecondsSinceEpoch;
-      if (now - _lastStateSentMs < 45) return;
+      if (now - _lastStateSentMs < 40) return;
       final sig = _discStateSignature();
       if (sig == _lastSentStateSig) return;
       _lastSentStateSig = sig;
@@ -1528,4 +1598,21 @@ class GameController extends ChangeNotifier {
     ws.disconnect();
     super.dispose();
   }
+}
+
+/// Host'tan gelen bir pul-durumu karesi (istemci interpolasyon arabelleği).
+class _Snap {
+  _Snap({
+    required this.rxMs,
+    required this.xs,
+    required this.ys,
+    required this.vxs,
+    required this.vys,
+  });
+
+  final double rxMs; // istemciye varış zamanı (duvar saati, ms)
+  final List<double> xs;
+  final List<double> ys;
+  final List<double> vxs;
+  final List<double> vys;
 }

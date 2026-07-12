@@ -51,10 +51,14 @@ class MenuScreen extends StatelessWidget {
                       // Amiral gemisi: tam genişlik RANKED afişi.
                       StaggerIn(
                         index: 3,
-                        child: _HeroPlayCard(
-                          title: l10n.menuRanked,
-                          subtitle: l10n.menuRankedSub,
-                          onPressed: () => _goRanked(context, auth),
+                        child: PulseScale(
+                          max: 1.015,
+                          durationMs: 1600,
+                          child: _HeroPlayCard(
+                            title: l10n.menuRanked,
+                            subtitle: l10n.menuRankedSub,
+                            onPressed: () => _goRanked(context, auth),
+                          ),
                         ),
                       ),
                       const SizedBox(height: 10),
@@ -67,7 +71,7 @@ class MenuScreen extends StatelessWidget {
                               child: _MediumPlayCard(
                                 label: l10n.menuQuick,
                                 icon: Icons.bolt_rounded,
-                                color: AppColors.camgobegi,
+                                color: AppColors.acikMor,
                                 onPressed: () =>
                                     AppRouter.goLobby(context, quickMatch: true),
                               ),
@@ -403,6 +407,7 @@ class _HeroPlayCard extends StatelessWidget {
                   color: AppColors.morDahaKoyu.withValues(alpha: 0.15),
                 ),
               ),
+              const ShineOverlay(),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 14),
                 child: Row(

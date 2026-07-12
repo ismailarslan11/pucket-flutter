@@ -9,6 +9,7 @@ import '../theme/app_theme.dart';
 import '../widgets/yesa_background.dart';
 import '../widgets/pucket_logo.dart';
 import '../widgets/pucket_button.dart';
+import '../widgets/yesa_effects.dart';
 
 class UsernameScreen extends StatefulWidget {
   const UsernameScreen({super.key});
@@ -121,7 +122,31 @@ class _UsernameScreenState extends State<UsernameScreen> {
     return Scaffold(
       body: YesaBackground(
         child: SafeArea(
-          child: Center(
+          child: Stack(
+            children: [
+              // Geri: giriş ekranına dön (misafir/oturum iptali).
+              Positioned(
+                top: 8,
+                left: 10,
+                child: ScalePress(
+                  onTap: _submitting
+                      ? () {}
+                      : () => context.read<AuthService>().signOut(),
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: AppGradients.neonPurple,
+                      border: Border.all(color: AppColors.beyaz.withValues(alpha: 0.3)),
+                      boxShadow: AppShadows.depth(AppColors.morDahaKoyu),
+                    ),
+                    child: const Icon(Icons.arrow_back_rounded,
+                        color: AppColors.beyaz, size: 20),
+                  ),
+                ),
+              ),
+              Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(32),
               child: Column(
@@ -224,6 +249,7 @@ class _UsernameScreenState extends State<UsernameScreen> {
                         Opacity(
                           opacity: canSubmit ? 1 : 0.4,
                           child: PucketButton(
+                            pulse: true,
                             label: _submitting ? 'KAYDEDİLİYOR...' : 'TAMAM',
                             width: double.infinity,
                             onPressed: canSubmit ? _submit : () {},
@@ -236,6 +262,8 @@ class _UsernameScreenState extends State<UsernameScreen> {
                 ],
               ),
             ),
+          ),
+            ],
           ),
         ),
       ),

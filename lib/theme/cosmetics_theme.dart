@@ -8,8 +8,8 @@ class CosmeticsTheme {
   static const discColors = <String, Color>{
     'green': AppColors.neonYesil,
     'gold': AppColors.sariAna,
-    'blue': AppColors.camgobegi,
-    'red': AppColors.turuncuAna,
+    'blue': AppColors.blue,
+    'red': AppColors.red,
     'purple': AppColors.acikMor,
   };
 

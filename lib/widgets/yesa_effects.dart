@@ -423,3 +423,139 @@ class _ConfettiPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _ConfettiPainter old) => old.t != t;
 }
+
+/// Önemli butonlar için yumuşak nabız (büyüyüp küçülme) animasyonu.
+class PulseScale extends StatefulWidget {
+  const PulseScale({
+    super.key,
+    required this.child,
+    this.min = 1.0,
+    this.max = 1.035,
+    this.durationMs = 1300,
+    this.enabled = true,
+  });
+
+  final Widget child;
+  final double min;
+  final double max;
+  final int durationMs;
+  final bool enabled;
+
+  @override
+  State<PulseScale> createState() => _PulseScaleState();
+}
+
+class _PulseScaleState extends State<PulseScale> with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: Duration(milliseconds: widget.durationMs),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!widget.enabled) return widget.child;
+    return AnimatedBuilder(
+      animation: _ctrl,
+      builder: (_, child) {
+        final t = Curves.easeInOut.transform(_ctrl.value);
+        return Transform.scale(
+          scale: widget.min + (widget.max - widget.min) * t,
+          child: child,
+        );
+      },
+      child: widget.child,
+    );
+  }
+}
+
+/// Kartın üzerinden periyodik geçen çapraz ışık bandı (vitrin parlaması).
+/// Bir Stack içine `Positioned.fill` yerine doğrudan eklenir; kendi kendini
+/// konumlandırır ve dokunuşları engellemez.
+class ShineOverlay extends StatefulWidget {
+  const ShineOverlay({super.key, this.periodMs = 3200, this.opacity = 0.22});
+
+  final int periodMs;
+  final double opacity;
+
+  @override
+  State<ShineOverlay> createState() => _ShineOverlayState();
+}
+
+class _ShineOverlayState extends State<ShineOverlay> with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: Duration(milliseconds: widget.periodMs),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned.fill(
+      child: IgnorePointer(
+        child: AnimatedBuilder(
+          animation: _ctrl,
+          builder: (_, _) => CustomPaint(
+            painter: _ShinePainter(t: _ctrl.value, opacity: widget.opacity),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ShinePainter extends CustomPainter {
+  _ShinePainter({required this.t, required this.opacity});
+
+  final double t;
+  final double opacity;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    // Bandın hızlı geçip uzun beklemesi: sadece döngünün ilk %45'inde görünür.
+    final phase = t / 0.45;
+    if (phase > 1) return;
+    final x = size.width * (phase * 1.8 - 0.4);
+    final band = size.width * 0.22;
+    canvas.save();
+    canvas.translate(x, 0);
+    canvas.skew(-0.35, 0);
+    canvas.drawRect(
+      Rect.fromLTWH(0, -size.height, band, size.height * 3),
+      Paint()
+        ..shader = LinearGradient(
+          colors: [
+            Colors.white.withValues(alpha: 0),
+            Colors.white.withValues(alpha: opacity),
+            Colors.white.withValues(alpha: 0),
+          ],
+        ).createShader(Rect.fromLTWH(0, 0, band, size.height)),
+    );
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(covariant _ShinePainter old) => old.t != t;
+}

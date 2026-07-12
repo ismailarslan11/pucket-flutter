@@ -342,16 +342,16 @@ function ensureTokenFields(meta) {
 // Ödül tipleri: {t:'tokens',n:X} | {t:'disc',id:'...'} | {t:'board',id:'...'}
 const BP_XP_PER_TIER = 150;
 const BP_TIERS = [
+  { free: { t: 'tokens', n: 15 }, premium: { t: 'tokens', n: 30 } },
+  { free: { t: 'tokens', n: 15 }, premium: { t: 'tokens', n: 30 } },
+  { free: { t: 'tokens', n: 20 }, premium: { t: 'tokens', n: 40 } },
+  { free: { t: 'tokens', n: 20 }, premium: { t: 'disc', id: 'goldcoin' } },
+  { free: { t: 'tokens', n: 25 }, premium: { t: 'tokens', n: 50 } },
+  { free: { t: 'tokens', n: 25 }, premium: { t: 'disc', id: 'frost' } },
   { free: { t: 'tokens', n: 30 }, premium: { t: 'tokens', n: 60 } },
-  { free: { t: 'tokens', n: 30 }, premium: { t: 'tokens', n: 60 } },
-  { free: { t: 'tokens', n: 40 }, premium: { t: 'disc', id: 'goldcoin' } },
-  { free: { t: 'tokens', n: 40 }, premium: { t: 'tokens', n: 80 } },
-  { free: { t: 'board', id: 'neon' }, premium: { t: 'disc', id: 'frost' } },
-  { free: { t: 'tokens', n: 50 }, premium: { t: 'tokens', n: 100 } },
-  { free: { t: 'tokens', n: 50 }, premium: { t: 'disc', id: 'tiger' } },
-  { free: { t: 'tokens', n: 60 }, premium: { t: 'tokens', n: 120 } },
-  { free: { t: 'tokens', n: 60 }, premium: { t: 'disc', id: 'dragon' } },
-  { free: { t: 'disc', id: 'robot' }, premium: { t: 'disc', id: 'alien' } },
+  { free: { t: 'tokens', n: 30 }, premium: { t: 'disc', id: 'tiger' } },
+  { free: { t: 'tokens', n: 35 }, premium: { t: 'tokens', n: 70 } },
+  { free: { t: 'board', id: 'neon' }, premium: { t: 'disc', id: 'dragon' } },
 ];
 
 function bpTierForXp(xp) {

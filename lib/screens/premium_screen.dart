@@ -274,7 +274,7 @@ class _PremiumHero extends StatelessWidget {
                     gradient: const RadialGradient(
                       center: Alignment(-0.35, -0.42),
                       radius: 1.2,
-                      colors: [Color(0xFFFFE9A0), Color(0xFFF6C444), Color(0xFF8A6410)],
+                      colors: [Color(0xFFF3DFA0), Color(0xFFDAAD31), Color(0xFF8A6410)],
                       stops: [0.0, 0.55, 1.0],
                     ),
                     border: Border.all(color: Colors.white30, width: 1.5),
@@ -358,7 +358,7 @@ class _VipCard extends StatelessWidget {
           min: 0.25,
           max: 0.55,
           child: Container(
-            padding: const EdgeInsets.fromLTRB(16, 22, 16, 16),
+            clipBehavior: Clip.antiAlias,
             decoration: BoxDecoration(
               gradient: const LinearGradient(
                 begin: Alignment.topLeft,
@@ -368,81 +368,97 @@ class _VipCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(18),
               border: Border.all(color: AppColors.sariAna.withValues(alpha: 0.7), width: 1.6),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Stack(
               children: [
-                Row(
-                  children: [
-                    // VIP taç pulu önizlemesi — oyundaki 3D pul görünümüyle aynı.
-                    FloatY(amplitude: 3, child: const _CrownDiscPreview(size: 64)),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                const ShineOverlay(periodMs: 4200, opacity: 0.14),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 22, 16, 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
                         children: [
-                          Text(
-                            l10n.vipTitle,
-                            style: AppTextStyles.glow(AppColors.sariAna)
-                                .copyWith(fontSize: 18, letterSpacing: 1.5),
-                          ),
-                          const SizedBox(height: 3),
-                          Text(
-                            l10n.vipSubtitle,
-                            style: const TextStyle(color: AppColors.textMuted, fontSize: 11),
+                          // VIP taç pulu önizlemesi — oyundaki 3D pul görünümüyle aynı.
+                          FloatY(amplitude: 3, child: const _CrownDiscPreview(size: 64)),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  l10n.vipTitle,
+                                  style: AppTextStyles.glow(AppColors.sariAna)
+                                      .copyWith(fontSize: 18, letterSpacing: 1.5),
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  l10n.vipSubtitle,
+                                  style: const TextStyle(
+                                      color: AppColors.textMuted, fontSize: 11),
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                _perk(l10n.vipPerkNoAds, l10n.vipPerkNoAdsSub, Icons.block_rounded),
-                _perk(l10n.vipPerkDisc, l10n.vipPerkDiscSub, Icons.workspace_premium_rounded),
-                _perk(l10n.vipPerkTokens, l10n.vipPerkTokensSub, Icons.monetization_on_rounded),
-                const SizedBox(height: 14),
-                SizedBox(
-                  width: double.infinity,
-                  child: owned
-                      ? Container(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            color: AppColors.sariAna.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppColors.sariAna),
-                          ),
-                          child: Text(
-                            l10n.vipActive,
-                            style: const TextStyle(
-                              color: AppColors.sariAna,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 1.2,
-                            ),
-                          ),
-                        )
-                      : ScalePress(
-                          onTap: onBuy ?? () {},
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 13),
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFFFFD75E), Color(0xFFF0A818)],
+                      const SizedBox(height: 14),
+                      _perk(l10n.vipPerkNoAds, l10n.vipPerkNoAdsSub, Icons.block_rounded),
+                      _perk(l10n.vipPerkDisc, l10n.vipPerkDiscSub,
+                          Icons.workspace_premium_rounded),
+                      _perk(l10n.vipPerkTokens, l10n.vipPerkTokensSub,
+                          Icons.monetization_on_rounded),
+                      const SizedBox(height: 14),
+                      SizedBox(
+                        width: double.infinity,
+                        child: owned
+                            ? Container(
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  color: AppColors.sariAna.withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: AppColors.sariAna),
+                                ),
+                                child: Text(
+                                  l10n.vipActive,
+                                  style: const TextStyle(
+                                    color: AppColors.sariAna,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 1.2,
+                                  ),
+                                ),
+                              )
+                            : PulseScale(
+                                child: ScalePress(
+                                  onTap: onBuy ?? () {},
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(vertical: 13),
+                                    alignment: Alignment.center,
+                                    decoration: BoxDecoration(
+                                      gradient: const LinearGradient(
+                                        colors: [Color(0xFFDAAD31), Color(0xFFCB9103)],
+                                      ),
+                                      borderRadius: BorderRadius.circular(12),
+                                      boxShadow:
+                                          AppShadows.neon(AppColors.sariAna, blur: 10),
+                                    ),
+                                    child: Text(
+                                      price == null
+                                          ? l10n.buyVip
+                                          : '${l10n.buyVip} — $price',
+                                      style: const TextStyle(
+                                        color: Color(0xFF201505),
+                                        fontWeight: FontWeight.w900,
+                                        fontSize: 14,
+                                        letterSpacing: 1,
+                                      ),
+                                    ),
+                                  ),
+                                ),
                               ),
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: AppShadows.neon(AppColors.sariAna, blur: 10),
-                            ),
-                            child: Text(
-                              price == null ? l10n.buyVip : '${l10n.buyVip} — $price',
-                              style: const TextStyle(
-                                color: Color(0xFF201505),
-                                fontWeight: FontWeight.w900,
-                                fontSize: 14,
-                                letterSpacing: 1,
-                              ),
-                            ),
-                          ),
-                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -459,7 +475,7 @@ class _VipCard extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
-                    colors: [Color(0xFFFFD75E), Color(0xFFF0A818)],
+                    colors: [Color(0xFFEBCB6E), Color(0xFFCB9103)],
                   ),
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: AppShadows.neon(AppColors.sariAna, blur: 8),
@@ -518,7 +534,8 @@ class _VipCard extends StatelessWidget {
                   const SizedBox(height: 1),
                   Text(
                     sub,
-                    style: const TextStyle(color: AppColors.textMuted, fontSize: 11, height: 1.3),
+                    style: const TextStyle(
+                        color: AppColors.textMuted, fontSize: 11, height: 1.3),
                   ),
                 ],
               ),
@@ -536,7 +553,7 @@ class _CrownDiscPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const base = Color(0xFFF6C444);
+    const base = Color(0xFFDAAD31);
     final light = Color.lerp(base, Colors.white, 0.42)!;
     final dark = Color.lerp(base, Colors.black, 0.38)!;
     final rim = Color.lerp(base, Colors.black, 0.52)!;
