@@ -1,6 +1,10 @@
-import 'package:flutter/material.dart';
+import 'dart:async';
 
-/// Uygulama açılışında gösterilen animasyonlu Yesa Studio marka ekranı.
+import 'package:flutter/material.dart';
+import 'package:video_player/video_player.dart';
+
+/// Uygulama açılışında oynatılan Yesa Studio marka videosu.
+/// Video bitince (veya emniyet zaman aşımında) [onDone] çağrılır.
 class BrandSplash extends StatefulWidget {
   const BrandSplash({super.key, required this.onDone});
 
@@ -10,92 +14,83 @@ class BrandSplash extends StatefulWidget {
   State<BrandSplash> createState() => _BrandSplashState();
 }
 
-class _BrandSplashState extends State<BrandSplash> with TickerProviderStateMixin {
-  late final AnimationController _ctrl;
-  late final AnimationController _outCtrl;
-  late final Animation<double> _fade;
-  late final Animation<double> _scale;
-  late final Animation<double> _glow;
+class _BrandSplashState extends State<BrandSplash> {
+  VideoPlayerController? _controller;
+  bool _done = false;
+  Timer? _safety;
 
   @override
   void initState() {
     super.initState();
-    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1400));
-    _outCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 500));
+    _init();
+    // Emniyet: video hiç oynamazsa (bozuk/uzun) uygulama takılı kalmasın.
+    _safety = Timer(const Duration(seconds: 6), _finish);
+  }
 
-    _fade = CurvedAnimation(parent: _ctrl, curve: const Interval(0.0, 0.5, curve: Curves.easeOut));
-    _scale = Tween<double>(begin: 0.86, end: 1.0)
-        .animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOutBack));
-    _glow = CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut);
+  Future<void> _init() async {
+    try {
+      final c = VideoPlayerController.asset('assets/video/brand_splash.mp4');
+      _controller = c;
+      await c.initialize();
+      if (!mounted) {
+        c.dispose();
+        return;
+      }
+      c.addListener(_watchEnd);
+      await c.setVolume(1.0);
+      await c.play();
+      setState(() {});
+    } catch (_) {
+      _finish(); // Video açılmazsa doğrudan geç.
+    }
+  }
 
-    _ctrl.forward();
-    // Giriş + bekleme sonrası çıkış.
-    Future.delayed(const Duration(milliseconds: 2200), () async {
-      if (!mounted) return;
-      await _outCtrl.forward();
-      if (mounted) widget.onDone();
-    });
+  void _watchEnd() {
+    final c = _controller;
+    if (c == null || !c.value.isInitialized) return;
+    final pos = c.value.position;
+    final dur = c.value.duration;
+    // Bitişe ~120ms kala geçişi başlat (son karede takılma hissi olmasın).
+    if (dur > Duration.zero && pos >= dur - const Duration(milliseconds: 120)) {
+      _finish();
+    }
+  }
+
+  void _finish() {
+    if (_done) return;
+    _done = true;
+    _safety?.cancel();
+    if (mounted) widget.onDone();
   }
 
   @override
   void dispose() {
-    _ctrl.dispose();
-    _outCtrl.dispose();
+    _safety?.cancel();
+    _controller?.removeListener(_watchEnd);
+    _controller?.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: Listenable.merge([_ctrl, _outCtrl]),
-      builder: (context, _) {
-        final outFade = 1.0 - _outCtrl.value;
-        return Opacity(
-          opacity: outFade,
-          child: Container(
-            color: Colors.white,
-            alignment: Alignment.center,
-            child: FadeTransition(
-              opacity: _fade,
-              child: Transform.scale(
-                scale: _scale.value,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    // Çok yumuşak, dağınık marka parıltısı (belirgin daire değil).
-                    Container(
-                      width: 180,
-                      height: 180,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFF2DE1C2).withValues(alpha: 0.06 * _glow.value),
-                            blurRadius: 120,
-                            spreadRadius: 8,
-                          ),
-                          BoxShadow(
-                            color: const Color(0xFF9B6BFF).withValues(alpha: 0.06 * _glow.value),
-                            blurRadius: 120,
-                            spreadRadius: 4,
-                          ),
-                        ],
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 48),
-                      child: Image.asset(
-                        'assets/images/yesa_studio_logo.png',
-                        fit: BoxFit.contain,
-                      ),
-                    ),
-                  ],
+    final c = _controller;
+    final ready = c != null && c.value.isInitialized;
+    return Container(
+      color: Colors.black,
+      child: Center(
+        child: ready
+            ? SizedBox.expand(
+                child: FittedBox(
+                  fit: BoxFit.cover,
+                  child: SizedBox(
+                    width: c.value.size.width,
+                    height: c.value.size.height,
+                    child: VideoPlayer(c),
+                  ),
                 ),
-              ),
-            ),
-          ),
-        );
-      },
+              )
+            : const SizedBox.shrink(),
+      ),
     );
   }
 }
