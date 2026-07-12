@@ -1,5 +1,5 @@
 // Otomatik oluşturulur — elle düzenlemeyin.
 class GoogleAuthConfigGenerated {
-  static const webClientId = '461164328612-0nr4vtrungqa74ko5l2he84cvehurtel.apps.googleusercontent.com';
-  static const iosClientId = '461164328612-fbt9ckaiab0diimgkm4ii0rohs77ihf2.apps.googleusercontent.com';
+  static const webClientId = '549603731179-1mmkd70ol7gm6kvbrivvt4cer0tteajm.apps.googleusercontent.com';
+  static const iosClientId = '549603731179-tl87pvasv9jsf2gehl7phref0s2cb44k.apps.googleusercontent.com';
 }

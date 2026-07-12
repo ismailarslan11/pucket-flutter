@@ -1,41 +1,34 @@
 {
   "project_info": {
-    "project_number": "461164328612",
-    "project_id": "pucketyeni",
-    "storage_bucket": "pucketyeni.firebasestorage.app"
+    "project_number": "549603731179",
+    "project_id": "pucket-f958c",
+    "storage_bucket": "pucket-f958c.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:461164328612:android:f3bec96b611ca30b311831",
+        "mobilesdk_app_id": "1:549603731179:android:fc8a3e3f97c3c3a6fa80ae",
         "android_client_info": {
           "package_name": "com.yesastudio.pucket"
         }
       },
       "oauth_client": [
         {
-          "client_id": "461164328612-0nr4vtrungqa74ko5l2he84cvehurtel.apps.googleusercontent.com",
+          "client_id": "549603731179-1mmkd70ol7gm6kvbrivvt4cer0tteajm.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyBjjf28PLC1LJyxy6kd3Jy8bOIYCEmpmjw"
+          "current_key": "AIzaSyBcpkDKq1nIepLT4zVrUkXcdxAq7WTu0_o"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "461164328612-0nr4vtrungqa74ko5l2he84cvehurtel.apps.googleusercontent.com",
+              "client_id": "549603731179-1mmkd70ol7gm6kvbrivvt4cer0tteajm.apps.googleusercontent.com",
               "client_type": 3
-            },
-            {
-              "client_id": "461164328612-fbt9ckaiab0diimgkm4ii0rohs77ihf2.apps.googleusercontent.com",
-              "client_type": 2,
-              "ios_info": {
-                "bundle_id": "com.pucket.pucketFlutter"
-              }
             }
           ]
         }

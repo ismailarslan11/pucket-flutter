@@ -3,21 +3,21 @@
 <plist version="1.0">
 <dict>
 	<key>CLIENT_ID</key>
-	<string>461164328612-fbt9ckaiab0diimgkm4ii0rohs77ihf2.apps.googleusercontent.com</string>
+	<string>549603731179-tl87pvasv9jsf2gehl7phref0s2cb44k.apps.googleusercontent.com</string>
 	<key>REVERSED_CLIENT_ID</key>
-	<string>com.googleusercontent.apps.461164328612-fbt9ckaiab0diimgkm4ii0rohs77ihf2</string>
+	<string>com.googleusercontent.apps.549603731179-tl87pvasv9jsf2gehl7phref0s2cb44k</string>
 	<key>API_KEY</key>
-	<string>AIzaSyAQYymolaAzDtpY4_FvF7-bP_Uh6VZfDjI</string>
+	<string>AIzaSyCswReh7Hu0lfJMt8FWGoF7-Z2KPug_Cpg</string>
 	<key>GCM_SENDER_ID</key>
-	<string>461164328612</string>
+	<string>549603731179</string>
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
 	<string>com.pucket.pucketFlutter</string>
 	<key>PROJECT_ID</key>
-	<string>pucketyeni</string>
+	<string>pucket-f958c</string>
 	<key>STORAGE_BUCKET</key>
-	<string>pucketyeni.firebasestorage.app</string>
+	<string>pucket-f958c.firebasestorage.app</string>
 	<key>IS_ADS_ENABLED</key>
 	<false></false>
 	<key>IS_ANALYTICS_ENABLED</key>
@@ -29,6 +29,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:461164328612:ios:bf4d5d789d82082a311831</string>
+	<string>1:549603731179:ios:20c0513cf9f9aba8fa80ae</string>
 </dict>
 </plist>
