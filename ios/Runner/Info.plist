@@ -36,7 +36,7 @@
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>GADApplicationIdentifier</key>
-	<string>ca-app-pub-8812492864768219~4176844887</string>
+	<string>ca-app-pub-3160084138052304~1562267757</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>NSUserTrackingUsageDescription</key>
