@@ -21,7 +21,7 @@ class AudioService extends ChangeNotifier {
   Future<void> playWin() => _playSfx('sounds/win.wav');
   Future<void> playLose() => _playSfx('sounds/lose.wav');
 
-  Future<void> playMenuMusic() => _playMusic(MusicTrack.menu, 'sounds/menu.wav');
+  Future<void> playMenuMusic() => _playMusic(MusicTrack.menu, 'sounds/anasayfamuzik.mp3');
 
   Future<void> playGameMusic() => _playMusic(MusicTrack.game, 'sounds/muzik.mp3');
 
