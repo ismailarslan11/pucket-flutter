@@ -520,6 +520,14 @@ function markOffline(uid) {
   else onlineUids.set(uid, n);
 }
 
+// İki kullanıcı birbirini engellemiş mi? (her iki yön de eşleşmeyi keser)
+function eitherBlocked(uidA, uidB) {
+  const a = db.get(`playerMeta.${uidA}.blocked`).value() || [];
+  if (a.includes(uidB)) return true;
+  const b = db.get(`playerMeta.${uidB}.blocked`).value() || [];
+  return b.includes(uidA);
+}
+
 function findMatch(newEntry) {
   const ELO_RANGE = 200;
   const now = Date.now();
@@ -528,6 +536,8 @@ function findMatch(newEntry) {
   for (let i = 0; i < matchmakingQueue.length; i++) {
     const candidate = matchmakingQueue[i];
     if (candidate.uid === newEntry.uid) continue;
+    // Engellenen oyuncularla eşleşme yok.
+    if (eitherBlocked(newEntry.uid, candidate.uid)) continue;
     const waited = now - candidate.joinedAt;
     const range = ELO_RANGE + Math.floor(waited / 5000) * 100;
     if (Math.abs(candidate.elo - newEntry.elo) <= range) {
@@ -1536,6 +1546,33 @@ const server = http.createServer((req, res) => {
           .write();
         res.writeHead(200, cors);
         res.end(JSON.stringify({ ok: true }));
+      })
+      .catch(() => {
+        res.writeHead(400, cors);
+        res.end(JSON.stringify({ ok: false }));
+      });
+    return;
+  }
+
+  // Oyuncu engelleme: engelleyenin listesine ekler; bir daha eşleşmezler.
+  if (url.pathname === '/block' && req.method === 'POST') {
+    readJsonBody(req)
+      .then((data) => {
+        const blocker = (data.blocker || '').trim();
+        const blocked = (data.blocked || '').trim();
+        if (!blocker || !blocked || blocker === blocked) {
+          res.writeHead(400, cors);
+          res.end(JSON.stringify({ ok: false }));
+          return;
+        }
+        const meta = getPlayerMeta(blocker);
+        const list = Array.isArray(meta.blocked) ? meta.blocked : [];
+        if (!list.includes(blocked)) list.push(blocked);
+        // Aşırı büyümeyi engelle (en fazla 500 engel).
+        while (list.length > 500) list.shift();
+        db.set(`playerMeta.${blocker}.blocked`, list).write();
+        res.writeHead(200, cors);
+        res.end(JSON.stringify({ ok: true, blocked: list.length }));
       })
       .catch(() => {
         res.writeHead(400, cors);

@@ -343,6 +343,25 @@ class MetaApi {
     }
   }
 
+  /// Oyuncuyu engelle — bir daha eşleşmezsiniz (sunucuda tutulur).
+  static Future<bool> blockPlayer({
+    required String blocker,
+    required String blocked,
+  }) async {
+    try {
+      final res = await http
+          .post(
+            Uri.parse('$apiBaseUrl/block'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'blocker': blocker, 'blocked': blocked}),
+          )
+          .timeout(const Duration(seconds: 8));
+      return res.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
+
   static Future<bool> reportPlayer({
     required String reporter,
     required String reported,

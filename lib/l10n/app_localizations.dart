@@ -402,6 +402,9 @@ class AppLocalizations {
 
   String get shareResult => _t('shareResult');
   String get reportPlayer => _t('reportPlayer');
+  String get blockPlayer => _t('blockPlayer');
+  String get blockConfirm => _t('blockConfirm');
+  String get blockDone => _t('blockDone');
   String get reportSent => _t('reportSent');
   String get opponentProfile => _t('opponentProfile');
   String get profileTitle => _t('profileTitle');
@@ -768,6 +771,9 @@ const _tr = {
   'shareResult': 'PAYLAŞ',
   'reportPlayer': 'Raporla',
   'reportSent': 'Rapor gönderildi',
+  'blockPlayer': 'Engelle',
+  'blockConfirm': 'Bu oyuncuyu engelle? Bir daha eşleşmezsiniz.',
+  'blockDone': 'Oyuncu engellendi',
   'opponentProfile': 'Rakip',
   'profileTitle': 'PROFİL',
   'profileEmpty': 'Profil yok',
@@ -1124,6 +1130,9 @@ const _en = {
   'shareResult': 'SHARE',
   'reportPlayer': 'Report',
   'reportSent': 'Report submitted',
+  'blockPlayer': 'Block',
+  'blockConfirm': 'Block this player? You won\'t be matched again.',
+  'blockDone': 'Player blocked',
   'opponentProfile': 'Opponent',
   'profileTitle': 'PROFILE',
   'profileEmpty': 'No profile',
@@ -1429,6 +1438,9 @@ const _de = {
   'shareResult': 'TEILEN',
   'reportPlayer': 'Melden',
   'reportSent': 'Meldung gesendet',
+  'blockPlayer': 'Blockieren',
+  'blockConfirm': 'Diesen Spieler blockieren? Ihr werdet nicht erneut gematcht.',
+  'blockDone': 'Spieler blockiert',
   'opponentProfile': 'Gegner',
   'profileTitle': 'PROFIL',
   'profileEmpty': 'Kein Profil',
@@ -1734,6 +1746,9 @@ const _es = {
   'shareResult': 'COMPARTIR',
   'reportPlayer': 'Reportar',
   'reportSent': 'Reporte enviado',
+  'blockPlayer': 'Bloquear',
+  'blockConfirm': '¿Bloquear a este jugador? No volverán a emparejarse.',
+  'blockDone': 'Jugador bloqueado',
   'opponentProfile': 'Rival',
   'profileTitle': 'PERFIL',
   'profileEmpty': 'Sin perfil',
@@ -2038,6 +2053,9 @@ const _ar = {
   'disc_emoji_trophy': 'كأس',
   'shareResult': 'مشاركة',
   'reportPlayer': 'إبلاغ',
+  'blockPlayer': 'حظر',
+  'blockConfirm': 'حظر هذا اللاعب؟ لن تتم مطابقتكما مجددًا.',
+  'blockDone': 'تم حظر اللاعب',
   'reportSent': 'تم الإبلاغ',
   'opponentProfile': 'الخصم',
   'profileTitle': 'الملف',
@@ -2344,6 +2362,9 @@ const _fr = {
   'shareResult': 'PARTAGER',
   'reportPlayer': 'Signaler',
   'reportSent': 'Signalement envoyé',
+  'blockPlayer': 'Bloquer',
+  'blockConfirm': 'Bloquer ce joueur ? Vous ne serez plus jumelés.',
+  'blockDone': 'Joueur bloqué',
   'opponentProfile': 'Adversaire',
   'profileTitle': 'PROFIL',
   'profileEmpty': 'Pas de profil',

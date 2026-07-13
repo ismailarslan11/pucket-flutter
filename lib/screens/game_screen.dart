@@ -1269,7 +1269,7 @@ class _GameScreenState extends State<GameScreen> {
                 }),
               ),
               const SizedBox(height: 12),
-              if (!game.aiMode && game.opponentUid.isNotEmpty)
+              if (!game.aiMode && game.opponentUid.isNotEmpty) ...[
                 PucketButton(
                   label: l10n.reportPlayer,
                   secondary: true,
@@ -1287,6 +1287,14 @@ class _GameScreenState extends State<GameScreen> {
                     }
                   },
                 ),
+                const SizedBox(height: 12),
+                PucketButton(
+                  label: l10n.blockPlayer,
+                  secondary: true,
+                  width: 260,
+                  onPressed: () => _confirmBlock(game),
+                ),
+              ],
               const SizedBox(height: 12),
               PucketButton(label: l10n.backToMenu, secondary: true, width: 260, onPressed: () => AppRouter.goMenu(context)),
             ],
@@ -1294,6 +1302,31 @@ class _GameScreenState extends State<GameScreen> {
         ),
       ),
     );
+  }
+
+  /// Rakibi engelle: onay iste → sunucuya bildir → menüye dön.
+  Future<void> _confirmBlock(GameController game) async {
+    final l10n = context.l10nRead;
+    final oppUid = game.opponentUid;
+    if (oppUid.isEmpty) return;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.card,
+        title: Text(l10n.blockPlayer, style: const TextStyle(color: AppColors.beyaz)),
+        content: Text(l10n.blockConfirm, style: const TextStyle(color: AppColors.textMuted)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(l10n.no)),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text(l10n.blockPlayer)),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    final auth = context.read<AuthService>();
+    await MetaApi.blockPlayer(blocker: auth.getUid(), blocked: oppUid);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.blockDone)));
+    AppRouter.goMenu(context);
   }
 
   Widget _buildInGameSettings(GameController game) {
