@@ -139,6 +139,16 @@
       "matches": 0,
       "league": "Bronz",
       "createdAt": 1782488103869
+    },
+    "userA": {
+      "uid": "userA",
+      "name": "Oyuncu",
+      "elo": 1000,
+      "wins": 0,
+      "losses": 0,
+      "matches": 0,
+      "league": "Bronz",
+      "createdAt": 1783980104659
     }
   },
   "matchHistory": [
@@ -165,5 +175,45 @@
     "iso": "u_ea434801",
     "xultrarsla": "u_a86147dd",
     "copaamericano": "u_c507c971"
+  },
+  "playerMeta": {
+    "userA": {
+      "quests": {
+        "date": "2026-07-13",
+        "play": 0,
+        "win": 0,
+        "career": 0,
+        "claimed": false
+      },
+      "streak": 1,
+      "lastLoginDate": "2026-07-13",
+      "achievements": [],
+      "cosmetics": {
+        "discColor": "green",
+        "boardTheme": "classic"
+      },
+      "fcmToken": "",
+      "seasonWins": 0,
+      "tokens": 0,
+      "unlockedDiscs": [],
+      "unlockedBoards": [],
+      "lastAdReward": 0,
+      "blocked": [
+        "userB"
+      ]
+    }
+  },
+  "career": {},
+  "reports": [],
+  "friends": {},
+  "tournament": {
+    "weekId": "",
+    "entries": [],
+    "scores": {}
+  },
+  "season": {
+    "id": 1,
+    "name": "Sezon 1",
+    "startDate": 1783980101687
   }
 }
