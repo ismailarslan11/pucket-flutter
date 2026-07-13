@@ -177,8 +177,17 @@ class MetaApi {
     }
   }
 
-  static Future<void> bumpQuest(String uid, String field) async {
-    await postMeta(uid, {'questBump': field});
+  /// Günlük görev ilerlemesini bildirir (sunucu hedefte tavanlar).
+  /// Dönen güncel meta ile sayaçlar anında yenilenir.
+  static Future<PlayerMeta?> bumpQuests(
+    String uid, {
+    bool play = false,
+    bool win = false,
+    bool career = false,
+  }) async {
+    return postMeta(uid, {
+      'questProgress': {'play': play, 'win': win, 'career': career},
+    });
   }
 
   static Future<void> saveCosmetics(String uid, Map<String, String> cosmetics) async {

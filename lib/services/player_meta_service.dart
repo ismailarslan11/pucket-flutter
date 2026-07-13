@@ -72,6 +72,20 @@ class PlayerMetaService extends ChangeNotifier {
     await load(uid);
   }
 
+  /// Maç bitince günlük görev sayaçlarını artırır.
+  Future<void> recordQuestProgress(
+    String uid, {
+    bool play = false,
+    bool win = false,
+    bool career = false,
+  }) async {
+    final m = await MetaApi.bumpQuests(uid, play: play, win: win, career: career);
+    if (m != null) {
+      meta = m;
+      notifyListeners();
+    }
+  }
+
   Future<int?> earnWinTokens(String uid) async {
     final r = await MetaApi.earnWinTokens(uid);
     if (r.meta != null) {

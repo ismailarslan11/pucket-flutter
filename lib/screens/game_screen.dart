@@ -53,6 +53,7 @@ class _GameScreenState extends State<GameScreen> {
   int _lastRoundAdKey = -1;
   int _lastWinTokenKey = -1;
   int _lastBpXpKey = -1;
+  int _lastQuestKey = -1;
 
   @override
   void didChangeDependencies() {
@@ -162,6 +163,7 @@ class _GameScreenState extends State<GameScreen> {
     if (game.phase == GamePhase.gameover && _lastPhase != GamePhase.gameover) {
       _maybeAwardWinTokens(game);
       _maybeAwardBattlePassXp(game);
+      _maybeBumpQuests(game);
       if (game.careerMode && game.matchFinished && game.careerOpponent != null) {
         final won = game.lastWinner == game.mySeat;
         final career = context.read<CareerService>();
@@ -236,6 +238,23 @@ class _GameScreenState extends State<GameScreen> {
         SnackBar(content: Text(context.l10nRead.tokensEarned(gain))),
       );
     });
+  }
+
+  /// Günlük görevler: bitmiş her gerçek maç "oyna"yı, galibiyet "kazan"ı,
+  /// kariyer galibiyeti "kariyer"i artırır. Antrenman/yerel 2 kişi sayılmaz.
+  void _maybeBumpQuests(GameController game) {
+    if (!game.matchFinished) return;
+    if (game.trainingMode || game.localDuoMode) return;
+    if (_lastQuestKey == game.visualGeneration) return;
+    _lastQuestKey = game.visualGeneration;
+    final won = game.lastWinner == game.mySeat;
+    final uid = context.read<AuthService>().getUid();
+    context.read<PlayerMetaService>().recordQuestProgress(
+          uid,
+          play: true,
+          win: won,
+          career: game.careerMode && won,
+        );
   }
 
   void _maybeAwardBattlePassXp(GameController game) {

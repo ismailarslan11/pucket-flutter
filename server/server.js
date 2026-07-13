@@ -1112,7 +1112,19 @@ const server = http.createServer((req, res) => {
           if (data.fcmToken) {
             db.set(`playerMeta.${uid}.fcmToken`, data.fcmToken).write();
           }
-          // questBump yalnızca sunucu tarafından (matchEnd, career) — istemciden kabul edilmez
+          // Günlük görev ilerlemesi. Hile koruması: her sayaç hedefinde
+          // TAVANLANIR — spam edilse bile ödül normal görev bitiminden fazla
+          // olamaz (zaten günde 50 KP). İstemci maç bitince bildirir.
+          if (data.questProgress && typeof data.questProgress === 'object') {
+            const q = meta.quests;
+            const caps = { play: 3, win: 1, career: 1 };
+            for (const field of Object.keys(caps)) {
+              if (data.questProgress[field]) {
+                q[field] = Math.min(caps[field], (q[field] || 0) + 1);
+              }
+            }
+            db.set(`playerMeta.${uid}.quests`, q).write();
+          }
           res.writeHead(200, cors);
           res.end(JSON.stringify({ ok: true, meta: getPlayerMeta(uid) }));
         })
