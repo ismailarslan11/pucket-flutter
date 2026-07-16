@@ -133,8 +133,8 @@ class GameController extends ChangeNotifier {
   int _lastUiDiscSignature = -1;
   int _lastHitAudioFrame = 0;
   int _lastSentStateSig = 0;
-  int _lastStateSentMs = 0;
-  int _lastNetworkBoardBumpMs = 0;
+  double _lastStateSentMs = 0;
+  double _lastNetworkBoardBumpMs = 0;
   int? _localShotDisc;
   /// Kendi atışının yerel tahminle akacağı an (monotonik ağ saati, ms).
   double _localShotPredictUntil = 0;
@@ -318,7 +318,9 @@ class GameController extends ChangeNotifier {
 
   /// Ağ paketlerinden gelen repaint — frame başına en fazla bir kez.
   void _bumpBoardFromNetwork() {
-    final now = DateTime.now().millisecondsSinceEpoch;
+    // Monotonik: duvar saati geriye sıçrarsa bu kapı kilitlenir ve tahta
+    // yeniden çizilmez (görünür donma).
+    final now = _nowNet;
     if (now - _lastNetworkBoardBumpMs < 14) return;
     _lastNetworkBoardBumpMs = now;
     _bumpBoard();
@@ -1323,7 +1325,10 @@ class GameController extends ChangeNotifier {
     if (!force) {
       final anyMoving = discs.any((d) => d.vvx.abs() > 0.01 || d.vvy.abs() > 0.01);
       if (!anyMoving) return;
-      final now = DateTime.now().millisecondsSinceEpoch;
+      // Monotonik saat: duvar saati (DateTime.now) NTP ile GERİYE sıçrarsa
+      // fark negatife düşer, `< 40` sürekli doğru olur ve gönderim tamamen
+      // durur — rakip için oyun donar. Stopwatch geri gitmez.
+      final now = _nowNet;
       if (now - _lastStateSentMs < 40) return;
       final sig = _discStateSignature();
       if (sig == _lastSentStateSig) return;
@@ -1331,7 +1336,7 @@ class GameController extends ChangeNotifier {
       _lastStateSentMs = now;
     } else {
       _lastSentStateSig = _discStateSignature();
-      _lastStateSentMs = DateTime.now().millisecondsSinceEpoch;
+      _lastStateSentMs = _nowNet;
     }
 
     final discPayload = discs
