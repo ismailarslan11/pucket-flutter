@@ -85,20 +85,6 @@ class SeasonInfo {
       );
 }
 
-class TournamentEntry {
-  final String uid;
-  final String name;
-  final int points;
-
-  TournamentEntry({required this.uid, required this.name, required this.points});
-
-  factory TournamentEntry.fromJson(Map<String, dynamic> j) => TournamentEntry(
-        uid: j['uid'] as String? ?? '',
-        name: j['name'] as String? ?? 'Oyuncu',
-        points: (j['points'] as num?)?.toInt() ?? 0,
-      );
-}
-
 class MetaApi {
   static Future<T?> _retry<T>(Future<T?> Function() fn, {int attempts = 3}) async {
     for (var i = 0; i < attempts; i++) {
@@ -284,18 +270,6 @@ class MetaApi {
     }
   }
 
-  static Future<List<TournamentEntry>> fetchTournament() async {
-    try {
-      final res = await http.get(Uri.parse('$apiBaseUrl/tournament')).timeout(const Duration(seconds: 8));
-      if (res.statusCode != 200) return [];
-      final j = jsonDecode(res.body) as Map<String, dynamic>;
-      final list = j['leaderboard'] as List? ?? [];
-      return list.map((e) => TournamentEntry.fromJson(e as Map<String, dynamic>)).toList();
-    } catch (_) {
-      return [];
-    }
-  }
-
   /// IAP jeton paketi — satın alma sonrası sunucuya jeton ekletir.
   static Future<bool> grantIapTokens(String uid, int amount) async {
     try {
@@ -320,21 +294,6 @@ class MetaApi {
             Uri.parse('$apiBaseUrl/iap/premium'),
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode({'uid': uid}),
-          )
-          .timeout(const Duration(seconds: 8));
-      return res.statusCode == 200;
-    } catch (_) {
-      return false;
-    }
-  }
-
-  static Future<bool> joinTournament(String uid, String name) async {
-    try {
-      final res = await http
-          .post(
-            Uri.parse('$apiBaseUrl/tournament/join'),
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({'uid': uid, 'name': name}),
           )
           .timeout(const Duration(seconds: 8));
       return res.statusCode == 200;

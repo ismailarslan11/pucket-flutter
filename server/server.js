@@ -134,12 +134,6 @@ function settleRankedMatch(room, winnerSeat) {
   const wMeta = getPlayerMeta(winnerUid);
   wMeta.seasonWins = (wMeta.seasonWins || 0) + 1;
   db.set(`playerMeta.${winnerUid}.seasonWins`, wMeta.seasonWins).write();
-  const t = getTournamentState();
-  if (t.entries.includes(winnerUid)) {
-    t.scores[winnerUid] = (t.scores[winnerUid] || 0) + 3;
-    db.set('tournament', t).write();
-  }
-
   room.send(winnerSeat, {
     type: 'eloResult',
     won: true,
@@ -253,13 +247,6 @@ function makeSessionToken() {
 
 function todayKey() {
   return new Date().toISOString().slice(0, 10);
-}
-
-function weekKey() {
-  const d = new Date();
-  const oneJan = new Date(d.getFullYear(), 0, 1);
-  const week = Math.ceil(((d - oneJan) / 86400000 + oneJan.getDay() + 1) / 7);
-  return `${d.getFullYear()}-W${week}`;
 }
 
 function getSeasonInfo() {
@@ -448,36 +435,6 @@ function getCareerData(uid) {
 function saveCareerData(uid, data) {
   db.set(`career.${uid}`, data).write();
   return data;
-}
-
-// Haftalık turnuva ödülleri (ilk 3 sıra, jeton).
-const TOURNAMENT_PRIZES = [300, 150, 75];
-
-function distributeTournamentPrizes(prev) {
-  if (!prev || !prev.scores) return;
-  const ranked = Object.entries(prev.scores)
-    .filter(([, pts]) => pts > 0)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, TOURNAMENT_PRIZES.length);
-  ranked.forEach(([uid], i) => {
-    const meta = getPlayerMeta(uid);
-    if (!meta) return;
-    ensureTokenFields(meta);
-    meta.tokens += TOURNAMENT_PRIZES[i];
-    db.set(`playerMeta.${uid}.tokens`, meta.tokens).write();
-  });
-}
-
-function getTournamentState() {
-  const wk = weekKey();
-  let t = db.get('tournament').value() || { weekId: '', entries: [], scores: {} };
-  if (t.weekId !== wk) {
-    // Yeni hafta: önceki haftanın ilk 3'üne ödül dağıt, sonra sıfırla.
-    if (t.weekId) distributeTournamentPrizes(t);
-    t = { weekId: wk, entries: [], scores: {} };
-    db.set('tournament', t).write();
-  }
-  return t;
 }
 
 function readJsonBody(req) {
@@ -1167,47 +1124,6 @@ const server = http.createServer((req, res) => {
         });
       return;
     }
-  }
-
-  if (url.pathname === '/tournament') {
-    const t = getTournamentState();
-    const leaderboard = Object.entries(t.scores || {})
-      .map(([uid, pts]) => {
-        const p = getPlayer(uid);
-        return p ? { uid, name: p.name, points: pts } : null;
-      })
-      .filter(Boolean)
-      .sort((a, b) => b.points - a.points)
-      .slice(0, 20);
-    res.writeHead(200, cors);
-    res.end(JSON.stringify({ weekId: t.weekId, entries: t.entries, leaderboard, prizes: TOURNAMENT_PRIZES }));
-    return;
-  }
-
-  if (url.pathname === '/tournament/join' && req.method === 'POST') {
-    readJsonBody(req)
-      .then((data) => {
-        const uid = data.uid;
-        if (!uid) {
-          res.writeHead(400, cors);
-          res.end(JSON.stringify({ ok: false }));
-          return;
-        }
-        upsertPlayer(uid, data.name);
-        const t = getTournamentState();
-        if (!t.entries.includes(uid)) {
-          t.entries.push(uid);
-          t.scores[uid] = t.scores[uid] || 0;
-          db.set('tournament', t).write();
-        }
-        res.writeHead(200, cors);
-        res.end(JSON.stringify({ ok: true, tournament: t }));
-      })
-      .catch(() => {
-        res.writeHead(400, cors);
-        res.end(JSON.stringify({ ok: false }));
-      });
-    return;
   }
 
   // ── Battle Pass ──
@@ -1959,7 +1875,6 @@ async function startServer() {
     career: {},
     reports: [],
     friends: {},
-    tournament: { weekId: '', entries: [], scores: {} },
     season: { id: 1, name: 'Sezon 1', startDate: Date.now() },
   }).write();
   migrateUsernamesFromPlayers();
