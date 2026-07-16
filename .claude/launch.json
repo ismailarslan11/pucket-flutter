@@ -4,8 +4,28 @@
     {
       "name": "pucket-web",
       "runtimeExecutable": "flutter",
-      "runtimeArgs": ["run", "-d", "web-server", "--web-port", "8642", "--web-hostname", "127.0.0.1"],
+      "runtimeArgs": [
+        "run",
+        "-d",
+        "web-server",
+        "--web-port",
+        "8642",
+        "--web-hostname",
+        "127.0.0.1"
+      ],
       "port": 8642
+    },
+    {
+      "name": "yesa-works",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "4173",
+        "--directory",
+        "/Users/ismail/Projects/yesa-works"
+      ],
+      "port": 4173
     }
   ]
 }

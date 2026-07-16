@@ -136,13 +136,27 @@ class GameController extends ChangeNotifier {
   int _lastStateSentMs = 0;
   int _lastNetworkBoardBumpMs = 0;
   int? _localShotDisc;
-  int _localShotUntilMs = 0;
+  /// Kendi atışının yerel tahminle akacağı an (monotonik ağ saati, ms).
+  double _localShotPredictUntil = 0;
+  /// Tahminden ağ otoritesine yumuşak devretme süresi.
+  static const double _shotBlendMs = 150;
 
   final boardRepaint = BoardRepaintNotifier();
   final uiSync = UiSyncNotifier();
   final fx = GameFx();
 
   static const _physicsStepMs = 1000 / 60;
+
+  // ── Ağ saati ──────────────────────────────────────────────────────────
+  // Monotonik: duvar saati (DateTime.now) NTP düzeltmesiyle geriye/ileriye
+  // sıçrayabilir ve interpolation zaman eksenini bozar. Stopwatch sıçramaz.
+  // Host bu saatle damgalar, client kendi saatiyle ölçer; aradaki sabit fark
+  // (_clockOffset) kestirilir — mutlak saatlerin uyuşması gerekmez.
+  final Stopwatch _netClock = Stopwatch()..start();
+  double get _nowNet => _netClock.elapsedMicroseconds / 1000.0;
+
+  /// Host: gönderilen her state paketine artan sıra numarası.
+  int _stateSeq = 0;
 
   int get visualGeneration => _visualGeneration;
 
@@ -335,18 +349,85 @@ class GameController extends ChangeNotifier {
     if (d.vvy.abs() < 0.03) d.vvy = 0;
   }
 
-  // ── İstemci ağ senkronu: anlık görüntü arabelleği (snapshot interpolation) ──
-  // Host'tan gelen durumlar geldiği anda uygulanmaz; ~110 ms "geçmişten",
-  // iki paket arasında yumuşak geçişle oynatılır. Böylece ağ titremesi
-  // (jitter) ışınlanma/zıplama yerine akıcı harekete dönüşür.
-  static const _interpDelayMs = 110.0;
-  final List<_Snap> _snapBuf = [];
-  double _starvedBaseRx = -1;
+  // ── İstemci ağ senkronu: snapshot interpolation (gönderen-zaman ekseni) ──
+  // Host'tan gelen kareler geldiği anda uygulanmaz. Her kare HOST'un saatiyle
+  // (`t`) damgalıdır; client host saatini kendi saatine çevirip (_clockOffset)
+  // ~D ms "geçmişten" oynatır. Kritik nokta: zaman ekseni VARIŞ zamanı değil
+  // GÖNDERİM zamanıdır — böylece ağ jitter'ı oynatma hızını bozamaz, sadece
+  // arabellek derinliğini etkiler.
+  static const _interpMinMs = 80.0;
+  static const _interpMaxMs = 120.0;
+  /// Pozisyon farkı bunu aşarsa yumuşak düzeltme yerine ışınla (kopmuş demektir).
+  static const _teleportThreshold = GameConstants.discRadius * 3;
+  /// Yumuşak düzeltmenin saniyede kapattığı hata oranı (frame-bağımsız).
+  static const _correctionPerSec = 12.0;
 
-  bool _bufferSnapshot(List states) {
+  final List<_Snap> _snapBuf = [];
+  double _interpDelayMs = 100;
+  int _lastSeq = -1;
+
+  /// hostSaati − yerelSaat. Kayan pencerede MAKSİMUM ile kestirilir:
+  /// örnek = O − d (d = tek yön gecikme ≥ 0), yani en az gecikmiş paket
+  /// gerçek ofsete en yakınıdır.
+  double? _clockOffset;
+  final List<({double sample, double at})> _offsetWin = [];
+  double _jitterMs = 0;
+  double? _lastRxNet;
+  double? _lastSnapT;
+
+  /// Ağ oturumu değişince (yeniden bağlanma/yeni maç) tüm ağ durumunu sıfırla —
+  /// bayat kareler ve eski saat ofseti yeni oturuma taşınmasın.
+  void _resetNetSync() {
+    _snapBuf.clear();
+    _offsetWin.clear();
+    _clockOffset = null;
+    _lastSeq = -1;
+    _jitterMs = 0;
+    _lastRxNet = null;
+    _lastSnapT = null;
+    _interpDelayMs = 100;
+  }
+
+  bool _bufferSnapshot(List states, {int? seq, num? hostT}) {
+    final rx = _nowNet;
+
+    // 1) Sıra koruması: bayat veya tekrar eden kare uygulanmaz.
+    //    (WebSocket=TCP sırayı korur; bu koruma yeniden bağlanma sonrası
+    //     gecikmiş kareler ve tekrar gönderimler içindir.)
+    if (seq != null) {
+      if (_lastSeq >= 0 && seq <= _lastSeq) return false;
+      _lastSeq = seq;
+    }
+
+    // 2) Host damgası yoksa (eski sürüm istemci) varış zamanına düş.
+    final t = (hostT ?? rx).toDouble();
+
+    // 3) Saat ofseti kestirimi: pencere içi maksimum.
+    final sample = t - rx;
+    _offsetWin.add((sample: sample, at: rx));
+    _offsetWin.removeWhere((e) => rx - e.at > 2000); // ~2 sn pencere
+    var maxSample = _offsetWin.first.sample;
+    for (final e in _offsetWin) {
+      if (e.sample > maxSample) maxSample = e.sample;
+    }
+    _clockOffset = maxSample;
+
+    // 4) Jitter ölçümü: varış aralığı ile gönderim aralığı farkı (EWMA).
+    if (_lastRxNet != null && _lastSnapT != null) {
+      final rxGap = rx - _lastRxNet!;
+      final txGap = t - _lastSnapT!;
+      final dev = (rxGap - txGap).abs();
+      _jitterMs = _jitterMs * 0.9 + dev * 0.1;
+      // Uyarlanabilir gecikme: sakin ağda 80 ms, dalgalıda 120 ms'e kadar.
+      final target = (_interpMinMs + _jitterMs * 2).clamp(_interpMinMs, _interpMaxMs);
+      _interpDelayMs += (target - _interpDelayMs) * 0.05; // yumuşak geçiş
+    }
+    _lastRxNet = rx;
+    _lastSnapT = t;
+
     final n = states.length;
     final s = _Snap(
-      rxMs: DateTime.now().millisecondsSinceEpoch.toDouble(),
+      t: t,
       xs: List<double>.filled(n, 0),
       ys: List<double>.filled(n, 0),
       vxs: List<double>.filled(n, 0),
@@ -360,48 +441,90 @@ class GameController extends ChangeNotifier {
       s.vys[i] = (e[3] as num).toDouble();
     }
     _snapBuf.add(s);
-    if (_snapBuf.length > 16) _snapBuf.removeAt(0);
+    if (_snapBuf.length > 24) _snapBuf.removeAt(0);
     return true;
   }
+
+  /// Şu an oynatılması gereken host zamanı.
+  double get _renderHostTime => _nowNet + (_clockOffset ?? 0) - _interpDelayMs;
 
   /// Oynatılacak arabellek verisi var mı? (ticker uyanık kalsın)
   bool get _clientSnapPending {
     if (_snapBuf.isEmpty) return false;
-    final renderMs =
-        DateTime.now().millisecondsSinceEpoch - _interpDelayMs;
-    return renderMs < _snapBuf.last.rxMs + 250;
+    // Son karenin oynatma anı geçene dek uyanık kal.
+    if (_renderHostTime < _snapBuf.last.t + 250) return true;
+    // Zaman çizgisi bitti ama hedefe tam oturmadıysa oturana dek devam et.
+    // (Madde 20: top tamamen dursa bile senkron bozulmasın.)
+    return !_settledOnLastSnap;
   }
 
-  /// Pozisyon+hızı doğrudan bir kareden uygula (sert geçiş anları için).
-  void _applySnap(_Snap s, int? skipIdx) {
+  /// Son kareye (host'un nihai duruş pozisyonu) tam oturduk mu?
+  /// Üstel yakınsama matematiksel olarak sıfıra inmez; bu eşik sayesinde
+  /// ticker, kalıcı bir kayma bırakmadan duruyor.
+  bool get _settledOnLastSnap {
+    if (_snapBuf.isEmpty) return true;
+    final s = _snapBuf.last;
     final n = math.min(discs.length, s.xs.length);
     for (var i = 0; i < n; i++) {
-      if (i == skipIdx) continue;
-      final d = discs[i];
-      d.vx = s.xs[i];
-      d.vy = s.ys[i];
-      d.vvx = s.vxs[i];
-      d.vvy = s.vys[i];
-      if (i < _prevVx.length) {
-        _prevVx[i] = d.vx;
-        _prevVy[i] = d.vy;
-      }
+      final dx = s.xs[i] - discs[i].vx;
+      final dy = s.ys[i] - discs[i].vy;
+      if (dx * dx + dy * dy > 0.01) return false; // ~0.1 birim
     }
+    return true;
   }
 
-  /// Client fizik adımı: arabellekten geçmişe dönük yumuşak oynatma.
-  void _clientNetAdvance() {
-    final nowMs = DateTime.now().millisecondsSinceEpoch.toDouble();
-    final localIdx =
-        (nowMs < _localShotUntilMs) ? _localShotDisc : null;
+  /// Hedefe doğru yumuşak düzeltme; sadece gerçekten kopmuşsa ışınlar.
+  /// Frame-bağımsız: kapanma oranı geçen süreye (dtMs) göre hesaplanır.
+  void _steerTo(Disc d, int i, double tx, double ty, double tvx, double tvy,
+      double dtMs) {
+    final dx = tx - d.vx;
+    final dy = ty - d.vy;
+    final distSq = dx * dx + dy * dy;
 
-    // Kendi atışın: host yankısı gelene dek yerel tahminle aksın.
+    if (distSq > _teleportThreshold * _teleportThreshold) {
+      // Gerçek kopma (uzun donma / yeniden bağlanma): tek seferde eşitle.
+      d.vx = tx;
+      d.vy = ty;
+      if (i < _prevVx.length) {
+        _prevVx[i] = tx;
+        _prevVy[i] = ty;
+      }
+    } else {
+      // Üstel yakınsama: k = 1 - e^(-rate*dt) → kare hızından bağımsız.
+      final k = 1 - math.exp(-_correctionPerSec * dtMs / 1000.0);
+      d.vx += dx * k;
+      d.vy += dy * k;
+    }
+    d.vvx = tvx;
+    d.vvy = tvy;
+  }
+
+  /// Client ağ adımı: host-zaman ekseninde snapshot interpolation.
+  /// Fizik burada çalışmaz — host'un ürettiği zaman çizgisi oynatılır.
+  void _clientNetAdvance() {
+    final nowNet = _nowNet;
+
+    // Kendi atışın: host yankısı gelene dek yerel tahmin (prediction).
+    // Süre dolunca ANINDA snap yerine ~150 ms harmanla devredilir (aşağıda).
+    final predicting = nowNet < _localShotPredictUntil;
+    final localIdx = predicting ? _localShotDisc : null;
     if (localIdx != null && localIdx < discs.length) {
       _integrateOne(discs[localIdx]);
     }
+    // Devretme harmanı: 0 → tam ağ otoritesi, 1 → tam yerel tahmin.
+    var handoff = 0.0;
+    final blendIdx = _localShotDisc;
+    if (!predicting && blendIdx != null) {
+      final since = nowNet - _localShotPredictUntil;
+      if (since < _shotBlendMs) {
+        handoff = 1 - (since / _shotBlendMs);
+      } else {
+        _localShotDisc = null; // harman bitti, tamamen ağa bırak
+      }
+    }
 
-    if (_snapBuf.length < 2) {
-      // Arabellek daha dolmadı: eski hafif tahmin (skip: atış zaten aktı).
+    if (_snapBuf.isEmpty) {
+      // Hiç kare yok: elde veri olmadığı için hafif tahminle akıt.
       for (var i = 0; i < discs.length; i++) {
         if (i == localIdx) continue;
         _integrateOne(discs[i]);
@@ -409,51 +532,67 @@ class GameController extends ChangeNotifier {
       return;
     }
 
-    final renderMs = nowMs - _interpDelayMs;
+    final renderT = _renderHostTime;
 
-    // Geride kalan kareleri düş — s0 olarak bir öncekini tut.
-    while (_snapBuf.length >= 2 && _snapBuf[1].rxMs <= renderMs) {
+    // Oynatma anını geçmiş kareleri düş (s0 = bir önceki kare kalsın).
+    while (_snapBuf.length >= 2 && _snapBuf[1].t <= renderT) {
       _snapBuf.removeAt(0);
     }
 
     final s0 = _snapBuf[0];
-    if (renderMs <= s0.rxMs) {
-      // Henüz oynatma zamanı gelmedi: ilk kareye sabitle.
-      if (_starvedBaseRx != s0.rxMs) {
-        _applySnap(s0, localIdx);
-        _starvedBaseRx = s0.rxMs;
+    final hasNext = _snapBuf.length >= 2;
+
+    // Hedef durumu belirle: iki kare arası lerp (asıl yol) veya
+    // arabellek açlığında son kareden kısa extrapolasyon.
+    late final List<double> tx, ty, tvx, tvy;
+    final n = hasNext
+        ? math.min(discs.length, math.min(s0.xs.length, _snapBuf[1].xs.length))
+        : math.min(discs.length, s0.xs.length);
+    tx = List<double>.filled(n, 0);
+    ty = List<double>.filled(n, 0);
+    tvx = List<double>.filled(n, 0);
+    tvy = List<double>.filled(n, 0);
+
+    if (hasNext && renderT > s0.t) {
+      final s1 = _snapBuf[1];
+      final span = (s1.t - s0.t).clamp(1.0, 1000.0);
+      final f = ((renderT - s0.t) / span).clamp(0.0, 1.0);
+      final stepsInSpan = span / _physicsStepMs;
+      for (var i = 0; i < n; i++) {
+        tx[i] = s0.xs[i] + (s1.xs[i] - s0.xs[i]) * f;
+        ty[i] = s0.ys[i] + (s1.ys[i] - s0.ys[i]) * f;
+        // Hız: kareler arası gerçek yer değiştirmeden türetilir — render
+        // ara-karesi (discRenderAlpha) ve hareket algısı için tutarlı.
+        tvx[i] = (s1.xs[i] - s0.xs[i]) / stepsInSpan;
+        tvy[i] = (s1.ys[i] - s0.ys[i]) / stepsInSpan;
       }
-      return;
+    } else {
+      // Arabellek açlığı veya henüz oynatma zamanı gelmedi:
+      // son kareyi baz al, gecikme kadar kendi hızıyla ileri taşı (kısa,
+      // sınırlı extrapolasyon — 150 ms üstü tahmin edilmez, sabit kalır).
+      final ahead = hasNext ? 0.0 : (renderT - s0.t).clamp(0.0, 150.0);
+      final steps = ahead / _physicsStepMs;
+      for (var i = 0; i < n; i++) {
+        tx[i] = s0.xs[i] + s0.vxs[i] * steps;
+        ty[i] = s0.ys[i] + s0.vys[i] * steps;
+        tvx[i] = s0.vxs[i];
+        tvy[i] = s0.vys[i];
+      }
     }
 
-    if (_snapBuf.length == 1) {
-      // Arabellek açlığı (paket gecikti): son kare + hafif tahmin.
-      if (_starvedBaseRx != s0.rxMs) {
-        _applySnap(s0, localIdx);
-        _starvedBaseRx = s0.rxMs;
-      }
-      for (var i = 0; i < discs.length; i++) {
-        if (i == localIdx) continue;
-        _integrateOne(discs[i]);
-      }
-      return;
-    }
-
-    _starvedBaseRx = -1;
-    final s1 = _snapBuf[1];
-    final span = (s1.rxMs - s0.rxMs).clamp(1.0, 1000.0);
-    final t = ((renderMs - s0.rxMs) / span).clamp(0.0, 1.0);
-    final stepsInSpan = span / _physicsStepMs;
-    final n = math.min(
-        discs.length, math.min(s0.xs.length, s1.xs.length));
+    // Hedefe yumuşak sür — hiçbir yerde ham pozisyon doğrudan atanmaz;
+    // yalnızca teleport eşiği aşılırsa (_steerTo içinde) ışınlanır.
     for (var i = 0; i < n; i++) {
       if (i == localIdx) continue;
       final d = discs[i];
-      d.vx = s0.xs[i] + (s1.xs[i] - s0.xs[i]) * t;
-      d.vy = s0.ys[i] + (s1.ys[i] - s0.ys[i]) * t;
-      // Hareket algısı ve render ara-karesi için adım başına hız.
-      d.vvx = (s1.xs[i] - s0.xs[i]) / stepsInSpan;
-      d.vvy = (s1.ys[i] - s0.ys[i]) / stepsInSpan;
+      if (i == blendIdx && handoff > 0) {
+        // Devretme: yerel tahminden ağ hedefine yumuşak geçiş.
+        final gx = d.vx * handoff + tx[i] * (1 - handoff);
+        final gy = d.vy * handoff + ty[i] * (1 - handoff);
+        _steerTo(d, i, gx, gy, tvx[i], tvy[i], _physicsStepMs);
+      } else {
+        _steerTo(d, i, tx[i], ty[i], tvx[i], tvy[i], _physicsStepMs);
+      }
     }
   }
 
@@ -600,9 +739,8 @@ class GameController extends ChangeNotifier {
     _lastSentStateSig = 0;
     _lastStateSentMs = 0;
     _localShotDisc = null;
-    _localShotUntilMs = 0;
-    _snapBuf.clear();
-    _starvedBaseRx = -1;
+    _localShotPredictUntil = 0;
+    _resetNetSync();
     aiBot.reset();
     discs = trainingMode
         ? PhysicsEngine.initTrainingDiscs(trainingLayout)
@@ -949,6 +1087,9 @@ class GameController extends ChangeNotifier {
         reconnecting = false;
         opponentDisconnected = false;
         _graceTimer?.cancel();
+        // Kopma boyunca biriken bayat kareler ve eski saat ofseti atılır;
+        // host yeni bir seq/t serisiyle devam edecek.
+        _resetNetSync();
         _setSeat((msg['seat'] as num).toInt());
         roomCode = msg['room'] as String;
         if (msg['ranked'] == true) isRanked = true;
@@ -981,7 +1122,11 @@ class GameController extends ChangeNotifier {
         var boardChanged = false;
         var uiChanged = false;
         if (msg['discs'] is List && phase == GamePhase.playing) {
-          boardChanged = _bufferSnapshot(msg['discs'] as List);
+          boardChanged = _bufferSnapshot(
+            msg['discs'] as List,
+            seq: (msg['seq'] as num?)?.toInt(),
+            hostT: msg['t'] as num?,
+          );
         }
         if (msg['roundWins'] is List) {
           final rw = msg['roundWins'] as List;
@@ -1186,13 +1331,20 @@ class GameController extends ChangeNotifier {
             ])
         .toList();
 
+    // seq: bayat/tekrar kare koruması. t: HOST'un monotonik saati — client
+    // interpolation'ı varış zamanına değil buna göre yapar (jitter bağışıklığı).
+    final seq = ++_stateSeq;
+    final t = _nowNet.round();
+
     if (phase == GamePhase.playing && !force) {
-      ws.send({'type': 'state', 'discs': discPayload});
+      ws.send({'type': 'state', 'seq': seq, 't': t, 'discs': discPayload});
       return;
     }
 
     ws.send({
       'type': 'state',
+      'seq': seq,
+      't': t,
       'discs': discPayload,
       'roundWins': roundWins.toList(),
       'currentRound': currentRound,
@@ -1206,6 +1358,8 @@ class GameController extends ChangeNotifier {
     if (aiMode || !isOnlineHost) return;
     ws.send({
       'type': 'state',
+      'seq': ++_stateSeq,
+      't': _nowNet.round(),
       'discs': discs
           .map((d) => [
                 (d.vx * 10).round() / 10,
@@ -1437,7 +1591,7 @@ class GameController extends ChangeNotifier {
         discs[dragState.discIndex].vvx = vvx;
         discs[dragState.discIndex].vvy = vvy;
         _localShotDisc = dragState.discIndex;
-        _localShotUntilMs = DateTime.now().millisecondsSinceEpoch + 280;
+        _localShotPredictUntil = _nowNet + 280;
         ws.send({
           'type': 'shot',
           'disc': dragState.discIndex,
@@ -1603,14 +1757,16 @@ class GameController extends ChangeNotifier {
 /// Host'tan gelen bir pul-durumu karesi (istemci interpolasyon arabelleği).
 class _Snap {
   _Snap({
-    required this.rxMs,
+    required this.t,
     required this.xs,
     required this.ys,
     required this.vxs,
     required this.vys,
   });
 
-  final double rxMs; // istemciye varış zamanı (duvar saati, ms)
+  /// HOST'un monotonik saatindeki gönderim anı (ms). Interpolation ekseni
+  /// budur — varış zamanı DEĞİL; jitter bağışıklığının temeli.
+  final double t;
   final List<double> xs;
   final List<double> ys;
   final List<double> vxs;
