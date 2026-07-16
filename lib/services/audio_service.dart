@@ -1,13 +1,15 @@
 import 'package:audioplayers/audioplayers.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 
 import 'settings_service.dart';
 
 enum MusicTrack { menu, game, none }
 
-class AudioService extends ChangeNotifier {
+class AudioService extends ChangeNotifier with WidgetsBindingObserver {
   AudioService(this.settings) {
     settings.addListener(_onSettingsUpdate);
+    // Uygulama arka plana geçince müzik sussun, geri gelince devam etsin.
+    WidgetsBinding.instance.addObserver(this);
   }
 
   final SettingsService settings;
@@ -15,6 +17,36 @@ class AudioService extends ChangeNotifier {
   final AudioPlayer _music = AudioPlayer();
 
   MusicTrack _currentTrack = MusicTrack.none;
+  bool _pausedByLifecycle = false;
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    switch (state) {
+      case AppLifecycleState.resumed:
+        _resumeAfterBackground();
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.paused:
+      case AppLifecycleState.hidden:
+      case AppLifecycleState.detached:
+        _pauseForBackground();
+    }
+  }
+
+  /// Arka plana/masaüstüne dönünce çalan müziği duraklat (durdurma değil —
+  /// kaldığı yeri korur ki geri dönünce aynı yerden devam etsin).
+  void _pauseForBackground() {
+    if (_currentTrack == MusicTrack.none || _pausedByLifecycle) return;
+    _pausedByLifecycle = true;
+    _music.pause().catchError((_) {});
+  }
+
+  void _resumeAfterBackground() {
+    if (!_pausedByLifecycle) return;
+    _pausedByLifecycle = false;
+    // Kullanıcı arka plandayken müziği kapattıysa devam ettirme.
+    if (!settings.musicOn || _currentTrack == MusicTrack.none) return;
+    _music.resume().catchError((_) {});
+  }
 
   Future<void> playShot() => _playSfx('sounds/shot.wav');
   Future<void> playHit() => _playSfx('sounds/hit.wav');
@@ -27,7 +59,14 @@ class AudioService extends ChangeNotifier {
 
   Future<void> _playMusic(MusicTrack track, String asset) async {
     if (!settings.musicOn) return;
-    if (_currentTrack == track) return;
+    // Arka plandayken duraklatılmış aynı parça yeniden istenirse (ör.
+    // menüye dönüş) durdurma sayacını temizle, akış aşağıda ele alınır.
+    _pausedByLifecycle = false;
+    if (_currentTrack == track) {
+      // Aynı parça: arka planda duraklatılmışsa sadece devam ettir.
+      _music.resume().catchError((_) {});
+      return;
+    }
     try {
       await _music.stop();
       await _music.setReleaseMode(ReleaseMode.loop);
@@ -65,6 +104,7 @@ class AudioService extends ChangeNotifier {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     settings.removeListener(_onSettingsUpdate);
     _sfx.dispose();
     _music.dispose();
