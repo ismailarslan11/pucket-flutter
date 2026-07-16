@@ -43,8 +43,6 @@ class MenuScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      StaggerIn(index: 1, child: YesaRibbon(text: l10n.onlineMultiplayer, icon: Icons.wifi_tethering_rounded)),
-                      const SizedBox(height: 14),
                       StaggerIn(index: 2, child: const DailyQuestsPanel()),
                       const SizedBox(height: 16),
                       YesaSectionLabel('Oyna'),
