@@ -139,11 +139,12 @@ class MenuScreen extends StatelessWidget {
                           ],
                         ),
                       ),
-                      const SizedBox(height: 18),
+                      const SizedBox(height: 34),
                       YesaSectionLabel(l10n.more),
+                      const SizedBox(height: 4),
                       YesaMenuGrid(
                         columns: 4,
-                        spacing: 10,
+                        spacing: 12,
                         children: [
                           YesaMenuTile(
                             label: l10n.menuLeaderboard,
