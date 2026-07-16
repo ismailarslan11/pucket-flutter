@@ -359,8 +359,6 @@ class GameController extends ChangeNotifier {
   static const _interpMaxMs = 120.0;
   /// Pozisyon farkı bunu aşarsa yumuşak düzeltme yerine ışınla (kopmuş demektir).
   static const _teleportThreshold = GameConstants.discRadius * 3;
-  /// Yumuşak düzeltmenin saniyede kapattığı hata oranı (frame-bağımsız).
-  static const _correctionPerSec = 12.0;
 
   final List<_Snap> _snapBuf = [];
   double _interpDelayMs = 100;
@@ -410,7 +408,16 @@ class GameController extends ChangeNotifier {
     for (final e in _offsetWin) {
       if (e.sample > maxSample) maxSample = e.sample;
     }
-    _clockOffset = maxSample;
+    // Ofset YUMUŞAK takip edilir. Yumuşatmanın doğru yeri burası: ham
+    // kestirim sıçrarsa _renderHostTime zıplar ve TÜM pullar aynı anda
+    // kayar. Ofseti süzmek, pozisyona gecikme eklemeden süreksizliği önler.
+    if (_clockOffset == null) {
+      _clockOffset = maxSample;
+    } else {
+      final diff = maxSample - _clockOffset!;
+      // Büyük fark = gerçek kopma/yeniden senkron → tek seferde otur.
+      _clockOffset = diff.abs() > 250 ? maxSample : _clockOffset! + diff * 0.05;
+    }
 
     // 4) Jitter ölçümü: varış aralığı ile gönderim aralığı farkı (EWMA).
     if (_lastRxNet != null && _lastSnapT != null) {
@@ -475,25 +482,30 @@ class GameController extends ChangeNotifier {
 
   /// Hedefe doğru yumuşak düzeltme; sadece gerçekten kopmuşsa ışınlar.
   /// Frame-bağımsız: kapanma oranı geçen süreye (dtMs) göre hesaplanır.
-  void _steerTo(Disc d, int i, double tx, double ty, double tvx, double tvy,
-      double dtMs) {
+  /// Rakip pulu, interpolasyonun ürettiği hedefe oturtur.
+  ///
+  /// ÖNEMLİ: Hedef ham paket değil, `lerp(s0, s1, f)` ile hesaplanmış
+  /// SÜREKLİ bir zaman fonksiyonudur (f monotonik saatle düzgün ilerler),
+  /// yani zaten pürüzsüzdür. Üstüne yumuşatma koymak akıcılık katmaz,
+  /// yalnızca kalıcı gecikme yaratır: Δ×(1−k)/k ≈ 4.5Δ ≈ bir pul yarıçapı.
+  /// Bu yüzden hedef doğrudan uygulanır — profesyonel oyunlarda uzak
+  /// varlıklar (Source/Overwatch/Rocket League) böyle çizilir.
+  ///
+  /// `_teleportThreshold` yalnızca bir emniyet: normal akışta hata ~0'dır,
+  /// ama uzun donma/yeniden bağlanma sonrası render ara-kare tamponunun
+  /// dev bir sıçramayı yumuşatmaya çalışmasını engeller.
+  void _applyNetTarget(Disc d, int i, double tx, double ty, double tvx, double tvy) {
     final dx = tx - d.vx;
     final dy = ty - d.vy;
-    final distSq = dx * dx + dy * dy;
+    final jumped = dx * dx + dy * dy > _teleportThreshold * _teleportThreshold;
 
-    if (distSq > _teleportThreshold * _teleportThreshold) {
-      // Gerçek kopma (uzun donma / yeniden bağlanma): tek seferde eşitle.
-      d.vx = tx;
-      d.vy = ty;
-      if (i < _prevVx.length) {
-        _prevVx[i] = tx;
-        _prevVy[i] = ty;
-      }
-    } else {
-      // Üstel yakınsama: k = 1 - e^(-rate*dt) → kare hızından bağımsız.
-      final k = 1 - math.exp(-_correctionPerSec * dtMs / 1000.0);
-      d.vx += dx * k;
-      d.vy += dy * k;
+    d.vx = tx;
+    d.vy = ty;
+    if (jumped && i < _prevVx.length) {
+      // Işınlanma: önceki kare tamponunu da taşı ki painter araya
+      // sahte bir "uçuş" çizmesin.
+      _prevVx[i] = tx;
+      _prevVy[i] = ty;
     }
     d.vvx = tvx;
     d.vvy = tvy;
@@ -589,9 +601,9 @@ class GameController extends ChangeNotifier {
         // Devretme: yerel tahminden ağ hedefine yumuşak geçiş.
         final gx = d.vx * handoff + tx[i] * (1 - handoff);
         final gy = d.vy * handoff + ty[i] * (1 - handoff);
-        _steerTo(d, i, gx, gy, tvx[i], tvy[i], _physicsStepMs);
+        _applyNetTarget(d, i, gx, gy, tvx[i], tvy[i]);
       } else {
-        _steerTo(d, i, tx[i], ty[i], tvx[i], tvy[i], _physicsStepMs);
+        _applyNetTarget(d, i, tx[i], ty[i], tvx[i], tvy[i]);
       }
     }
   }
