@@ -8,6 +8,7 @@ import '../game/ai_bot.dart';
 import '../game/game_controller.dart';
 import '../l10n/l10n_extension.dart';
 import '../services/auth_service.dart';
+import '../services/bot_names.dart';
 import '../services/settings_service.dart';
 import '../services/share_service.dart';
 import '../services/websocket_service.dart';
@@ -19,14 +20,16 @@ import 'app_router.dart';
 class LobbyScreen extends StatefulWidget {
   const LobbyScreen({
     super.key,
-    this.quickMatch = false,
     this.createRoom = false,
     this.joinCode,
+    this.timedSeconds,
   });
 
-  final bool quickMatch;
   final bool createRoom;
   final String? joinCode;
+
+  /// Doluysa: süreli mod. Sahte arama sonrası bu süreyle maç başlar.
+  final int? timedSeconds;
 
   @override
   State<LobbyScreen> createState() => _LobbyScreenState();
@@ -45,7 +48,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
   List<String> _matchMsgs = [];
   bool _errorShown = false;
 
-  bool get _showRoomCode => !widget.quickMatch && _roomCode != '——';
+  bool get _showRoomCode => widget.timedSeconds == null && _roomCode != '——';
 
   @override
   void initState() {
@@ -72,16 +75,60 @@ class _LobbyScreenState extends State<LobbyScreen> {
   Future<void> _doInit() async {
     final l10n = context.l10nRead;
 
-    // İlk maç (hızlı eşleş) garantili kolay gizli bot — kazanılabilir ilk deneyim.
-    if (widget.quickMatch) {
+    // Süreli mod: gerçek çevrimiçi eşleşme yok. Kısa bir "rakip aranıyor"
+    // hissinden sonra gizli bota düşülür (kullanıcı gerçek oyuncu sanır).
+    if (widget.timedSeconds != null) {
+      _watchdog?.cancel();
+      // Bot rakibe gerçek kullanıcı adı ver: arama süresi boyunca havuzu tazele.
+      unawaited(BotNames.refresh(excludeName: context.read<AuthService>().getName()));
       final settings = context.read<SettingsService>();
-      if (!settings.firstMatchPlayed) {
-        _watchdog?.cancel();
-        await settings.markFirstMatchPlayed();
-        if (!mounted) return;
-        AppRouter.startBotFallback(context, level: AiLevel.easy);
+      // İlk maç garantili kolay gizli bot — kazanılabilir ilk deneyim.
+      final firstMatch = !settings.firstMatchPlayed;
+      if (firstMatch) await settings.markFirstMatchPlayed();
+      if (!mounted) return;
+
+      _matchMsgs = [l10n.lobbyMatchMsg1, l10n.lobbyMatchMsg2, l10n.lobbyMatchMsg3];
+      setState(() {
+        _title = l10n.lobbyMatching;
+        _message = l10n.lobbyQuickSearching;
+        _roomCode = '——';
+        _showShare = false;
+        _spinning = true;
+      });
+
+      if (firstMatch) {
+        // İlk deneyimi hemen başlat (garantili kolay rakip).
+        Future.delayed(const Duration(milliseconds: 1200), () {
+          if (mounted) _launchHiddenBot(AiLevel.easy);
+        });
         return;
       }
+
+      // Zorluk: genelde zorlu, her 5-6 maçta bir kolay (oyuncu kopmasın).
+      final pick = pickHiddenBotLevel(settings.botMatchesSinceEasy);
+      unawaited(settings.setBotMatchesSinceEasy(pick.nextCounter));
+
+      var idx = 0;
+      _msgTimer = Timer.periodic(const Duration(milliseconds: 900), (_) {
+        if (!mounted) return;
+        setState(() {
+          idx = (idx + 1) % _matchMsgs.length;
+          _message = _matchMsgs[idx];
+        });
+      });
+      _botFallback = Timer(const Duration(seconds: 3), () {
+        if (!mounted) return;
+        _msgTimer?.cancel();
+        // Gizli bot: "rakip bulundu" göster, "AI" ibaresi yok.
+        setState(() {
+          _message = l10n.lobbyOpponentFound;
+          _spinning = false;
+        });
+        Future.delayed(const Duration(milliseconds: 900), () {
+          if (mounted) _launchHiddenBot(pick.level);
+        });
+      });
+      return;
     }
 
     _matchMsgs = [l10n.lobbyMatchMsg1, l10n.lobbyMatchMsg2, l10n.lobbyMatchMsg3];
@@ -120,47 +167,11 @@ class _LobbyScreenState extends State<LobbyScreen> {
     _watchdog?.cancel();
     if (!mounted) return;
     if (!ok) {
-      if (widget.quickMatch && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.queueNoServer)),
-        );
-        AppRouter.startBotFallback(context);
-        return;
-      }
       _showConnectionError();
       return;
     }
 
-    if (widget.quickMatch) {
-      setState(() {
-        _title = l10n.lobbyMatching;
-        _message = l10n.lobbyQuickSearching;
-        _roomCode = '——';
-        _showShare = false;
-        _spinning = true;
-      });
-      game.joinRoom('');
-      var idx = 0;
-      _msgTimer = Timer.periodic(const Duration(milliseconds: 2200), (_) {
-        if (!mounted) return;
-        setState(() {
-          idx = (idx + 1) % _matchMsgs.length;
-          _message = _matchMsgs[idx];
-        });
-      });
-      _botFallback = Timer(const Duration(seconds: 20), () {
-        if (mounted && game.phase == GamePhase.idle) {
-          // Gizli bot: "rakip bulundu" göster, "AI" ibaresi yok.
-          setState(() {
-            _message = l10n.lobbyOpponentFound;
-            _spinning = false;
-          });
-          Future.delayed(const Duration(milliseconds: 1200), () {
-            if (mounted) AppRouter.startBotFallback(context);
-          });
-        }
-      });
-    } else if (widget.createRoom) {
+    if (widget.createRoom) {
       final code = makeRoomCode();
       setState(() {
         _title = l10n.lobbyRoomCreated;
@@ -182,23 +193,21 @@ class _LobbyScreenState extends State<LobbyScreen> {
     }
   }
 
+  /// Süreli modsa süreli maç, değilse normal gizli bot maçı başlatır.
+  void _launchHiddenBot(AiLevel level) {
+    final secs = widget.timedSeconds;
+    if (secs != null) {
+      AppRouter.startTimed(context, secs, level: level);
+    } else {
+      AppRouter.startBotFallback(context, level: level);
+    }
+  }
+
   void _onGameUpdate() {
     final game = _game;
     if (game == null || !mounted) return;
     if (game.roomCode.isEmpty) return;
     final l10n = context.l10nRead;
-
-    if (widget.quickMatch) {
-      if (!game.lobbyWaiting) {
-        _botFallback?.cancel();
-        _msgTimer?.cancel();
-        setState(() {
-          _message = l10n.lobbyOpponentFound;
-          _spinning = false;
-        });
-      }
-      return;
-    }
 
     _botFallback?.cancel();
     _msgTimer?.cancel();

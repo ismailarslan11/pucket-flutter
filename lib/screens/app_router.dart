@@ -88,17 +88,17 @@ class AppRouter {
 
   static void goLobby(
     BuildContext context, {
-    bool quickMatch = false,
     bool createRoom = false,
     String? joinCode,
+    int? timedSeconds,
   }) {
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => LobbyScreen(
-          quickMatch: quickMatch,
           createRoom: createRoom,
           joinCode: joinCode,
+          timedSeconds: timedSeconds,
         ),
       ),
     );
@@ -129,6 +129,18 @@ class AppRouter {
     final game = context.read<GameController>();
     game.leave();
     game.startAiGame(level, botFallback: true, ranked: ranked);
+    goGame(context);
+  }
+
+  /// Süreli mod: gizli bota karşı, seçilen süreyle.
+  static void startTimed(
+    BuildContext context,
+    int durationSec, {
+    AiLevel level = AiLevel.hard,
+  }) {
+    final game = context.read<GameController>();
+    game.leave();
+    game.startTimedGame(durationSec, level: level);
     goGame(context);
   }
 

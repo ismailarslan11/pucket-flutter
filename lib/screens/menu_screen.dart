@@ -16,7 +16,6 @@ import '../widgets/yesa_background.dart';
 import '../widgets/yesa_effects.dart';
 import '../widgets/yesa_menu_tile.dart';
 import 'app_router.dart';
-import 'rank_screen.dart';
 
 class MenuScreen extends StatelessWidget {
   const MenuScreen({super.key});
@@ -45,55 +44,34 @@ class MenuScreen extends StatelessWidget {
                     children: [
                       StaggerIn(index: 2, child: const DailyQuestsPanel()),
                       const SizedBox(height: 16),
-                      YesaSectionLabel('Oyna'),
-                      // Amiral gemisi: tam genişlik RANKED afişi.
+                      // Ana oyun modu: süreli mod — tam genişlik, "OYNA" etiketli.
+                      // Bölüm başlığı yok: tek mod kaldığı için kartla aynı
+                      // kelimeyi iki kez tekrar ediyordu.
                       StaggerIn(
                         index: 3,
-                        child: PulseScale(
-                          max: 1.015,
-                          durationMs: 1600,
-                          child: _HeroPlayCard(
-                            title: l10n.menuRanked,
-                            subtitle: l10n.menuRankedSub,
-                            onPressed: () => _goRanked(context, auth),
-                          ),
+                        child: _MediumPlayCard(
+                          label: l10n.menuTimed,
+                          icon: Icons.timer_rounded,
+                          color: AppColors.camgobegi,
+                          onPressed: () => _pickTimedDuration(context),
                         ),
                       ),
                       const SizedBox(height: 10),
-                      // İki orta kart: hızlı eşleşme + kariyer.
-                      Row(
-                        children: [
-                          Expanded(
-                            child: StaggerIn(
-                              index: 4,
-                              child: _MediumPlayCard(
-                                label: l10n.menuQuick,
-                                icon: Icons.bolt_rounded,
-                                color: AppColors.acikMor,
-                                onPressed: () =>
-                                    AppRouter.goLobby(context, quickMatch: true),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: StaggerIn(
-                              index: 5,
-                              child: _MediumPlayCard(
-                                label: l10n.menuCareer,
-                                icon: Icons.military_tech_rounded,
-                                color: AppColors.pembe,
-                                badge: '${career.careerPoints}p',
-                                onPressed: () => AppRouter.goCareer(context),
-                              ),
-                            ),
-                          ),
-                        ],
+                      // Kariyer — tam genişlik.
+                      StaggerIn(
+                        index: 4,
+                        child: _MediumPlayCard(
+                          label: l10n.menuCareer,
+                          icon: Icons.military_tech_rounded,
+                          color: AppColors.pembe,
+                          badge: '${career.careerPoints}p',
+                          onPressed: () => AppRouter.goCareer(context),
+                        ),
                       ),
                       const SizedBox(height: 10),
                       // Beş mini kutu: oda / katıl / antrenman / bot / 2 kişilik.
                       StaggerIn(
-                        index: 6,
+                        index: 5,
                         child: Row(
                           children: [
                             Expanded(
@@ -147,15 +125,6 @@ class MenuScreen extends StatelessWidget {
                         spacing: 12,
                         children: [
                           YesaMenuTile(
-                            label: l10n.menuLeaderboard,
-                            icon: Icons.leaderboard_rounded,
-                            staggerIndex: 11,
-                            onPressed: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (_) => const RankScreen()),
-                            ),
-                          ),
-                          YesaMenuTile(
                             label: l10n.battlePass,
                             icon: Icons.military_tech_rounded,
                             accent: true,
@@ -163,22 +132,10 @@ class MenuScreen extends StatelessWidget {
                             onPressed: () => AppRouter.goBattlePass(context),
                           ),
                           YesaMenuTile(
-                            label: l10n.friends,
-                            icon: Icons.group_rounded,
-                            staggerIndex: 14,
-                            onPressed: () => AppRouter.goFriends(context),
-                          ),
-                          YesaMenuTile(
                             label: l10n.menuTutorial,
                             icon: Icons.school_rounded,
                             staggerIndex: 15,
                             onPressed: () => AppRouter.goTutorial(context),
-                          ),
-                          YesaMenuTile(
-                            label: l10n.menuProfile,
-                            icon: Icons.person_rounded,
-                            staggerIndex: 14,
-                            onPressed: () => AppRouter.goProfile(context),
                           ),
                           YesaMenuTile(
                             label: l10n.menuCosmetics,
@@ -213,12 +170,69 @@ class MenuScreen extends StatelessWidget {
     );
   }
 
-  void _goRanked(BuildContext context, AuthService auth) {
-    if (!auth.canPlayRanked) {
-      showRankedLoginDialog(context);
-      return;
-    }
-    AppRouter.goQueue(context);
+  void _pickTimedDuration(BuildContext context) {
+    final l10n = context.l10nRead;
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.card,
+        title: Text(
+          l10n.timedPickTitle,
+          style: const TextStyle(color: AppColors.beyaz, fontWeight: FontWeight.w900),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              l10n.timedPickHint,
+              style: const TextStyle(color: AppColors.textMuted, fontSize: 13, height: 1.5),
+            ),
+            const SizedBox(height: 18),
+            Row(
+              children: [1, 3, 5].map((m) {
+                return Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.only(right: m == 5 ? 0 : 8),
+                    child: ScalePress(
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        AppRouter.goLobby(context, timedSeconds: m * 60);
+                      },
+                      child: Container(
+                        height: 64,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          gradient: AppGradients.neonPurple,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: AppColors.beyaz.withValues(alpha: 0.3)),
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              '$m',
+                              style: const TextStyle(
+                                color: AppColors.beyaz,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 22,
+                              ),
+                            ),
+                            Text(
+                              l10n.minutesShort,
+                              style: const TextStyle(color: AppColors.pusluBeyaz, fontSize: 10),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
@@ -318,10 +332,7 @@ class _ProfileCard extends StatelessWidget {
                       icon: Icons.emoji_events_outlined,
                       value: '${user.elo}',
                       gradient: AppGradients.neonPurple,
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const RankScreen()),
-                      ),
+                      onTap: null,
                     ),
                   ],
                 ),
@@ -333,136 +344,6 @@ class _ProfileCard extends StatelessWidget {
     );
   }
 }
-
-/// Tam genişlik RANKED afişi — turuncu gradyan, süzülen kupa, ok ucu.
-class _HeroPlayCard extends StatelessWidget {
-  const _HeroPlayCard({
-    required this.title,
-    required this.subtitle,
-    required this.onPressed,
-  });
-
-  final String title;
-  final String subtitle;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return GlowPulse(
-      color: AppColors.sariAna,
-      min: 0.25,
-      max: 0.55,
-      child: ScalePress(
-        onTap: onPressed,
-        child: Container(
-          height: 78,
-          clipBehavior: Clip.antiAlias,
-          decoration: BoxDecoration(
-            gradient: AppGradients.heroPlay,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppColors.beyaz.withValues(alpha: 0.55), width: 2),
-          ),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              // Cam parlaması.
-              Positioned(
-                top: -26,
-                left: -20,
-                right: -20,
-                height: 52,
-                child: IgnorePointer(
-                  child: Transform.rotate(
-                    angle: -0.10,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            AppColors.beyaz.withValues(alpha: 0.30),
-                            AppColors.beyaz.withValues(alpha: 0.0),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              // Sağda kocaman soluk kupa — derinlik.
-              Positioned(
-                right: -6,
-                top: -10,
-                child: Icon(
-                  Icons.emoji_events_rounded,
-                  size: 96,
-                  color: AppColors.morDahaKoyu.withValues(alpha: 0.15),
-                ),
-              ),
-              const ShineOverlay(),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                child: Row(
-                  children: [
-                    FloatY(
-                      amplitude: 3,
-                      child: Container(
-                        width: 46,
-                        height: 46,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: AppColors.beyaz.withValues(alpha: 0.35),
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: AppColors.beyaz.withValues(alpha: 0.4)),
-                        ),
-                        child: const Icon(Icons.emoji_events_rounded,
-                            size: 26, color: AppColors.morDahaKoyu),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            title.toUpperCase(),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: AppColors.morDahaKoyu,
-                              fontWeight: FontWeight.w900,
-                              fontSize: 17,
-                              letterSpacing: 1.2,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            subtitle,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: AppColors.morDahaKoyu.withValues(alpha: 0.75),
-                              fontWeight: FontWeight.w700,
-                              fontSize: 11,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Icon(Icons.arrow_forward_ios_rounded,
-                        size: 18, color: AppColors.morDahaKoyu),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 /// Orta boy yatay oyun kartı — renkli ikon rozeti + etiket.
 class _MediumPlayCard extends StatelessWidget {
   const _MediumPlayCard({
@@ -664,13 +545,13 @@ class _StatPill extends StatelessWidget {
 
   final IconData icon;
   final String value;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
   final Gradient gradient;
 
   @override
   Widget build(BuildContext context) {
     return ScalePress(
-      onTap: onTap,
+      onTap: onTap ?? () {},
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
