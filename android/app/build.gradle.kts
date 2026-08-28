@@ -27,6 +27,16 @@ android {
     }
 
     signingConfigs {
+        // Projeye özel debug anahtarı. Makinenin ortak ~/.android/debug.keystore
+        // parmak izi başka bir Google Cloud projesinde kayıtlı olduğu için bu
+        // paket adıyla yeni bir OAuth istemcisi oluşturulamıyordu; bu anahtar
+        // temiz bir SHA-1 verir ve Google girişini çalışır hale getirir.
+        getByName("debug") {
+            storeFile = file("../pucket-debug.jks")
+            storePassword = "android"
+            keyAlias = "pucketdebug"
+            keyPassword = "android"
+        }
         if (keystorePropertiesFile.exists()) {
             create("release") {
                 keyAlias = keystoreProperties["keyAlias"] as String
