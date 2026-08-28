@@ -78,6 +78,7 @@ class MenuScreen extends StatelessWidget {
                               child: _MiniPlayTile(
                                 label: l10n.menuCreateRoom,
                                 icon: Icons.add_box_rounded,
+                                comingSoon: true,
                                 onPressed: () =>
                                     AppRouter.goLobby(context, createRoom: true),
                               ),
@@ -87,6 +88,7 @@ class MenuScreen extends StatelessWidget {
                               child: _MiniPlayTile(
                                 label: l10n.menuJoinRoom,
                                 icon: Icons.login_rounded,
+                                comingSoon: true,
                                 onPressed: () => AppRouter.goJoin(context),
                               ),
                             ),
@@ -432,43 +434,84 @@ class _MiniPlayTile extends StatelessWidget {
     required this.label,
     required this.icon,
     required this.onPressed,
+    this.comingSoon = false,
   });
 
   final String label;
   final IconData icon;
   final VoidCallback onPressed;
+  final bool comingSoon;
 
   @override
   Widget build(BuildContext context) {
+    final double dim = comingSoon ? 0.42 : 1.0;
     return ScalePress(
-      onTap: onPressed,
-      child: Container(
-        height: 64,
-        padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 6),
-        decoration: BoxDecoration(
-          color: AppColors.morDahaKoyu.withValues(alpha: 0.55),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.lavanta.withValues(alpha: 0.28)),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 20, color: AppColors.sariAna),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: AppColors.pusluBeyaz,
-                fontWeight: FontWeight.w700,
-                fontSize: 7.5,
-                height: 1.1,
+      onTap: comingSoon
+          ? () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('$label · ${context.l10nRead.comingSoon}'),
+                  duration: const Duration(milliseconds: 1400),
+                ),
+              );
+            }
+          : onPressed,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Opacity(
+            opacity: dim,
+            child: Container(
+              height: 64,
+              padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppColors.morDahaKoyu.withValues(alpha: 0.55),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppColors.lavanta.withValues(alpha: 0.28)),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(icon, size: 20, color: AppColors.sariAna),
+                  const SizedBox(height: 4),
+                  Text(
+                    label,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: AppColors.pusluBeyaz,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 7.5,
+                      height: 1.1,
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+          if (comingSoon)
+            Positioned(
+              top: -4,
+              right: -2,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                decoration: BoxDecoration(
+                  color: AppColors.sariAna,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  context.l10nRead.comingSoon,
+                  style: const TextStyle(
+                    color: AppColors.morDahaKoyu,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 6.5,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
