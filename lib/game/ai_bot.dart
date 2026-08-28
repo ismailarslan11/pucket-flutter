@@ -35,7 +35,16 @@ const double _aimMissScale = 100;
 /// tanjant cinsinden). Duvar bandı 2 * wallHalfH kalınlığında; pul bandı
 /// geçerken yana `bant * tan` kadar kayar, bu kayma geçit penceresini aşarsa
 /// pul köşeye çarpar. Emniyet payıyla 1.15 alındı.
-const double _maxDirectTan = 1.15;
+const double _maxDirectTan = 1.55;
+
+/// Kurulum atışında pulun geçidin ne kadar üstüne park ettirileceği. Çok
+/// yakın olursa bir sonraki atış için açı kalmaz, çok uzak olursa fazladan
+/// atış gerekir.
+const double _setupStandoff = 150;
+
+/// Dar açılı (zor) bir atışın getirdiği ek düşünme süresi, ms.
+const double _deliberationMs = 620;
+
 
 const aiConfigs = {
   AiLevel.easy: AiConfig(
@@ -57,8 +66,8 @@ const aiConfigs = {
   AiLevel.hard: AiConfig(
     // Hızlı ve agresif ama makineli tüfek değil: seri atış frenlemesi ve
     // ara sıra gelen "acemi" atış insan ritmini korur.
-    intervalMin: 360,
-    intervalMax: 720,
+    intervalMin: 240,
+    intervalMax: 500,
     accuracy: 0.975,
     powerMin: 0.94,
     powerMax: 1.0,
@@ -70,6 +79,10 @@ class AiBot {
   final math.Random _rng = math.Random();
   double _nextShot = 0;
   int _burst = 0;
+
+  /// Son atışın ne kadar hassas olduğu (1 = bol toleranslı, 0.3 = iğne deliği).
+  /// Zor atışta insan daha uzun nişan alır; bekleme süresi buna göre uzar.
+  double _lastShotFocus = 1.0;
 
   /// Round başında insan gibi biraz "hazırlanır" — geri sayım biter bitmez
   /// atmaz (anında atış botu ele veriyor).
@@ -84,12 +97,15 @@ class AiBot {
     var wait = cfg.intervalMin +
         (cfg.intervalMax - cfg.intervalMin) * _rng.nextDouble();
 
-    // Seri atış frenlemesi: art arda 2 hızlı atıştan sonra insan gibi bir
+    // Seri atış frenlemesi: art arda birkaç hızlı atıştan sonra insan gibi bir
     // "nefes alma" molası ver — üst üste 3 pulu saniyede sokması engellensin.
+    // Mola artık daha seyrek ve daha kısa: asıl ritim değişkenliğini think()
+    // içindeki nişan alma duraklaması sağlıyor, bu yüzden buradaki sabit fren
+    // gereksiz yere yavaşlatıyordu.
     _burst++;
-    if (_burst >= 2) {
+    if (_burst >= 3) {
       _burst = 0;
-      wait += 550 + _rng.nextDouble() * 650;
+      wait += 380 + _rng.nextDouble() * 520;
     } else if (_rng.nextDouble() < 0.15) {
       // Ara sıra kısa duraksama — makine ritmini kırar.
       wait += 250 + _rng.nextDouble() * 450;
@@ -194,13 +210,36 @@ class AiBot {
     }
 
     var missX = (1 - cfg.accuracy) * _aimMissScale;
+
+    // Odaklanma. Pul geçide ne kadar yatık açıyla yaklaşırsa, duvar bandını
+    // geçerken yana o kadar kayar (bant/2 * tan) ve hata payı daralır. İyi bir
+    // oyuncu böyle bir atışta daha uzun nişan alır ve daha isabetli vurur;
+    // bot da zor atışlarda sapmasını küçültüyor. Kolay seviyede bu yok —
+    // acemi oyuncu zoru zor olduğu için ıskalar.
+    final approachDy = GameConstants.vHalf - tgt.vy;
+    if (cfg.strategy != 'random' && approachDy > 1) {
+      final tan = (aimX - tgt.vx).abs() / approachDy;
+      final tolerance =
+          (_gateHalfWindow - GameConstants.wallHalfH * tan).clamp(0.5, _gateHalfWindow);
+      _lastShotFocus = (tolerance / _gateHalfWindow).clamp(0.3, 1.0);
+      missX *= _lastShotFocus;
+      // Nişan almak zaman alır. Dar açılı atıştan sonra bot bir soluklanır;
+      // kolay atışlarda hızlı devam eder. Ritmi asıl insanlaştıran bu:
+      // sabit aralık, ne kadar rastgeleleştirilirse rastgeleleştirilsin,
+      // metronom gibi hissettiriyor.
+      _nextShot += (1 - _lastShotFocus) * _deliberationMs;
+    } else {
+      _lastShotFocus = 1.0;
+    }
+
     // İnsan payı: keskin nişancı bot bile ara sıra çuvallasın, aksi halde
     // kusursuz ritmi makine gibi hissettiriyor.
     if (_rng.nextDouble() < 0.12) missX *= 3.5;
     aimX += (_rng.nextDouble() - 0.5) * 2 * missX;
 
     var aimY = GameConstants.vHalf;
-    var powerScale = 1.0;
+    // Kurulum atışında güç mesafeden hesaplanır; doğrudan atışta serbest.
+    double? travelTarget;
 
     // Kurulum atışı. Pul duvara yakın ve geçidin çok yanındaysa doğrudan atış
     // matematiksel olarak imkânsız: pul 16 birim kalınlığındaki duvar bandını
@@ -210,8 +249,12 @@ class AiBot {
     if (cfg.strategy != 'random' &&
         dyWall > 1 &&
         (aimX - tgt.vx).abs() / dyWall > _maxDirectTan) {
-      aimY = tgt.vy - 70; // yukarı-içeri: bir sonraki atış için temiz çizgi
-      powerScale = 0.5; // nazik dokunuş, pul karşı duvara sekmesin
+      // Hedef: geçidin tam üstünde, rahat bir atış mesafesinde bir nokta.
+      aimX = _gapCX;
+      aimY = GameConstants.vHalf - _setupStandoff;
+      final sdx = aimX - tgt.vx;
+      final sdy = aimY - tgt.vy;
+      travelTarget = math.sqrt(sdx * sdx + sdy * sdy);
     }
 
     final dx = aimX - tgt.vx;
@@ -219,9 +262,21 @@ class AiBot {
     final dist = math.sqrt(dx * dx + dy * dy);
     if (dist < 1) return false;
 
-    final power = GameConstants.slingMax *
-        powerScale *
-        (cfg.powerMin + (cfg.powerMax - cfg.powerMin) * _rng.nextDouble());
+    final double power;
+    if (travelTarget != null) {
+      // Sürtünmeli hareket geometrik seri: menzil = v0 / (1 - friction).
+      // Pulu hedeflenen noktada durduracak başlangıç hızını tersten çöz.
+      // Eski sabit 0.5 çarpanı 527 birim menzil veriyordu (gereken ~150) —
+      // "nazik dokunuş" diye yazılmış şey aslında tahtayı baştan sona geçip
+      // duvarlardan sekiyor, pulu rastgele bir yere bırakıyordu.
+      final v0 = travelTarget * (1 - GameConstants.friction);
+      final frac = (v0 / (GameConstants.slingMax * GameConstants.slingPower))
+          .clamp(0.06, cfg.powerMax);
+      power = GameConstants.slingMax * frac;
+    } else {
+      power = GameConstants.slingMax *
+          (cfg.powerMin + (cfg.powerMax - cfg.powerMin) * _rng.nextDouble());
+    }
     tgt.vvx = (dx / dist) * power * GameConstants.slingPower;
     tgt.vvy = (dy / dist) * power * GameConstants.slingPower;
     return true;
