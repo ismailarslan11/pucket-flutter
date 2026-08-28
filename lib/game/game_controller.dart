@@ -7,8 +7,10 @@ import 'package:flutter/services.dart';
 import '../models/career_opponent.dart';
 import '../models/disc.dart';
 import '../models/rank_tier.dart';
+import '../services/api_config.dart';
 import '../services/audio_service.dart';
 import '../services/auth_service.dart';
+import '../services/bot_names.dart';
 import '../services/settings_service.dart';
 import '../services/websocket_service.dart';
 import 'ai_bot.dart';
@@ -91,6 +93,12 @@ class GameController extends ChangeNotifier {
   bool careerMode = false;
   bool trainingMode = false;
   bool localDuoMode = false;
+  // Süreli mod: belirlenen süre (sn) dolunca alanında daha az pul kalan kazanır;
+  // eşitse beraberlik (kazanan yok). Süre dolmadan bir taraf tamamen boşalırsa
+  // maç o anda biter ve alanı boşalan taraf kazanır.
+  bool timedMode = false;
+  int matchDurationSec = 180;
+  bool isDraw = false;
   String localPlayerRed = 'Oyuncu 1';
   String localPlayerBlue = 'Oyuncu 2';
   final Map<int, DragState> _duoDrags = {};
@@ -98,6 +106,9 @@ class GameController extends ChangeNotifier {
   String trainingGoalLabel = '';
   CareerOpponent? careerOpponent;
   AiLevel aiLevel = AiLevel.medium;
+
+  /// Bu istemcinin sunucuya bildirdiği ad (openConnection'da atanır).
+  String _myName = 'Oyuncu';
 
   String opponentName = '';
   String opponentUid = '';
@@ -280,6 +291,8 @@ class GameController extends ChangeNotifier {
   void Function(String message)? onToast;
   void Function()? onOpponentLeft;
   void Function()? onAfkForfeit;
+  /// Sürüm uyuşmazlığı: sunucu maçı reddetti. [outdated] true → BU cihaz eski.
+  void Function(bool outdated)? onNeedUpdate;
   void Function()? onOpponentDisconnected;
   void Function()? onOpponentReconnected;
   void Function()? onReconnecting;
@@ -296,7 +309,10 @@ class GameController extends ChangeNotifier {
       isOnlineHost = true;
     } else {
       mySeat = seat;
-      if (!aiMode) isOnlineHost = seat == 0;
+      // Sunucu-otoriteli: fizik artık sunucuda çalışır. İKİ koltuk da saf
+      // istemcidir (interpolasyon + şut gönderimi); hiçbiri fizik/host değil.
+      // Böylece rakip pulları kararlı sunucu zaman çizgisinden akıcı çizilir.
+      if (!aiMode) isOnlineHost = false;
     }
   }
 
@@ -342,11 +358,17 @@ class GameController extends ChangeNotifier {
   }
 
   /// Client: paket yokken tek pulu hızıyla ilerlet (çarpışma yok).
-  void _integrateOne(Disc d) {
-    d.vx += d.vvx;
-    d.vy += d.vvy;
-    d.vvx *= GameConstants.friction;
-    d.vvy *= GameConstants.friction;
+  /// Tek pul entegrasyonu. [steps] = geçen 60Hz-adım sayısı (kare dt / adım).
+  /// Client artık kare başına (108/120Hz) çağırdığı için sabit "1 adım"
+  /// varsaymak pulu 1.8× hızlandırırdı; hareket ve sürtünme geçen süreyle
+  /// ölçeklenir → kare hızından bağımsız, doğru tahmin.
+  void _integrateOne(Disc d, [double steps = 1.0]) {
+    if (steps <= 0) return;
+    d.vx += d.vvx * steps;
+    d.vy += d.vvy * steps;
+    final fr = math.pow(GameConstants.friction, steps).toDouble();
+    d.vvx *= fr;
+    d.vvy *= fr;
     if (d.vvx.abs() < 0.03) d.vvx = 0;
     if (d.vvy.abs() < 0.03) d.vvy = 0;
   }
@@ -357,14 +379,32 @@ class GameController extends ChangeNotifier {
   // ~D ms "geçmişten" oynatır. Kritik nokta: zaman ekseni VARIŞ zamanı değil
   // GÖNDERİM zamanıdır — böylece ağ jitter'ı oynatma hızını bozamaz, sadece
   // arabellek derinliğini etkiler.
-  static const _interpMinMs = 80.0;
-  static const _interpMaxMs = 120.0;
-  /// Pozisyon farkı bunu aşarsa yumuşak düzeltme yerine ışınla (kopmuş demektir).
-  static const _teleportThreshold = GameConstants.discRadius * 3;
+  // 60Hz gönderim + tipik iyi bağlantı (Jit<10) için daha sıkı tampon: rakip
+  // pulları ~100ms yerine ~60ms geçmişten oynatılır → belirgin daha "canlı"/
+  // tepkisel his. Jitter yükselince (kötü ağ) uyarlanır ve max'a kadar çıkar.
+  static const _interpMinMs = 55.0;
+  // Kötü/burst bağlantıda (ör. 5G, yüksek ping) tampon açlığını önlemek için
+  // gecikmenin çıkabileceği SERT tavan. İyi bağlantıda kullanılmaz.
+  static const _interpMaxHardMs = 260.0;
+  /// Pozisyon farkı bunu aşarsa doğrudan atama yerine hızlı-yumuşak düzeltme
+  /// (ışınlanma değil, ~3-4 karelik kayma) uygulanır.
+  static const _teleportThreshold = GameConstants.discRadius * 3; // 66
+  /// Bunu aşarsa gerçek kopmadır (yeniden bağlanma/dev sıçrama) → anında ışınla.
+  static const _hardSnapThreshold = GameConstants.discRadius * 8; // 176
 
   final List<_Snap> _snapBuf = [];
   double _interpDelayMs = 100;
   int _lastSeq = -1;
+  /// Son ~1.5sn'deki varış aralıkları — burst/kötü bağlantıda en büyük boşluğu
+  /// ölçüp tampon derinliğini (interp gecikmesi) ona göre uyarlar (açlık = yok).
+  final List<({double gap, double at})> _rxGapWin = [];
+
+  /// Monotonik oynatma saati. renderT'yi her karede `now+offset-delay` ile
+  /// hesaplamak, offset/delay kestirimleri oynadıkça oynatma hızını dalgalandırır
+  /// (judder) ve bazen zamanı geri alır (geri kayma). Bunun yerine playhead
+  /// gerçek zamanda düzgün ilerler, hedefe yavaşça yakınsar → sabit oynatma hızı.
+  double? _playhead;
+  double _lastAdvanceNet = 0;
 
   /// hostSaati − yerelSaat. Kayan pencerede MAKSİMUM ile kestirilir:
   /// örnek = O − d (d = tek yön gecikme ≥ 0), yani en az gecikmiş paket
@@ -375,17 +415,31 @@ class GameController extends ChangeNotifier {
   double? _lastRxNet;
   double? _lastSnapT;
 
+  // --- Test/ölçüm göstergesi (kNetDebugHud) ---
+  final List<double> _rxTimes = [];
+  double debugFps = 0;
+  bool get isNetClient => !aiMode && !isOnlineHost && !localDuoMode;
+  String get netDebugLine {
+    final off = _clockOffset?.round() ?? 0;
+    // "SA" = Server-Authoritative sürüm işareti (bu build'i teyit için).
+    return 'SA·v40  FPS ${debugFps.round()}  RX ${_rxTimes.length}/s  '
+        'Buf ${_snapBuf.length}  Dly ${_interpDelayMs.round()}  Off $off  Jit ${_jitterMs.round()}';
+  }
+
   /// Ağ oturumu değişince (yeniden bağlanma/yeni maç) tüm ağ durumunu sıfırla —
   /// bayat kareler ve eski saat ofseti yeni oturuma taşınmasın.
   void _resetNetSync() {
     _snapBuf.clear();
     _offsetWin.clear();
+    _rxGapWin.clear();
     _clockOffset = null;
     _lastSeq = -1;
     _jitterMs = 0;
     _lastRxNet = null;
     _lastSnapT = null;
     _interpDelayMs = 100;
+    _playhead = null;
+    _lastAdvanceNet = 0;
   }
 
   bool _bufferSnapshot(List states, {int? seq, num? hostT}) {
@@ -427,9 +481,28 @@ class GameController extends ChangeNotifier {
       final txGap = t - _lastSnapT!;
       final dev = (rxGap - txGap).abs();
       _jitterMs = _jitterMs * 0.9 + dev * 0.1;
-      // Uyarlanabilir gecikme: sakin ağda 80 ms, dalgalıda 120 ms'e kadar.
-      final target = (_interpMinMs + _jitterMs * 2).clamp(_interpMinMs, _interpMaxMs);
-      _interpDelayMs += (target - _interpDelayMs) * 0.05; // yumuşak geçiş
+
+      // Gerçek burst boşluğu: son ~1.5sn'deki EN BÜYÜK varış aralığı. 5G/kötü
+      // ağda paketler öbek öbek gelir; EWMA jitter bunu kaçırır ama tampon 1'e
+      // düşüp açlık (ışınlanma/hızlanma) yaratır. Gecikme, bu boşluğu karşılamalı.
+      _rxGapWin.add((gap: rxGap, at: rx));
+      _rxGapWin.removeWhere((e) => rx - e.at > 1500);
+      var maxGap = 0.0;
+      for (final e in _rxGapWin) {
+        if (e.gap > maxGap) maxGap = e.gap;
+      }
+
+      // Hedef gecikme = hem jitter'ı hem de en büyük burst boşluğunu (1.4× marj)
+      // karşılayacak kadar. İyi bağlantıda maxGap küçük → gecikme düşük kalır;
+      // kötü bağlantıda derinleşir (açlık olmaz).
+      final jitterTarget = _interpMinMs + _jitterMs * 2;
+      final gapTarget = maxGap * 1.4;
+      final target =
+          math.max(jitterTarget, gapTarget).clamp(_interpMinMs, _interpMaxHardMs);
+      // Asimetrik: açlığı önlemek için HIZLI derinleş (0.20), bağlantı düzelince
+      // gecikmeyi YAVAŞ azalt (0.01) — böylece pul lag'i gereksiz artıp azalmaz.
+      final rate = target > _interpDelayMs ? 0.20 : 0.01;
+      _interpDelayMs += (target - _interpDelayMs) * rate;
     }
     _lastRxNet = rx;
     _lastSnapT = t;
@@ -451,6 +524,8 @@ class GameController extends ChangeNotifier {
     }
     _snapBuf.add(s);
     if (_snapBuf.length > 24) _snapBuf.removeAt(0);
+    _rxTimes.add(rx);
+    _rxTimes.removeWhere((t) => rx - t > 1000);
     return true;
   }
 
@@ -499,31 +574,64 @@ class GameController extends ChangeNotifier {
   void _applyNetTarget(Disc d, int i, double tx, double ty, double tvx, double tvy) {
     final dx = tx - d.vx;
     final dy = ty - d.vy;
-    final jumped = dx * dx + dy * dy > _teleportThreshold * _teleportThreshold;
+    final err2 = dx * dx + dy * dy;
 
-    d.vx = tx;
-    d.vy = ty;
-    if (jumped && i < _prevVx.length) {
-      // Işınlanma: önceki kare tamponunu da taşı ki painter araya
-      // sahte bir "uçuş" çizmesin.
-      _prevVx[i] = tx;
-      _prevVy[i] = ty;
+    if (err2 <= _teleportThreshold * _teleportThreshold) {
+      // Normal akış: hedefi DOĞRUDAN uygula (gecikmesiz, net).
+      d.vx = tx;
+      d.vy = ty;
+    } else if (err2 > _hardSnapThreshold * _hardSnapThreshold) {
+      // Gerçek kopma (yeniden bağlanma/dev sıçrama): anında ışınla + prev'i taşı
+      // ki painter araya sahte bir "uçuş" çizmesin.
+      d.vx = tx;
+      d.vy = ty;
+      if (i < _prevVx.length) {
+        _prevVx[i] = tx;
+        _prevVy[i] = ty;
+      }
+    } else {
+      // Eşik ile sert-snap arası: ANINDA zıplama yerine hızlı-yumuşak kayma
+      // (kare başına %40 → ~3-4 karede varır). Işınlanma yerine kısa düzeltme.
+      d.vx += dx * 0.4;
+      d.vy += dy * 0.4;
     }
     d.vvx = tvx;
     d.vvy = tvy;
+  }
+
+  /// Yerel şutun devri için: ilgili pulun GECİKMESİZ (present) ağ tahmini.
+  /// İnterpolasyon gecikmesi host'un geçmişini gösterir; devir bu geçmişe
+  /// yapılırsa pul zamanda geriye sıçrar (titreme/geri kayma). Son snapshot'ı
+  /// present host-zamanına extrapolate ederek "şu an nerede" tahminini üretiriz.
+  ({double x, double y})? _presentNetPos(int i) {
+    if (_snapBuf.isEmpty) return null;
+    final last = _snapBuf.last;
+    if (i >= last.xs.length) return null;
+    final ageHost = ((_nowNet + (_clockOffset ?? 0)) - last.t).clamp(0.0, 300.0);
+    final steps = ageHost / _physicsStepMs;
+    return (x: last.xs[i] + last.vxs[i] * steps, y: last.ys[i] + last.vys[i] * steps);
   }
 
   /// Client ağ adımı: host-zaman ekseninde snapshot interpolation.
   /// Fizik burada çalışmaz — host'un ürettiği zaman çizgisi oynatılır.
   void _clientNetAdvance() {
     final nowNet = _nowNet;
+    // Kare başına gerçek geçen süre → 60Hz-adım cinsinden (tahmin + playhead).
+    final dtReal = _lastAdvanceNet == 0
+        ? 0.0
+        : (nowNet - _lastAdvanceNet).clamp(0.0, 100.0);
+    _lastAdvanceNet = nowNet;
+    final steps = dtReal / _physicsStepMs;
 
     // Kendi atışın: host yankısı gelene dek yerel tahmin (prediction).
     // Süre dolunca ANINDA snap yerine ~150 ms harmanla devredilir (aşağıda).
     final predicting = nowNet < _localShotPredictUntil;
     final localIdx = predicting ? _localShotDisc : null;
     if (localIdx != null && localIdx < discs.length) {
-      _integrateOne(discs[localIdx]);
+      _integrateOne(discs[localIdx], steps);
+      // Tahmin de duvarlardan sekmeli — yoksa fırlatılan pul, sunucu düzeltmesi
+      // gelene dek DUVARDAN GEÇİP geri sıçrar (kullanıcının gördüğü hata).
+      PhysicsEngine.applyWallsSingle(discs[localIdx]);
     }
     // Devretme harmanı: 0 → tam ağ otoritesi, 1 → tam yerel tahmin.
     var handoff = 0.0;
@@ -533,7 +641,17 @@ class GameController extends ChangeNotifier {
       if (since < _shotBlendMs) {
         handoff = 1 - (since / _shotBlendMs);
       } else {
-        _localShotDisc = null; // harman bitti, tamamen ağa bırak
+        // Harman bitti — ama pulu geçmiş-interpolasyona ANINDA snap ETME (pul
+        // hâlâ hızlıyken ~78ms geriye sıçrar = kendi pulunda takılma). Pul
+        // sunucuda DURANA kadar present-net'te tut; durunca present ve geçmiş
+        // aynı noktada birleşir → sıçramasız normal akışa bırakılır.
+        var rested = true;
+        if (_snapBuf.isNotEmpty && blendIdx < _snapBuf.last.vxs.length) {
+          final vx = _snapBuf.last.vxs[blendIdx];
+          final vy = _snapBuf.last.vys[blendIdx];
+          rested = (vx * vx + vy * vy) < 0.02;
+        }
+        if (rested || since > 2500) _localShotDisc = null; // emniyet: 2.5sn
       }
     }
 
@@ -541,12 +659,35 @@ class GameController extends ChangeNotifier {
       // Hiç kare yok: elde veri olmadığı için hafif tahminle akıt.
       for (var i = 0; i < discs.length; i++) {
         if (i == localIdx) continue;
-        _integrateOne(discs[i]);
+        _integrateOne(discs[i], steps);
+        PhysicsEngine.applyWallsSingle(discs[i]); // açlıkta da duvardan geçme
       }
       return;
     }
 
-    final renderT = _renderHostTime;
+    // Monotonik oynatma saati: hedef = now + offset - delay, ama playhead'i
+    // gerçek geçen süre kadar ilerletip hedefe YAVAŞÇA yakınsatarak dalgalanmayı
+    // (judder) ve geri kaymayı engelle. Sabit oynatma hızı = pürüzsüz hareket.
+    final target = nowNet + (_clockOffset ?? 0) - _interpDelayMs;
+    if (_playhead == null) {
+      _playhead = target;
+    } else {
+      var ph = _playhead! + dtReal;
+      final err = target - ph;
+      if (err.abs() > 200) {
+        ph = target; // büyük sapma (donma/yeniden bağlanma) → tek seferde otur.
+      } else {
+        // Oynatma HIZINI ~1x'e KİLİTLE. Düzeltme, geçen gerçek sürenin en çok
+        // ~%3'ü kadar olabilir → pullar asla görünür şekilde "bir anda
+        // hızlanmaz" (kullanıcının gördüğü sistematik anormal hareket).
+        // Ofset/gecikme kestirimi oynasa bile sürüklenme, birkaç saniyede fark
+        // edilmeden kapanır. Eskiden `err*0.05` idi ve ~%8 hız sıçratıyordu.
+        final maxCorr = (dtReal * 0.03).clamp(0.05, 4.0);
+        ph += err.clamp(-maxCorr, maxCorr);
+      }
+      _playhead = ph;
+    }
+    final renderT = _playhead!;
 
     // Oynatma anını geçmiş kareleri düş (s0 = bir önceki kare kalsın).
     while (_snapBuf.length >= 2 && _snapBuf[1].t <= renderT) {
@@ -572,11 +713,25 @@ class GameController extends ChangeNotifier {
       final span = (s1.t - s0.t).clamp(1.0, 1000.0);
       final f = ((renderT - s0.t) / span).clamp(0.0, 1.0);
       final stepsInSpan = span / _physicsStepMs;
+      // Hermite (kübik) interpolation: iki snapshot'ın POZİSYON ve HIZINI kullanır.
+      // Sabit hızda doğrusalla birebir aynıdır (doğru); çarpışmada ise pulun
+      // gerçek eğrisini takip eder → doğrusal interpolasyonun "köşe kesme"
+      // artefaktı (kullanıcının gördüğü anormal hareket) kaybolur. Profesyonel
+      // multiplayer oyunların uzak-varlık interpolasyonu böyledir.
+      final f2 = f * f;
+      final f3 = f2 * f;
+      final h00 = 2 * f3 - 3 * f2 + 1;
+      final h10 = f3 - 2 * f2 + f;
+      final h01 = -2 * f3 + 3 * f2;
+      final h11 = f3 - f2;
       for (var i = 0; i < n; i++) {
-        tx[i] = s0.xs[i] + (s1.xs[i] - s0.xs[i]) * f;
-        ty[i] = s0.ys[i] + (s1.ys[i] - s0.ys[i]) * f;
-        // Hız: kareler arası gerçek yer değiştirmeden türetilir — render
-        // ara-karesi (discRenderAlpha) ve hareket algısı için tutarlı.
+        // Teğet = hızın span boyunca ürettiği yer değiştirme (vxs = adım/başına hız).
+        final m0x = s0.vxs[i] * stepsInSpan;
+        final m1x = _snapBuf[1].vxs[i] * stepsInSpan;
+        final m0y = s0.vys[i] * stepsInSpan;
+        final m1y = _snapBuf[1].vys[i] * stepsInSpan;
+        tx[i] = h00 * s0.xs[i] + h10 * m0x + h01 * s1.xs[i] + h11 * m1x;
+        ty[i] = h00 * s0.ys[i] + h10 * m0y + h01 * s1.ys[i] + h11 * m1y;
         tvx[i] = (s1.xs[i] - s0.xs[i]) / stepsInSpan;
         tvy[i] = (s1.ys[i] - s0.ys[i]) / stepsInSpan;
       }
@@ -599,10 +754,21 @@ class GameController extends ChangeNotifier {
     for (var i = 0; i < n; i++) {
       if (i == localIdx) continue;
       final d = discs[i];
-      if (i == blendIdx && handoff > 0) {
-        // Devretme: yerel tahminden ağ hedefine yumuşak geçiş.
-        final gx = d.vx * handoff + tx[i] * (1 - handoff);
-        final gy = d.vy * handoff + ty[i] * (1 - handoff);
+      if (i == blendIdx) {
+        // Kendi pulun: PRESENT (şimdiki) ağ tahminine oturt — gecikmeli tx/ty'ye
+        // DEĞİL (yoksa geriye sıçrar). Durana kadar present-net'te kalır.
+        final present = _presentNetPos(i);
+        final nx = present?.x ?? tx[i];
+        final ny = present?.y ?? ty[i];
+        final double gx, gy;
+        if (handoff > 0) {
+          // Yerel tahminden present-net'e yumuşak geçiş (ilk 150ms).
+          gx = d.vx * handoff + nx * (1 - handoff);
+          gy = d.vy * handoff + ny * (1 - handoff);
+        } else {
+          gx = nx; // harman sonrası: saf present-net (pul durana dek)
+          gy = ny;
+        }
         _applyNetTarget(d, i, gx, gy, tvx[i], tvy[i]);
       } else {
         _applyNetTarget(d, i, tx[i], ty[i], tvx[i], tvy[i]);
@@ -624,22 +790,47 @@ class GameController extends ChangeNotifier {
     final isClient = !aiMode && !isOnlineHost && !localDuoMode;
 
     if (!dragging && movingCount == 0 && !fx.active) {
-      if (!isClient) {
+      if (isClient) {
+        final clientDrifting = discs.any((d) => d.vvx.abs() > 0.02 || d.vvy.abs() > 0.02) ||
+            _clientSnapPending;
+        if (!clientDrifting) {
+          _lastTickWallMs = 0;
+          return false;
+        }
+      } else if (!aiMode) {
+        // Host/yerel maç: tahta dururken input bekle (CPU tasarrufu).
         _lastTickWallMs = 0;
         return false;
       }
-      final clientDrifting = discs.any((d) => d.vvx.abs() > 0.02 || d.vvy.abs() > 0.02) ||
-          _clientSnapPending;
-      if (!clientDrifting) {
-        _lastTickWallMs = 0;
-        return false;
-      }
+      // aiMode: düşürme — bot, tahta dururken de kendi hamlesini başlatabilsin
+      // (oyuncunun ilk atışını beklemez).
     }
 
     if (_lastTickWallMs == 0) _lastTickWallMs = nowMs;
     var delta = nowMs - _lastTickWallMs;
     _lastTickWallMs = nowMs;
+    // Pause→resume'da Ticker.elapsed sıfırlanır; nowMs geriye sıçrayıp delta
+    // negatif olabilir. Negatif delta fizik birikimini bozup oyunu dondurur —
+    // taze kare gibi ele al.
+    if (delta < 0) delta = 0;
     if (delta > 100) delta = 100;
+
+    // Ağ istemcisi: interpolasyonu HER EKRAN KARESİNDE bir kez, o anki zamanda
+    // örnekle. Rakip pullarını host'un 60Hz fizik-adımı + painter alpha alt-kare
+    // hattından geçirmek, 108/120Hz ekranla beat (vuruşma) oluşturup periyodik
+    // judder üretiyordu (ölçüm: sabit hız girişinde bile %20 hız dalgalanması,
+    // her ~60ms'de yarı hıza düşen hitch). Her kare doğrudan örnekleyip prev=cur
+    // yapınca painter alpha'sı no-op olur ve _clientNetAdvance'in monotonik
+    // playhead'i düzgün hareketi tam kare hızında çizer (%20 → %0.6).
+    if (isClient) {
+      fx.step();
+      _clientNetAdvance();
+      _capturePrevPositions();
+      _frameCount++;
+      _syncUiIfDiscCountsChanged();
+      return true;
+    }
+
     _physicsAccum += delta;
     if (_physicsAccum > _physicsStepMs * 3) _physicsAccum = _physicsStepMs * 3;
 
@@ -715,7 +906,7 @@ class GameController extends ChangeNotifier {
       _frameCount++;
       if (aiMode && aiBot.shouldThink(_frameCount * _physicsStepMs, aiLevel)) {
         if (aiBot.think(discs, aiLevel)) _haptic(25);
-      } else if (!aiMode && isOnlineHost && _frameCount % 3 == 0) {
+      } else if (!aiMode && isOnlineHost && _frameCount % 2 == 0) {
         _sendState();
       }
 
@@ -725,7 +916,12 @@ class GameController extends ChangeNotifier {
       }
       final winner = PhysicsEngine.checkWinner(discs);
       if (winner != null) {
-        _endRound(winner, broadcast: true);
+        // Süreli mod: süre dolmadan bir taraf tamamen boşalırsa maç orada biter.
+        if (timedMode) {
+          _endTimedMatch(clearWinner: winner);
+        } else {
+          _endRound(winner, broadcast: true);
+        }
         return true;
       }
     } else if (!aiMode && !isOnlineHost) {
@@ -762,6 +958,7 @@ class GameController extends ChangeNotifier {
     _initPrevFromCurrent();
     phase = GamePhase.idle;
     lastWinner = null;
+    isDraw = false;
     myRematchPending = false;
     opponentRematchRequested = false;
     if (localDuoMode) _setSeat(0);
@@ -796,6 +993,11 @@ class GameController extends ChangeNotifier {
         _secTimer = Timer.periodic(const Duration(seconds: 1), (_) {
           seconds++;
           uiSync.bump();
+          if (timedMode &&
+              phase == GamePhase.playing &&
+              seconds >= matchDurationSec) {
+            _endTimedMatch();
+          }
         });
         _startAfkTimer();
         _bumpBoard();
@@ -821,6 +1023,7 @@ class GameController extends ChangeNotifier {
     localDuoMode = false;
     careerMode = false;
     trainingMode = false;
+    timedMode = false;
     careerOpponent = null;
     isBotFallback = botFallback;
     // Gizli bot: ranked kuyruğunda rakip bulunamayınca bota düşülse de
@@ -829,11 +1032,16 @@ class GameController extends ChangeNotifier {
     aiLevel = level;
     _setSeat(0);
     if (botFallback) {
-      final profile = BotFallbackProfile.generate(playerElo: auth?.user?.elo ?? 1000);
+      final profile = BotFallbackProfile.generate(
+        playerElo: auth?.user?.elo ?? 1000,
+        namePool: BotNames.pool,
+      );
       roomCode = profile.roomCode;
       opponentName = profile.name;
       opponentElo = profile.elo;
       opponentLeague = profile.league;
+      // Gerçek oyuncu hissi: rakip bazen premium pul kullanır.
+      opponentDiscColor = profile.discId;
     } else {
       roomCode = 'BOT';
       opponentName = 'Bot';
@@ -848,12 +1056,95 @@ class GameController extends ChangeNotifier {
     }
   }
 
+  /// Süreli mod: gizli bota karşı, belirli süreyle. Süre dolunca alanında daha
+  /// az pul kalan kazanır; eşitse beraberlik.
+  void startTimedGame(int durationSec, {AiLevel level = AiLevel.hard}) {
+    ws.disconnect();
+    aiMode = true;
+    localDuoMode = false;
+    careerMode = false;
+    trainingMode = false;
+    careerOpponent = null;
+    isBotFallback = true;
+    isRanked = false;
+    timedMode = true;
+    matchDurationSec = durationSec;
+    aiLevel = level;
+    _setSeat(0);
+    final profile = BotFallbackProfile.generate(
+      playerElo: auth?.user?.elo ?? 1000,
+      namePool: BotNames.pool,
+    );
+    roomCode = profile.roomCode;
+    opponentName = profile.name;
+    opponentElo = profile.elo;
+    opponentLeague = profile.league;
+    opponentDiscColor = profile.discId;
+    resetMatch();
+    startCountdown();
+    _maybeBotEmote(const ['👍', '🤝', '😎'], chance: 0.45);
+  }
+
+  /// Süreli mod bitişi. Süre dolunca alanında daha az pul kalan kazanır;
+  /// [clearWinner] verilirse (bir taraf süre dolmadan tamamen boşaldı) sayım
+  /// yapılmadan doğrudan o taraf kazanır.
+  void _endTimedMatch({int? clearWinner}) {
+    if (phase != GamePhase.playing) return;
+    _secTimer?.cancel();
+    _afkTimer?.cancel();
+    int? winner;
+    if (clearWinner != null) {
+      winner = clearWinner;
+    } else {
+      // Üst yarı = mavi (seat 1 / bot), alt yarı = kırmızı (seat 0 / oyuncu).
+      final topCount = discs.where((d) => d.vy < GameConstants.vHalf).length;
+      final bottomCount = discs.length - topCount;
+      if (bottomCount < topCount) {
+        winner = 0; // oyuncunun alanında daha az pul → oyuncu kazandı
+      } else if (topCount < bottomCount) {
+        winner = 1; // botun alanında daha az pul → bot kazandı
+      } else {
+        winner = null; // eşit → beraberlik
+      }
+    }
+    phase = GamePhase.gameover;
+    matchFinished = true;
+    fx.addShake(8);
+    if (winner == null) {
+      isDraw = true;
+      lastWinner = null;
+    } else {
+      isDraw = false;
+      lastWinner = winner;
+      roundWins[winner]++;
+      fx.burst(
+        GameConstants.vw / 2,
+        GameConstants.vh / 2,
+        count: 34,
+        color: winner == mySeat ? const Color(0xFF22C55E) : const Color(0xFFEF4444),
+        speed: 5,
+        size: 3.2,
+      );
+      if (winner == mySeat) {
+        audio?.playWin();
+        _maybeBotEmote(const ['😅', '😮', '👏']);
+      } else {
+        audio?.playLose();
+        _maybeBotEmote(const ['🔥', '😎', '🎯']);
+      }
+    }
+    _markVisualGeneration();
+    onRoundEnd?.call();
+    notifyListeners();
+  }
+
   void startCareerGame(CareerOpponent opponent) {
     ws.disconnect();
     aiMode = true;
     localDuoMode = false;
     careerMode = true;
     trainingMode = false;
+    timedMode = false;
     careerOpponent = opponent;
     isBotFallback = false;
     isRanked = false;
@@ -878,6 +1169,7 @@ class GameController extends ChangeNotifier {
     localDuoMode = false;
     careerMode = false;
     trainingMode = true;
+    timedMode = false;
     careerOpponent = null;
     isBotFallback = false;
     isRanked = false;
@@ -899,6 +1191,7 @@ class GameController extends ChangeNotifier {
     localDuoMode = true;
     careerMode = false;
     trainingMode = false;
+    timedMode = false;
     careerOpponent = null;
     isBotFallback = false;
     isRanked = false;
@@ -920,6 +1213,7 @@ class GameController extends ChangeNotifier {
     isBotFallback = false;
     careerMode = false;
     trainingMode = false;
+    timedMode = false;
     careerOpponent = null;
     _setSeat(seat);
     roomCode = room;
@@ -934,6 +1228,7 @@ class GameController extends ChangeNotifier {
     String? idToken,
     bool isAnonymous = true,
   }) async {
+    _myName = name;
     ws.onMessage = _handleWs;
     ws.onPing = (ms) {
       pingMs = ms;
@@ -958,18 +1253,29 @@ class GameController extends ChangeNotifier {
     final ok = await ws.connect(wsUrl);
     if (!ok) return false;
     ws.setSession(uid: uid, sessionToken: sessionToken, roomCode: roomCode.isNotEmpty ? roomCode : null);
-    ws.send({
+    // Haritayı AÇIKÇA kur — null-aware harita elemanı (`'idToken': ?idToken`)
+    // release AOT'ta sonraki alanları (proto dahil) düşürebiliyor; debug/JIT'te
+    // sorunsuz. Bu yüzden tüm release build'ler proto göndermeyip "güncel değil"
+    // hatası veriyordu. Açık kurulum bunu kesin engeller.
+    final loginMsg = <String, dynamic>{
       'type': 'login',
       'uid': uid,
       'name': name,
-      'idToken': ?idToken,
       'isAnonymous': isAnonymous,
-    });
+      // Sunucu-otoriteli protokol sürümü. Sunucu, iki oyuncunun sürümü
+      // eşleşmezse maçı başlatmaz (eski istemci + yeni istemci = ışınlanma).
+      'proto': kProtocolVersion,
+    };
+    if (idToken != null) loginMsg['idToken'] = idToken;
+    ws.send(loginMsg);
     return true;
   }
 
   void joinRoom(String code) {
-    ws.send({'type': 'join', 'room': code});
+    // Ad DA gönderilmeli: sunucu oda koltuğunun adını `login`'de kaydettiği
+    // profilden değil, `join` mesajından okuyor (server.js Room.join). Ad
+    // gönderilmezse iki oyuncu da rakibini "Oyuncu" olarak görür.
+    ws.send({'type': 'join', 'room': code, 'name': _myName});
   }
 
   void enterQueue(String uid, String name) {
@@ -1272,6 +1578,17 @@ class GameController extends ChangeNotifier {
       case 'error':
         onToast?.call(msg['msg'] as String? ?? 'Hata');
         break;
+      case 'needUpdate':
+        // Sürüm uyuşmazlığı: maç başlatılmadı. Sessiz ışınlanma yerine net uyarı.
+        final outdated = msg['outdated'] as bool? ?? true;
+        phase = GamePhase.idle;
+        onToast?.call(outdated
+            ? 'Uygulaman güncel değil — en son sürüme güncelle.'
+            : 'Rakibin uygulaması eski — güncellemesi gerekiyor.');
+        onNeedUpdate?.call(outdated);
+        onOpponentLeft?.call();
+        notifyListeners();
+        break;
     }
   }
 
@@ -1329,7 +1646,7 @@ class GameController extends ChangeNotifier {
       // fark negatife düşer, `< 40` sürekli doğru olur ve gönderim tamamen
       // durur — rakip için oyun donar. Stopwatch geri gitmez.
       final now = _nowNet;
-      if (now - _lastStateSentMs < 40) return;
+      if (now - _lastStateSentMs < 28) return;
       final sig = _discStateSignature();
       if (sig == _lastSentStateSig) return;
       _lastSentStateSig = sig;
@@ -1348,10 +1665,16 @@ class GameController extends ChangeNotifier {
             ])
         .toList();
 
-    // seq: bayat/tekrar kare koruması. t: HOST'un monotonik saati — client
-    // interpolation'ı varış zamanına değil buna göre yapar (jitter bağışıklığı).
+    // seq: bayat/tekrar kare koruması.
+    // t: HOST'un OYUN-ZAMANI (frameCount × adım) — duvar saati DEĞİL. Fizik her
+    // adımda tam 16.6ms oyun-zamanı ilerler; duvar-saati damgası ise host'un kare
+    // temposu düzensizse (özellikle emülatör: BlueStacks) pozisyon oyun-zamanında
+    // eşit ama damgalar sıkışık/gevşek olur → client bunu judder olarak oynatır.
+    // Oyun-zamanı damgası zaman çizgisini host temposundan bağımsız kusursuz
+    // düzgün yapar; client interpolation'ı (t ekseninde) tam pürüzsüz çizer.
+    // (Ölçüm: jank'lı host + iyi ağda judder %39 → %0.3.)
     final seq = ++_stateSeq;
-    final t = _nowNet.round();
+    final t = (_frameCount * _physicsStepMs).round();
 
     if (phase == GamePhase.playing && !force) {
       ws.send({'type': 'state', 'seq': seq, 't': t, 'discs': discPayload});
@@ -1403,7 +1726,8 @@ class GameController extends ChangeNotifier {
     lastWinner = winner;
     roundWins[winner]++;
     currentRound++;
-    matchFinished = roundWins[winner] >= roundsToWin;
+    // Süreli mod tek maçtır: alan boşalınca da anında biter.
+    matchFinished = timedMode || roundWins[winner] >= roundsToWin;
     _haptic(winner == mySeat ? 50 : 30);
     // Gol juice'u: güçlü sarsıntı + kutlama patlaması.
     fx.addShake(10);
@@ -1662,6 +1986,9 @@ class GameController extends ChangeNotifier {
     pauseByOpponent = false;
     pauseSecondsLeft = 0;
     phase = GamePhase.playing;
+    // Ticker yeniden başlarken zamanlamayı sıfırla (donmayı önler).
+    _lastTickWallMs = 0;
+    _physicsAccum = 0;
     _secTimer?.cancel();
     _secTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       seconds++;
