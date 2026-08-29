@@ -37,27 +37,48 @@ List<Disc> _allOnOneSide({required bool top}) {
 
 void main() {
   group('timed mode early finish', () {
-    test('bottom half cleared before time is up ends the match for seat 0', () {
+    test('bottom half cleared before time is up wins the round for seat 0', () {
       final game = _timedMatch(_allOnOneSide(top: true));
 
       _run(game);
 
       expect(game.phase, GamePhase.gameover);
-      expect(game.matchFinished, isTrue);
       expect(game.isDraw, isFalse);
       expect(game.lastWinner, 0);
+      expect(game.roundWins, [1, 0]);
+      // Maç 3 rauntluk seri: tek raunt kazanmak maçı bitirmez.
+      expect(game.matchFinished, isFalse);
+      expect(game.currentRound, 2);
       game.dispose();
     });
 
-    test('top half cleared before time is up ends the match for seat 1', () {
+    test('top half cleared before time is up wins the round for seat 1', () {
       final game = _timedMatch(_allOnOneSide(top: false));
 
       _run(game);
 
       expect(game.phase, GamePhase.gameover);
-      expect(game.matchFinished, isTrue);
       expect(game.isDraw, isFalse);
       expect(game.lastWinner, 1);
+      expect(game.roundWins, [0, 1]);
+      expect(game.matchFinished, isFalse);
+      game.dispose();
+    });
+
+    test('second round win finishes the match', () {
+      final game = _timedMatch(_allOnOneSide(top: true));
+      _run(game);
+      expect(game.matchFinished, isFalse);
+
+      // İkinci raunt: tahtayı yeniden kur, aynı taraf yine boşaltsın.
+      game
+        ..discs = _allOnOneSide(top: true)
+        ..phase = GamePhase.playing;
+      _run(game);
+
+      expect(game.roundWins, [2, 0]);
+      expect(game.matchFinished, isTrue);
+      expect(game.lastWinner, 0);
       game.dispose();
     });
 

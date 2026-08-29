@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../game/ai_bot.dart';
 import '../game/game_controller.dart';
 import '../l10n/l10n_extension.dart';
 import '../models/career_result.dart';
@@ -335,11 +334,7 @@ class _GameScreenState extends State<GameScreen> {
                           style: const TextStyle(color: AppColors.red, fontSize: 11, fontWeight: FontWeight.w700),
                         ),
                       ),
-                    _roundRow(
-                      g,
-                      '${(g.seconds ~/ 60).toString().padLeft(2, '0')}:${(g.seconds % 60).toString().padLeft(2, '0')}',
-                      l10n,
-                    ),
+                    _roundRow(g, _fmtMatchTime(g), l10n),
                   ],
                 );
               },
@@ -608,28 +603,55 @@ class _GameScreenState extends State<GameScreen> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
-              'ROUND ${game.currentRound}/3',
-              style: TextStyle(
-                fontSize: 9,
-                fontWeight: FontWeight.w900,
-                color: AppColors.fieldBlue.withValues(alpha: 0.45),
-                letterSpacing: 2,
+            if (!game.timedMode) ...[
+              Text(
+                'ROUND ${game.currentRound}/${GameController.maxRounds}',
+                style: TextStyle(
+                  fontSize: 9,
+                  fontWeight: FontWeight.w900,
+                  color: AppColors.fieldBlue.withValues(alpha: 0.45),
+                  letterSpacing: 2,
+                ),
               ),
-            ),
-            const SizedBox(width: 8),
-            _pip(game.roundWins[0] > 0, AppColors.red),
-            _pip(game.roundWins[0] > 1, AppColors.red),
-            Container(
-              width: 1,
-              height: 12,
-              margin: const EdgeInsets.symmetric(horizontal: 4),
-              color: const Color(0xFF2A4A66),
-            ),
-            _pip(game.roundWins[1] > 0, AppColors.blue),
-            _pip(game.roundWins[1] > 1, AppColors.blue),
-            const SizedBox(width: 8),
-            Text(timer, style: const TextStyle(color: AppColors.gold, fontWeight: FontWeight.bold, fontSize: 11)),
+              const SizedBox(width: 8),
+              _pip(game.roundWins[0] > 0, AppColors.red),
+              _pip(game.roundWins[0] > 1, AppColors.red),
+              Container(
+                width: 1,
+                height: 12,
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                color: const Color(0xFF2A4A66),
+              ),
+              _pip(game.roundWins[1] > 0, AppColors.blue),
+              _pip(game.roundWins[1] > 1, AppColors.blue),
+              const SizedBox(width: 8),
+              Text(timer, style: const TextStyle(color: AppColors.gold, fontWeight: FontWeight.bold, fontSize: 11)),
+            ],
+            if (game.timedMode)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
+                decoration: BoxDecoration(
+                  color: AppColors.gold.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppColors.gold.withValues(alpha: 0.5)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.timer_rounded, color: AppColors.gold, size: 15),
+                    const SizedBox(width: 5),
+                    Text(
+                      timer,
+                      style: const TextStyle(
+                        color: AppColors.gold,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 16,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             if (!game.aiMode && !game.localDuoMode && game.pingMs != null) ...[
               const SizedBox(width: 6),
               PingIndicator(pingMs: game.pingMs),
@@ -752,11 +774,39 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
+  // Süreli modda geri sayım (kalan süre), diğer modlarda geçen süre.
+  String _fmtMatchTime(GameController g) {
+    final s = g.timedMode
+        ? (g.matchDurationSec - g.seconds).clamp(0, g.matchDurationSec)
+        : g.seconds;
+    return '${(s ~/ 60).toString().padLeft(2, '0')}:${(s % 60).toString().padLeft(2, '0')}';
+  }
+
   Widget? _phaseOverlay(GameController game, l10n) {
     if (game.phase != GamePhase.gameover || _showElo || _showCareer) return null;
     if (game.isRanked && game.matchFinished && !game.isBotFallback) return null;
+    // Süreli mod beraberliği: kazanan yok ama sonuç ekranı gösterilir.
+    if (game.isDraw) return _buildDrawOverlay(game, l10n);
     if (game.lastWinner == null) return null;
     return _buildRoundEndOverlay(game, l10n);
+  }
+
+  Widget _buildDrawOverlay(GameController game, l10n) {
+    // Beraberlikle biten raunt maçı bitirmez: seri sürüyorsa oyuncuyu bir
+    // sonraki raunda alırız, ancak son rauntta "yeni maç" gösterilir.
+    final score = '${game.roundWins[0]} - ${game.roundWins[1]}';
+    return _buildOverlayContent(
+      game,
+      l10n,
+      title: l10n.matchDraw,
+      sub: game.matchFinished
+          ? l10n.matchDrawSub
+          : '${l10n.roundEnded(game.currentRound - 1)}\n$score',
+      primaryLabel: game.matchFinished ? l10n.newMatch : l10n.nextRound,
+      onPrimary: game.matchFinished
+          ? () => game.rematchLocal()
+          : game.continueToNextRound,
+    );
   }
 
   Widget _buildRoundEndOverlay(GameController game, l10n) {
@@ -1345,22 +1395,6 @@ class _GameScreenState extends State<GameScreen> {
               SwitchListTile(title: Text(l10n.settingsMusic), value: settings.musicOn, onChanged: settings.setMusic),
               SwitchListTile(title: Text(l10n.settingsSfx), value: settings.sfxOn, onChanged: settings.setSfx),
               SwitchListTile(title: Text(l10n.settingsVibration), value: settings.vibrationOn, onChanged: settings.setVibration),
-              if (game.aiMode)
-                ListTile(
-                  title: Text(l10n.botDifficulty),
-                  trailing: DropdownButton<AiLevel>(
-                    value: game.aiLevel,
-                    dropdownColor: AppColors.card,
-                    items: [
-                      DropdownMenuItem(value: AiLevel.easy, child: Text(l10n.diffEasy)),
-                      DropdownMenuItem(value: AiLevel.medium, child: Text(l10n.diffMedium)),
-                      DropdownMenuItem(value: AiLevel.hard, child: Text(l10n.diffHard)),
-                    ],
-                    onChanged: (v) {
-                      if (v != null) setState(() => game.aiLevel = v);
-                    },
-                  ),
-                ),
               const SizedBox(height: 16),
               PucketButton(
                 label: l10n.ok,

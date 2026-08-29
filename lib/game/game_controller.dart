@@ -77,6 +77,11 @@ class GameController extends ChangeNotifier {
   final AiBot aiBot = AiBot();
 
   static const roundsToWin = 2;
+
+  /// Bir maçta oynanabilecek en fazla raunt. İki raunt kazanan maçı alır;
+  /// beraberlikle biten raunt kimseye puan yazmadığı için maç bu sınıra
+  /// dayanabilir — o durumda daha çok raunt kazanan maçı alır.
+  static const maxRounds = 3;
   static const maxPauseSeconds = 60;
   static const afkForfeitSeconds = 120;
 
@@ -1085,6 +1090,33 @@ class GameController extends ChangeNotifier {
     _maybeBotEmote(const ['👍', '🤝', '😎'], chance: 0.45);
   }
 
+  /// Raunt sonucunu işler ve maçın bitip bitmediğine karar verir.
+  ///
+  /// Maç en fazla [maxRounds] raunttur, [roundsToWin] raunt kazanan maçı alır.
+  /// Beraberlikle biten raunt kimseye puan yazmaz; raunt hakkı dolduğunda
+  /// daha çok raunt kazanan maçı alır, eşitlikte maç berabere biter.
+  @visibleForTesting
+  void scoreRound(int? roundWinner) {
+    if (roundWinner != null) roundWins[roundWinner]++;
+    currentRound++;
+
+    final decided =
+        roundWinner != null && roundWins[roundWinner] >= roundsToWin;
+    matchFinished = decided || currentRound > maxRounds;
+
+    if (matchFinished && !decided) {
+      // Raunt hakkı bitti ama kimse ikiye ulaşamadı: en az bir raunt berabere
+      // bitmiş demektir. Maçı daha çok raunt kazanan alır.
+      if (roundWins[0] == roundWins[1]) {
+        isDraw = true;
+        lastWinner = null;
+      } else {
+        isDraw = false;
+        lastWinner = roundWins[0] > roundWins[1] ? 0 : 1;
+      }
+    }
+  }
+
   /// Süreli mod bitişi. Süre dolunca alanında daha az pul kalan kazanır;
   /// [clearWinner] verilirse (bir taraf süre dolmadan tamamen boşaldı) sayım
   /// yapılmadan doğrudan o taraf kazanır.
@@ -1108,15 +1140,15 @@ class GameController extends ChangeNotifier {
       }
     }
     phase = GamePhase.gameover;
-    matchFinished = true;
     fx.addShake(8);
     if (winner == null) {
       isDraw = true;
       lastWinner = null;
+      scoreRound(null);
     } else {
       isDraw = false;
       lastWinner = winner;
-      roundWins[winner]++;
+      scoreRound(winner);
       fx.burst(
         GameConstants.vw / 2,
         GameConstants.vh / 2,
@@ -1724,10 +1756,8 @@ class GameController extends ChangeNotifier {
     _secTimer?.cancel();
     _afkTimer?.cancel();
     lastWinner = winner;
-    roundWins[winner]++;
-    currentRound++;
-    // Süreli mod tek maçtır: alan boşalınca da anında biter.
-    matchFinished = timedMode || roundWins[winner] >= roundsToWin;
+    isDraw = false;
+    scoreRound(winner);
     _haptic(winner == mySeat ? 50 : 30);
     // Gol juice'u: güçlü sarsıntı + kutlama patlaması.
     fx.addShake(10);
