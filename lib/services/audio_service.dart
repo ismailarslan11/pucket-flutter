@@ -17,6 +17,10 @@ class AudioService extends ChangeNotifier with WidgetsBindingObserver {
   final AudioPlayer _music = AudioPlayer();
 
   MusicTrack _currentTrack = MusicTrack.none;
+  // Bulunulan ekranın olması gereken parçası — müzik ayardan kapalı olsa bile
+  // hatırlanır ki tekrar açılınca doğru parça başlasın.
+  MusicTrack _desiredTrack = MusicTrack.none;
+  String _desiredAsset = '';
   bool _pausedByLifecycle = false;
 
   @override
@@ -58,6 +62,10 @@ class AudioService extends ChangeNotifier with WidgetsBindingObserver {
   Future<void> playGameMusic() => _playMusic(MusicTrack.game, 'sounds/muzik.mp3');
 
   Future<void> _playMusic(MusicTrack track, String asset) async {
+    // Ekranın istenen parçasını her zaman hatırla (müzik kapalıyken bile),
+    // ki ayardan tekrar açılınca doğru parça başlasın.
+    _desiredTrack = track;
+    _desiredAsset = asset;
     if (!settings.musicOn) return;
     // Arka plandayken duraklatılmış aynı parça yeniden istenirse (ör.
     // menüye dönüş) durdurma sayacını temizle, akış aşağıda ele alınır.
@@ -81,6 +89,8 @@ class AudioService extends ChangeNotifier with WidgetsBindingObserver {
       await _music.stop();
     } catch (_) {}
     _currentTrack = MusicTrack.none;
+    _desiredTrack = MusicTrack.none;
+    _desiredAsset = '';
   }
 
   Future<void> stopMenuMusic() => stopMusic();
@@ -96,7 +106,15 @@ class AudioService extends ChangeNotifier with WidgetsBindingObserver {
   void onSettingsChanged() {
     _music.setVolume(settings.musicVolume);
     if (!settings.musicOn) {
-      stopMusic();
+      // Ayardan kapatıldı: parçayı durdur ama ekranın istenen parçasını unutma
+      // (stopMusic desired'ı sıfırlardı; burada sadece çalmayı kes).
+      _music.stop().catchError((_) {});
+      _currentTrack = MusicTrack.none;
+      return;
+    }
+    // Ayardan tekrar açıldı: bu ekranın parçasını yeniden başlat.
+    if (_desiredTrack != MusicTrack.none && _currentTrack != _desiredTrack) {
+      _playMusic(_desiredTrack, _desiredAsset);
     }
   }
 

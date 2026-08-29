@@ -8,6 +8,7 @@ import '../game/game_controller.dart';
 import '../l10n/l10n_extension.dart';
 import '../models/rank_tier.dart';
 import '../services/auth_service.dart';
+import '../services/bot_names.dart';
 import '../services/settings_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/yesa_background.dart';
@@ -25,16 +26,12 @@ class QueueScreen extends StatefulWidget {
 class _QueueScreenState extends State<QueueScreen> {
   String _status = '';
   bool _spinning = true;
-  bool _showPreview = false;
-  bool _queueBlocked = false;
-  String? _oppName;
-  int? _myElo;
-  int? _oppElo;
+  final bool _showPreview = false;
+  final String? _oppName = null;
+  final int? _myElo = null;
+  final int? _oppElo = null;
   Timer? _msgTimer;
   Timer? _botTimer;
-  Timer? _watchdog;
-  GameController? _game;
-  bool _errorHandled = false;
 
   @override
   void initState() {
@@ -50,94 +47,39 @@ class _QueueScreenState extends State<QueueScreen> {
   }
 
   Future<void> _init() async {
-    // Güvenlik ağı: bağlantı kurulumu 12 sn içinde bir sonuca varmazsa
-    // sonsuza kadar "aranıyor" ekranında kalmak yerine bot'a düş.
-    _watchdog = Timer(const Duration(seconds: 12), () {
-      if (mounted) _handleConnectFailure();
-    });
     try {
       await _doInit();
     } catch (e, st) {
       debugPrint('QueueScreen._doInit failed: $e\n$st');
-      if (mounted) _handleConnectFailure();
+      if (mounted) _botFallback();
     }
   }
 
-  void _handleConnectFailure() {
-    if (_errorHandled) return;
-    _errorHandled = true;
-    _watchdog?.cancel();
-    final l10n = context.l10nRead;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(l10n.queueNoServer)),
-    );
-    AppRouter.startBotFallback(context, level: AiLevel.hard, ranked: true);
-  }
-
   Future<void> _doInit() async {
-    final auth = context.read<AuthService>();
     final settings = context.read<SettingsService>();
     final l10n = context.l10nRead;
 
+    // Bot rakibe gerçek kullanıcı adı ver: arama süresi boyunca havuzu tazele.
+    unawaited(BotNames.refresh(excludeName: context.read<AuthService>().getName()));
+
     // İlk maç garantili kolay (gizli) bot — hızlı, kazanılabilir ilk deneyim.
     if (!settings.firstMatchPlayed) {
-      _watchdog?.cancel();
       await settings.markFirstMatchPlayed();
       if (!mounted) return;
       AppRouter.startBotFallback(context, level: AiLevel.easy, ranked: true);
       return;
     }
 
+    // Gerçek çevrimiçi eşleşme yok. Kısa bir "rakip aranıyor" hissinden sonra
+    // gizli bota düşülür (kullanıcı gerçek bir oyuncuyla eşleştiğini sanır).
     _status = l10n.queueSearching;
-    _game = context.read<GameController>();
-    final game = _game!;
-
-    game.onGameStart = () {
-      if (mounted) AppRouter.goGame(context);
-    };
-
-    game.onToast = (m) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
-      if (m.contains('Google') || m.contains('Ranked') || m.contains('giriş')) {
-        _cancelTimers();
-        setState(() {
-          _queueBlocked = true;
-          _spinning = false;
-          _status = m;
-        });
-      }
-    };
-
-    bool ok;
-    try {
-      ok = await game
-          .openConnection(
-            uid: auth.getUid(),
-            name: auth.getName(),
-            idToken: await auth.getIdToken(),
-            isAnonymous: auth.user?.isAnonymous ?? true,
-          )
-          .timeout(const Duration(seconds: 10));
-    } catch (_) {
-      ok = false;
-    }
-    _watchdog?.cancel();
-    if (!mounted) return;
-    if (!ok) {
-      _handleConnectFailure();
-      return;
-    }
-
-    game.enterQueue(auth.getUid(), auth.getName());
-
     final msgs = [
       l10n.queueSearching,
       l10n.queueSearchingElo,
       l10n.queueSearchingMatch,
     ];
     var idx = 0;
-    _msgTimer = Timer.periodic(const Duration(milliseconds: 2200), (_) {
+    _msgTimer = Timer.periodic(const Duration(milliseconds: 900), (_) {
       if (!mounted) return;
       setState(() {
         idx = (idx + 1) % msgs.length;
@@ -145,41 +87,20 @@ class _QueueScreenState extends State<QueueScreen> {
       });
     });
 
-    _botTimer = Timer(const Duration(seconds: 20), () {
-      if (!mounted || _queueBlocked) return;
-      _botFallback();
+    _botTimer = Timer(const Duration(seconds: 3), () {
+      if (mounted) _botFallback();
     });
-
-    game.addListener(_onGameUpdate);
-  }
-
-  void _onGameUpdate() {
-    final game = _game;
-    if (game == null || !mounted) return;
-    if (game.isRanked && game.roomCode.isNotEmpty && !_showPreview) {
-      _cancelTimers();
-      setState(() {
-        _status = context.l10nRead.queueFound;
-        _spinning = false;
-        _showPreview = true;
-        _myElo = context.read<AuthService>().user?.elo;
-        _oppElo = game.opponentElo;
-        _oppName = game.opponentName;
-      });
-    }
   }
 
   void _botFallback() {
-    if (_queueBlocked) return;
     _cancelTimers();
     // Gizli bot: "rakip bulundu" göster, "AI" ibaresi yok.
     setState(() {
       _status = context.l10nRead.queueFound;
       _spinning = false;
     });
-    Future.delayed(const Duration(milliseconds: 1200), () {
+    Future.delayed(const Duration(milliseconds: 900), () {
       if (mounted) {
-        _game!.leaveQueue();
         AppRouter.startBotFallback(context, level: AiLevel.hard, ranked: true);
       }
     });
@@ -188,11 +109,6 @@ class _QueueScreenState extends State<QueueScreen> {
   @override
   void dispose() {
     _cancelTimers();
-    _watchdog?.cancel();
-    _game?.removeListener(_onGameUpdate);
-    if (_game != null && _game!.phase == GamePhase.idle) {
-      _game!.leaveQueue();
-    }
     super.dispose();
   }
 

@@ -1,16 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
-import '../config/ad_config.dart';
 import '../l10n/app_localizations.dart';
 import '../l10n/app_language.dart';
 import '../l10n/l10n_extension.dart';
+import '../config/ad_config.dart';
 import '../services/ad_service.dart';
 import '../services/auth_service.dart';
 import '../services/consent_service.dart';
-import '../services/firebase_engagement_service.dart';
-import '../services/firebase_init.dart';
 import '../services/purchase_service.dart';
 import '../services/settings_service.dart';
 import '../theme/app_theme.dart';
@@ -99,63 +96,41 @@ class SettingsScreen extends StatelessWidget {
                         ],
                       ),
                     ),
-                    if (AdConfig.supported || firebaseEnabled) ...[
+                    if (AdConfig.supported) ...[
                       const SizedBox(height: 14),
                       StaggerIn(
-                        index: 2,
+                        index: 3,
                         child: _SettingsCard(
                           title: 'GİZLİLİK',
                           children: [
-                            if (AdConfig.supported)
-                              _linkRow(
-                                l10n.settingsAds,
-                                l10n.settingsAdsSub,
-                                l10n.settingsAdPrivacy,
-                                () async {
-                                  final ok = await ConsentService.showPrivacyOptions();
-                                  if (!context.mounted) return;
-                                  if (!ok) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text(l10n.settingsAdPrivacyUnavailable)),
-                                    );
-                                    return;
-                                  }
-                                  await context.read<AdService>().refreshAfterConsent();
-                                  if (context.mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text(l10n.settingsAdPrivacySaved)),
-                                    );
-                                  }
-                                },
-                              ),
-                            if (firebaseEnabled)
-                              Align(
-                                alignment: Alignment.centerLeft,
-                                child: TextButton(
-                                  onPressed: () async {
-                                    final fid = await FirebaseEngagementService.refreshInstallationId();
-                                    if (fid != null && fid.isNotEmpty) {
-                                      await Clipboard.setData(ClipboardData(text: fid));
-                                      if (context.mounted) {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(content: Text(l10n.settingsFidCopied)),
-                                        );
-                                      }
-                                    }
-                                  },
-                                  child: Text(
-                                    l10n.settingsCopyFid,
-                                    style: const TextStyle(color: AppColors.sariAna, fontSize: 12, fontWeight: FontWeight.w700),
-                                  ),
-                                ),
-                              ),
+                            _linkRow(
+                              l10n.settingsAds,
+                              l10n.settingsAdsSub,
+                              l10n.settingsAdPrivacy,
+                              () async {
+                                final ok = await ConsentService.showPrivacyOptions();
+                                if (!context.mounted) return;
+                                if (!ok) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text(l10n.settingsAdPrivacyUnavailable)),
+                                  );
+                                  return;
+                                }
+                                await context.read<AdService>().refreshAfterConsent();
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text(l10n.settingsAdPrivacySaved)),
+                                  );
+                                }
+                              },
+                            ),
                           ],
                         ),
                       ),
                     ],
                     const SizedBox(height: 14),
                     StaggerIn(
-                      index: 3,
+                      index: 4,
                       child: Column(
                         children: [
                           ScalePress(

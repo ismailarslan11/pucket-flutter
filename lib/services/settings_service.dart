@@ -13,12 +13,20 @@ class SettingsService extends ChangeNotifier {
   bool tutorialSeen = false;
   bool firstMatchPlayed = false;
   bool adsRemoved = false;
+  bool reachabilityHintShown = false;
+  /// Son "kolay" gizli bottan bu yana oynanan maç sayısı. Oyuncu üst üste
+  /// kaybedip oyundan kopmasın diye periyodik olarak kolay rakip verilir.
+  int botMatchesSinceEasy = 0;
   AppLanguage language = AppLanguage.tr;
 
   static const _key = 'pucket_settings';
   static const _tutorialKey = 'pucket_tutorial_seen';
   static const _firstMatchKey = 'pucket_first_match_played';
   static const _adsRemovedKey = 'pucket_ads_removed';
+  // Anlam değişti: artık "bir kez gösterildi" değil, "kullanıcı "kapattım,
+  // gösterme" dedi". Eski kirli değeri yok saymak için yeni anahtar.
+  static const _reachabilityHintKey = 'pucket_reachability_optout_v2';
+  static const _botEasyCounterKey = 'pucket_bot_matches_since_easy';
   static const _langKey = 'pucket_language';
 
   AppLocalizations get l10n => AppLocalizations(language);
@@ -28,6 +36,8 @@ class SettingsService extends ChangeNotifier {
     tutorialSeen = prefs.getBool(_tutorialKey) ?? false;
     firstMatchPlayed = prefs.getBool(_firstMatchKey) ?? false;
     adsRemoved = prefs.getBool(_adsRemovedKey) ?? false;
+    reachabilityHintShown = prefs.getBool(_reachabilityHintKey) ?? false;
+    botMatchesSinceEasy = prefs.getInt(_botEasyCounterKey) ?? 0;
     final savedLang = prefs.getString(_langKey);
     if (savedLang != null) {
       language = AppLanguage.fromCode(savedLang);
@@ -65,6 +75,19 @@ class SettingsService extends ChangeNotifier {
     firstMatchPlayed = true;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_firstMatchKey, true);
+  }
+
+  Future<void> markReachabilityHintShown() async {
+    if (reachabilityHintShown) return;
+    reachabilityHintShown = true;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_reachabilityHintKey, true);
+  }
+
+  Future<void> setBotMatchesSinceEasy(int value) async {
+    botMatchesSinceEasy = value;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_botEasyCounterKey, value);
   }
 
   Future<void> setAdsRemoved(bool value) async {

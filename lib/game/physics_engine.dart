@@ -82,6 +82,19 @@ class PhysicsEngine {
     return discs;
   }
 
+  /// Tek pulu duvarlarla (orta duvar + dış sınırlar) çözer. Yerel şut
+  /// tahmininde (prediction) kullanılır: tahmin fiziği yalnızca pozisyon
+  /// entegre ediyordu, çarpışma yoktu — bu yüzden fırlatılan pul sunucu
+  /// düzeltmesi gelene dek DUVARDAN GEÇİP geri sıçrıyordu. Bu, tahmin edilen
+  /// pulu da duvarlardan sektirir → duvardan geçme görüntüsü ortadan kalkar.
+  static void applyWallsSingle(Disc d) {
+    final dr = GameConstants.discRadius;
+    for (var pass = 0; pass < _solverPasses; pass++) {
+      _resolveMidWall(d, dr);
+      _resolveOuterBounds(d, dr);
+    }
+  }
+
   static void stepPhysics(List<Disc> discs) {
     final dr = GameConstants.discRadius;
 

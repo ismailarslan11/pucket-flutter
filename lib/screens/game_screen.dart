@@ -603,7 +603,7 @@ class _GameScreenState extends State<GameScreen> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            if (!game.timedMode) ...[
+            ...[
               Text(
                 'ROUND ${game.currentRound}/${GameController.maxRounds}',
                 style: TextStyle(
@@ -625,33 +625,61 @@ class _GameScreenState extends State<GameScreen> {
               _pip(game.roundWins[1] > 0, AppColors.blue),
               _pip(game.roundWins[1] > 1, AppColors.blue),
               const SizedBox(width: 8),
-              Text(timer, style: const TextStyle(color: AppColors.gold, fontWeight: FontWeight.bold, fontSize: 11)),
+              if (!game.timedMode)
+                Text(timer,
+                    style: const TextStyle(
+                        color: AppColors.gold,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 11)),
             ],
             if (game.timedMode)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
-                decoration: BoxDecoration(
-                  color: AppColors.gold.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: AppColors.gold.withValues(alpha: 0.5)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.timer_rounded, color: AppColors.gold, size: 15),
-                    const SizedBox(width: 5),
-                    Text(
-                      timer,
-                      style: const TextStyle(
-                        color: AppColors.gold,
-                        fontWeight: FontWeight.w900,
-                        fontSize: 16,
-                        letterSpacing: 1,
+              Builder(builder: (_) {
+                // Uzatmada sayaç rengi değişir: oyuncu normal sürenin bittiğini
+                // ve skorun eşit olduğunu fark etmeli.
+                final c = game.inExtraTime ? AppColors.red : AppColors.gold;
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: c.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: c.withValues(alpha: 0.5)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        game.inExtraTime
+                            ? Icons.timelapse_rounded
+                            : Icons.timer_rounded,
+                        color: c,
+                        size: 15,
                       ),
-                    ),
-                  ],
-                ),
-              ),
+                      const SizedBox(width: 5),
+                      Text(
+                        timer,
+                        style: TextStyle(
+                          color: c,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 16,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                      if (game.inExtraTime) ...[
+                        const SizedBox(width: 5),
+                        Text(
+                          l10n.extraTime,
+                          style: TextStyle(
+                            color: c,
+                            fontWeight: FontWeight.w900,
+                            fontSize: 9,
+                            letterSpacing: 1,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                );
+              }),
             if (!game.aiMode && !game.localDuoMode && game.pingMs != null) ...[
               const SizedBox(width: 6),
               PingIndicator(pingMs: game.pingMs),
@@ -777,7 +805,7 @@ class _GameScreenState extends State<GameScreen> {
   // Süreli modda geri sayım (kalan süre), diğer modlarda geçen süre.
   String _fmtMatchTime(GameController g) {
     final s = g.timedMode
-        ? (g.matchDurationSec - g.seconds).clamp(0, g.matchDurationSec)
+        ? (g.roundDurationSec - g.seconds).clamp(0, g.roundDurationSec)
         : g.seconds;
     return '${(s ~/ 60).toString().padLeft(2, '0')}:${(s % 60).toString().padLeft(2, '0')}';
   }

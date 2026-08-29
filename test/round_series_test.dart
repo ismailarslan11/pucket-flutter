@@ -87,6 +87,27 @@ void main() {
       expect(game.lastWinner, 0);
     });
 
+    test('uzatma varsayılan olarak kapalı ve raunt süresi normaldir', () {
+      game.matchDurationSec = 60;
+      expect(game.inExtraTime, isFalse);
+      expect(game.roundDurationSec, 60);
+    });
+
+    test('uzatmaya girilince raunt süresi 10 saniye uzar', () {
+      game.matchDurationSec = 60;
+      game.inExtraTime = true;
+      expect(game.roundDurationSec, 70);
+      expect(GameController.extraTimeSec, 10);
+    });
+
+    test('resetRound uzatmayı sıfırlar', () {
+      game.matchDurationSec = 60;
+      game.inExtraTime = true;
+      game.resetRound();
+      expect(game.inExtraTime, isFalse);
+      expect(game.roundDurationSec, 60);
+    });
+
     test('resetMatch seriyi sıfırlar', () {
       game.scoreRound(0);
       game.scoreRound(0);

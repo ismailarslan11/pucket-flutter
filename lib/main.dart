@@ -23,11 +23,13 @@ import 'services/consent_service.dart';
 import 'services/api_config.dart';
 import 'services/audio_service.dart';
 import 'services/auth_service.dart';
+import 'services/bot_names.dart';
 import 'services/career_service.dart';
 import 'services/firebase_engagement_service.dart';
 import 'services/firebase_init.dart';
 import 'services/settings_service.dart';
 import 'services/deep_link_service.dart';
+import 'widgets/reachability_hint.dart';
 import 'services/deep_link_listener.dart';
 import 'services/disc_image_cache.dart';
 import 'services/battle_pass_api.dart';
@@ -65,6 +67,10 @@ void main() async {
   }
 
   await auth.initFirebase();
+
+  // Gizli bot rakiplerine gerçek kullanıcı adı vermek için isim havuzunu
+  // arka planda doldur (başarısız olursa yerleşik yedek liste kullanılır).
+  unawaited(BotNames.refresh(excludeName: auth.getName()));
 
   final playerMeta = PlayerMetaService();
   final audio = AudioService(settings);
@@ -299,6 +305,9 @@ class _AuthenticatedHomeState extends State<_AuthenticatedHome> {
         MaterialPageRoute(builder: (_) => const TutorialScreen()),
       );
     }
+
+    // iOS: menü gelir gelmez "Ulaşılabilirlik'i kapat" önerisini bir kez göster.
+    if (mounted) await maybeShowReachabilityHint(context);
   }
 
   @override

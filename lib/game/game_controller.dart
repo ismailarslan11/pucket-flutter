@@ -103,6 +103,17 @@ class GameController extends ChangeNotifier {
   // maç o anda biter ve alanı boşalan taraf kazanır.
   bool timedMode = false;
   int matchDurationSec = 180;
+
+  /// Süreli raunt eşitlikle bitince verilen ek süre (saniye). Uzatma bir kez
+  /// verilir; sonunda skor hâlâ eşitse raunt berabere biter.
+  static const extraTimeSec = 10;
+
+  /// Raunt uzatmaya girdiyse true.
+  bool inExtraTime = false;
+
+  /// Rauntun toplam süresi — uzatmaya girildiyse ek süre dahil.
+  int get roundDurationSec =>
+      matchDurationSec + (inExtraTime ? extraTimeSec : 0);
   bool isDraw = false;
   String localPlayerRed = 'Oyuncu 1';
   String localPlayerBlue = 'Oyuncu 2';
@@ -957,6 +968,7 @@ class GameController extends ChangeNotifier {
     _localShotPredictUntil = 0;
     _resetNetSync();
     aiBot.reset();
+    inExtraTime = false;
     discs = trainingMode
         ? PhysicsEngine.initTrainingDiscs(trainingLayout)
         : PhysicsEngine.initDiscs();
@@ -1000,7 +1012,7 @@ class GameController extends ChangeNotifier {
           uiSync.bump();
           if (timedMode &&
               phase == GamePhase.playing &&
-              seconds >= matchDurationSec) {
+              seconds >= roundDurationSec) {
             _endTimedMatch();
           }
         });
@@ -1122,8 +1134,6 @@ class GameController extends ChangeNotifier {
   /// yapılmadan doğrudan o taraf kazanır.
   void _endTimedMatch({int? clearWinner}) {
     if (phase != GamePhase.playing) return;
-    _secTimer?.cancel();
-    _afkTimer?.cancel();
     int? winner;
     if (clearWinner != null) {
       winner = clearWinner;
@@ -1139,6 +1149,20 @@ class GameController extends ChangeNotifier {
         winner = null; // eşit → beraberlik
       }
     }
+    // Süre doldu ve skor eşit: raunt berabere kapanmadan önce bir kez
+    // uzatma verilir. Sayaç çalışmaya devam eder, uzatma bitince buraya
+    // yeniden gelinir ve bu kez beraberlik kabul edilir.
+    if (winner == null && !inExtraTime) {
+      inExtraTime = true;
+      fx.addShake(5);
+      _haptic(25);
+      _markVisualGeneration();
+      notifyListeners();
+      return;
+    }
+
+    _secTimer?.cancel();
+    _afkTimer?.cancel();
     phase = GamePhase.gameover;
     fx.addShake(8);
     if (winner == null) {

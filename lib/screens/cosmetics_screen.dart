@@ -10,7 +10,6 @@ import '../services/auth_service.dart';
 import '../services/player_meta_service.dart';
 import '../theme/cosmetics_theme.dart';
 import '../theme/app_theme.dart';
-import '../widgets/pucket_button.dart';
 import '../widgets/yesa_background.dart';
 import '../widgets/yesa_menu_tile.dart';
 import '../widgets/yesa_effects.dart';
@@ -27,7 +26,6 @@ class _CosmeticsScreenState extends State<CosmeticsScreen> {
   String _disc = 'green';
   String _board = 'classic';
   String _winFx = 'classic';
-  bool _saving = false;
   bool _watchingAd = false;
   Timer? _cooldownTimer;
 
@@ -178,6 +176,32 @@ class _CosmeticsScreenState extends State<CosmeticsScreen> {
 
   void _snack(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+  }
+
+  /// Seçim anında kaydet — ayrı "Kaydet" butonu yok.
+  Future<void> _saveNow() async {
+    final auth = context.read<AuthService>();
+    final metaSvc = context.read<PlayerMetaService>();
+    await metaSvc.setCosmetics(auth.getUid(), {
+      'discColor': _disc,
+      'boardTheme': _board,
+      'winFx': _winFx,
+    });
+  }
+
+  void _selectDisc(String id) {
+    setState(() => _disc = id);
+    _saveNow();
+  }
+
+  void _selectBoard(String id) {
+    setState(() => _board = id);
+    _saveNow();
+  }
+
+  void _selectWinFx(String id) {
+    setState(() => _winFx = id);
+    _saveNow();
   }
 
   /// Jeton yetmeyince: eksiği göster + Jeton Al (Premium) / Reklam İzle sun.
@@ -333,7 +357,7 @@ class _CosmeticsScreenState extends State<CosmeticsScreen> {
                 locked: false,
                 price: 0,
                 color: e.value,
-                onTap: () => setState(() => _disc = e.key),
+                onTap: () => _selectDisc(e.key),
               );
             }).toList(),
           ),
@@ -359,7 +383,7 @@ class _CosmeticsScreenState extends State<CosmeticsScreen> {
                 name: l10n.discName(item.id),
                 selected: selected,
                 unlocked: unlocked,
-                onSelect: unlocked ? () => setState(() => _disc = item.id) : null,
+                onSelect: unlocked ? () => _selectDisc(item.id) : null,
                 onBuy: unlocked ? null : () => _purchase('disc', item.id, item.price),
               );
             },
@@ -390,7 +414,7 @@ class _CosmeticsScreenState extends State<CosmeticsScreen> {
                 name: l10n.discName(item.id),
                 selected: selected,
                 unlocked: unlocked,
-                onSelect: unlocked ? () => setState(() => _disc = item.id) : null,
+                onSelect: unlocked ? () => _selectDisc(item.id) : null,
                 onBuy: unlocked ? null : () => _purchase('disc', item.id, item.price),
               );
             },
@@ -424,11 +448,11 @@ class _CosmeticsScreenState extends State<CosmeticsScreen> {
                   else if (unlocked)
                     IconButton(
                       icon: const Icon(Icons.circle_outlined, color: AppColors.textMuted),
-                      onPressed: () => setState(() => _board = t),
+                      onPressed: () => _selectBoard(t),
                     ),
                 ],
               ),
-              onTap: unlocked ? () => setState(() => _board = t) : null,
+              onTap: unlocked ? () => _selectBoard(t) : null,
             );
           }),
           const SizedBox(height: 24),
@@ -487,37 +511,14 @@ class _CosmeticsScreenState extends State<CosmeticsScreen> {
                   else if (unlocked)
                     IconButton(
                       icon: const Icon(Icons.circle_outlined, color: AppColors.textMuted),
-                      onPressed: () => setState(() => _winFx = fx.id),
+                      onPressed: () => _selectWinFx(fx.id),
                     ),
                 ],
               ),
-              onTap: unlocked ? () => setState(() => _winFx = fx.id) : null,
+              onTap: unlocked ? () => _selectWinFx(fx.id) : null,
             );
           }),
           const SizedBox(height: 20),
-          PucketButton(
-            label: _saving ? '...' : l10n.save,
-            onPressed: _saving
-                ? () {}
-                : () async {
-                    if (!metaSvc.isDiscUnlocked(_disc) ||
-                        !metaSvc.isBoardUnlocked(_board) ||
-                        !metaSvc.isWinFxUnlocked(_winFx)) {
-                      _snack(l10n.tokensLocked);
-                      return;
-                    }
-                    setState(() => _saving = true);
-                    await metaSvc.setCosmetics(auth.getUid(), {
-                      'discColor': _disc,
-                      'boardTheme': _board,
-                      'winFx': _winFx,
-                    });
-                    if (mounted) {
-                      setState(() => _saving = false);
-                      Navigator.pop(this.context);
-                    }
-                  },
-          ),
         ],
         ),
       ),

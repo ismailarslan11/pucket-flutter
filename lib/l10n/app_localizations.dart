@@ -142,6 +142,7 @@ class AppLocalizations {
   String get roundWon => _t('roundWon');
   String get roundLost => _t('roundLost');
   String get nextRound => _t('nextRound');
+  String get extraTime => _t('extraTime');
   String get backToMenu => _t('backToMenu');
   String get reconnecting => _t('reconnecting');
   String opponentDisconnected(int sec) => _t('opponentDisconnected').replaceAll('{sec}', '$sec');
@@ -565,6 +566,7 @@ const _tr = {
   'roundWon': 'Round kazandın',
   'roundLost': 'Round kaybettin',
   'nextRound': 'SONRAKİ ROUND',
+  'extraTime': 'UZATMA',
   'backToMenu': 'MENÜYE DÖN',
   'reconnecting': 'Bağlantı yeniden kuruluyor...',
   'opponentDisconnected': 'Rakip bağlantısı koptu — {sec} sn bekleniyor',
@@ -938,6 +940,7 @@ const _en = {
   'roundWon': 'Round won',
   'roundLost': 'Round lost',
   'nextRound': 'NEXT ROUND',
+  'extraTime': 'EXTRA TIME',
   'backToMenu': 'BACK TO MENU',
   'reconnecting': 'Reconnecting...',
   'opponentDisconnected': 'Opponent disconnected — waiting {sec}s',
@@ -1311,6 +1314,7 @@ const _de = {
   'roundWon': 'Runde gewonnen',
   'roundLost': 'Runde verloren',
   'nextRound': 'NÄCHSTE RUNDE',
+  'extraTime': 'VERLÄNGERUNG',
   'backToMenu': 'ZUM MENÜ',
   'reconnecting': 'Verbindung wird wiederhergestellt...',
   'opponentDisconnected': 'Gegner offline — warte {sec}s',
@@ -1633,6 +1637,7 @@ const _es = {
   'roundWon': 'Ronda ganada',
   'roundLost': 'Ronda perdida',
   'nextRound': 'SIGUIENTE RONDA',
+  'extraTime': 'PRÓRROGA',
   'backToMenu': 'AL MENÚ',
   'reconnecting': 'Reconectando...',
   'opponentDisconnected': 'Rival desconectado — espera {sec}s',
@@ -1955,6 +1960,7 @@ const _ar = {
   'roundWon': 'فزت بالجولة',
   'roundLost': 'خسرت الجولة',
   'nextRound': 'الجولة التالية',
+  'extraTime': 'وقت إضافي',
   'backToMenu': 'القائمة',
   'reconnecting': 'إعادة الاتصال...',
   'opponentDisconnected': 'انقطع الخصم — انتظر {sec}ث',
@@ -2277,6 +2283,7 @@ const _fr = {
   'roundWon': 'Manche gagnée',
   'roundLost': 'Manche perdue',
   'nextRound': 'MANCHE SUIVANTE',
+  'extraTime': 'PROLONGATION',
   'backToMenu': 'AU MENU',
   'reconnecting': 'Reconnexion...',
   'opponentDisconnected': 'Adversaire déconnecté — {sec}s',

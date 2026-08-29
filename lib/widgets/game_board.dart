@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../game/game_constants.dart';
 import '../game/game_controller.dart';
 import '../models/cosmetic_catalog.dart';
+import '../services/api_config.dart';
 import '../services/auth_service.dart';
 import '../services/disc_image_cache.dart';
 import '../services/player_meta_service.dart';
@@ -28,6 +29,8 @@ class _GameBoardState extends State<GameBoard> with SingleTickerProviderStateMix
   double _innerH = 0;
   double _sx = 1;
   double _sy = 1;
+  double _lastFpsMs = 0;
+  double _fpsEwma = 0;
 
   @override
   void initState() {
@@ -70,8 +73,11 @@ class _GameBoardState extends State<GameBoard> with SingleTickerProviderStateMix
     final game = _game ?? context.read<GameController>();
     final disc = meta.discColor(auth.getUid());
     final board = meta.boardTheme(auth.getUid());
-    // Rakip kozmetiği yalnızca gerçek çevrimiçi maçta gösterilir.
-    final oppDisc = (!game.aiMode && !game.localDuoMode) ? game.opponentDiscColor : '';
+    // Rakip kozmetiği gerçek çevrimiçi maçta ve gizli bot maçında gösterilir
+    // (bot da gerçek oyuncu gibi bazen premium pul kullanır).
+    final oppDisc = (game.isBotFallback || (!game.aiMode && !game.localDuoMode))
+        ? game.opponentDiscColor
+        : '';
     if (disc != _discColor || board != _boardTheme || oppDisc != _oppDiscColor) {
       setState(() {
         _discColor = disc;
@@ -97,7 +103,18 @@ class _GameBoardState extends State<GameBoard> with SingleTickerProviderStateMix
     if (game == null) return;
     if (game.phase != GamePhase.playing) return;
     final ms = elapsed.inMicroseconds / 1000.0;
-    if (game.tick(ms)) {
+    if (kNetDebugHud) {
+      if (_lastFpsMs != 0) {
+        final dt = ms - _lastFpsMs;
+        if (dt > 0) {
+          final inst = 1000.0 / dt;
+          _fpsEwma = _fpsEwma == 0 ? inst : _fpsEwma * 0.9 + inst * 0.1;
+        }
+      }
+      _lastFpsMs = ms;
+      game.debugFps = _fpsEwma;
+    }
+    if (game.tick(ms) || (kNetDebugHud && game.isNetClient)) {
       game.boardRepaint.bump();
     }
   }
@@ -142,7 +159,9 @@ class _GameBoardState extends State<GameBoard> with SingleTickerProviderStateMix
               padding: const EdgeInsets.all(frameWidth),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(13),
-                child: game.localDuoMode
+                child: Stack(
+                  children: [
+                    game.localDuoMode
                     ? Listener(
                         behavior: HitTestBehavior.opaque,
                         onPointerDown: (e) {
@@ -187,6 +206,27 @@ class _GameBoardState extends State<GameBoard> with SingleTickerProviderStateMix
                         onPanCancel: () => game.onPointerUp(0),
                         child: _canvas(game),
                       ),
+                    if (kNetDebugHud && game.isNetClient)
+                      Positioned(
+                        top: 4,
+                        left: 6,
+                        child: IgnorePointer(
+                          child: AnimatedBuilder(
+                            animation: game.boardRepaint,
+                            builder: (context, _) => Text(
+                              game.netDebugLine,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                backgroundColor: Color(0xCC000000),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ),
           ),

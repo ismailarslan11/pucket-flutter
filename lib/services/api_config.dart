@@ -1,6 +1,14 @@
+/// Ağ ölçüm göstergesi (misafir ekranında FPS/RX/Buf/Dly). Yayın öncesi false yap.
+const bool kNetDebugHud = false;
+
 /// Canlı sunucu (Render). Yerel test için:
 /// flutter run --dart-define=WS_URL=ws://localhost:8080 --dart-define=API_URL=http://localhost:8080
-const kProductionServer = 'https://pucket-flutter-2.onrender.com';
+/// Ağ protokol sürümü. Sunucu-otoriteli mimari = 2. Sunucu, iki oyuncunun
+/// sürümü eşleşmezse maçı reddedip 'needUpdate' yollar (sessiz ışınlanma yerine
+/// net "güncelle" uyarısı).
+const kProtocolVersion = 2;
+
+const kProductionServer = 'https://api.yesaworks.xyz';
 const kLocalServerHttp = 'http://localhost:8080';
 const kLocalServerWs = 'ws://localhost:8080';
 
@@ -19,7 +27,7 @@ String get kWsServerUrl {
 
   if (useLocalDevServer) return kLocalServerWs;
 
-  return 'wss://pucket-flutter-2.onrender.com';
+  return 'wss://api.yesaworks.xyz';
 }
 
 String httpBaseFromWs(String wsUrl) {
