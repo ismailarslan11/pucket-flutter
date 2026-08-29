@@ -1884,12 +1884,48 @@ class GameController extends ChangeNotifier {
   void rematchLocal() {
     pendingEloResult = null;
     if (matchFinished) {
+      // Yeni maç = yeni rakip. Gizli bot maçlarında oyuncu gerçek biriyle
+      // eşleştiğini sanıyor; aynı isimle arka arkaya karşılaşmak yanılsamayı
+      // bozar. Kariyer/antrenman/2 kişilik modda rakip sabittir, dokunulmaz.
+      if (isBotFallback && !careerMode && !trainingMode && !localDuoMode) {
+        _assignNewBotOpponent();
+      }
       resetMatch();
       startCountdown();
     } else {
       resetRound();
       startCountdown();
     }
+  }
+
+  /// Gizli bot maçı için yeni bir rakip üretir: ad, ELO, lig, pul kozmetiği,
+  /// oda kodu ve zorluk seviyesi baştan seçilir.
+  void _assignNewBotOpponent() {
+    final previousName = opponentName;
+    final pick = pickHiddenBotLevel(settings.botMatchesSinceEasy);
+    unawaited(settings.setBotMatchesSinceEasy(pick.nextCounter));
+    aiLevel = pick.level;
+
+    // Aynı ad üst üste gelmesin: havuz küçükse birkaç deneme sonra kabul et.
+    BotFallbackProfile profile;
+    var attempts = 0;
+    do {
+      profile = BotFallbackProfile.generate(
+        playerElo: auth?.user?.elo ?? 1000,
+        namePool: BotNames.pool,
+      );
+      attempts++;
+    } while (profile.name == previousName && attempts < 5);
+
+    roomCode = profile.roomCode;
+    opponentName = profile.name;
+    opponentElo = profile.elo;
+    opponentLeague = profile.league;
+    opponentDiscColor = profile.discId;
+
+    // Ad havuzu lobide tazeleniyor; burada yeniden ağa gitmeye gerek yok.
+    // Havuz boşsa generate() yerleşik listeye düşer.
+    _maybeBotEmote(const ['👍', '🤝', '😎'], chance: 0.45);
   }
 
   void continueToNextRound() {
