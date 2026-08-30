@@ -13,8 +13,15 @@ import '../theme/app_theme.dart';
 /// hareketinden kaynaklanır ve uygulamadan kapatılamaz. iOS bu ayarın açık mı
 /// kapalı mı olduğunu okumaya da izin vermez; bu yüzden kullanıcı "Kapattım,
 /// gösterme" diyene kadar menü her açıldığında hatırlatma gösterilir.
+///
+/// iPad'de gösterilmez: Ulaşılabilirlik iPhone'a özgü bir özellik, iPad'de
+/// hiç yok. Uyarı orada hem gereksiz hem de "iPhone'un" diye başladığı için
+/// yanlış cihazdan bahsediyordu.
 Future<void> maybeShowReachabilityHint(BuildContext context) async {
   if (kIsWeb || !Platform.isIOS) return;
+  // iPad ayıklaması: en kısa kenar 600'ün altındaysa telefon. iPhone'ların en
+  // genişi ~430, iPad'lerin en darı ~744 — arada geniş bir boşluk var.
+  if (MediaQuery.of(context).size.shortestSide >= 600) return;
   final settings = context.read<SettingsService>();
   // "Kapattım, gösterme" seçilmişse artık hiç gösterme.
   if (settings.reachabilityHintShown) return;

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../services/auth_service.dart';
@@ -27,7 +28,7 @@ class _UsernameScreenState extends State<UsernameScreen> {
   bool _available = false;
   bool _serverError = false;
   bool _submitting = false;
-  String _hint = '2-16 karakter, harf ve rakam';
+  String _hint = '2-16 karakter · İngilizce harf, rakam, _';
 
   @override
   void initState() {
@@ -60,10 +61,10 @@ class _UsernameScreenState extends State<UsernameScreen> {
         _available = false;
         _checking = false;
         _hint = v.isEmpty
-            ? '2-16 karakter, harf ve rakam'
+            ? '2-16 karakter · İngilizce harf, rakam, _'
             : v.length < 2
                 ? 'En az 2 karakter'
-                : 'Sadece harf, rakam ve _ kullanılabilir';
+                : 'Sadece İngilizce harf, rakam ve _ kullanılabilir';
       }
     });
   }
@@ -201,6 +202,14 @@ class _UsernameScreenState extends State<UsernameScreen> {
                           maxLength: 16,
                           textAlign: TextAlign.center,
                           enabled: !_submitting,
+                          // Sunucu da aynı kümeyi dayatıyor (server.js
+                          // validateUsername). Türkçe karakter yazılabildiği
+                          // hâlde reddedildiğinde kullanıcı "ş de harf ama"
+                          // diye takılıyordu; artık hiç yazılamıyor.
+                          inputFormatters: [
+                            FilteringTextInputFormatter.allow(
+                                RegExp(r'[a-zA-Z0-9_]')),
+                          ],
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w900,
