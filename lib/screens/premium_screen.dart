@@ -1,3 +1,6 @@
+import 'dart:io' show Platform;
+
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -197,7 +200,7 @@ class PremiumScreen extends StatelessWidget {
                         const SizedBox(width: 5),
                         Flexible(
                           child: Text(
-                            l10n.securePayments,
+                            l10n.securePayments(_storeName),
                             textAlign: TextAlign.center,
                             style: const TextStyle(color: AppColors.textMuted, fontSize: 10),
                           ),
@@ -1013,4 +1016,12 @@ class _BattlePassCard extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Ödemenin geçtiği mağazanın adı. iOS'ta rakip platformun adı görünmemeli —
+/// App Store incelemesi "Google Play" ibaresini 2.3.10 (Accurate Metadata)
+/// kapsamında reddediyor.
+String get _storeName {
+  if (kIsWeb) return 'App Store';
+  return Platform.isIOS ? 'App Store' : 'Google Play';
 }

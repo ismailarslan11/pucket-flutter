@@ -286,7 +286,10 @@ class AppLocalizations {
   String get openLabel => _t('openLabel');
   String get premiumHeroSub => _t('premiumHeroSub');
   String get bestOffer => _t('bestOffer');
-  String get securePayments => _t('securePayments');
+  /// Mağaza adı çalışma anında yerleştirilir: iOS'ta 'Google Play' yazması
+  /// App Store incelemesinde 2.3.10 (Accurate Metadata) reddine yol açıyor.
+  String securePayments(String store) =>
+      _t('securePayments').replaceAll('{store}', store);
   String get noInternetTitle => _t('noInternetTitle');
   String get noInternetBody => _t('noInternetBody');
   String get noInternetRetry => _t('noInternetRetry');
@@ -694,7 +697,7 @@ const _tr = {
   'winFxNeon': 'Neon Fırtına',
   'premiumHeroSub': 'Ayrıcalıklarını aç, kazancını katla',
   'bestOffer': 'EN İYİ TEKLİF',
-  'securePayments': 'Ödemeler Google Play / App Store üzerinden güvenle işlenir',
+  'securePayments': 'Ödemeler {store} üzerinden güvenle işlenir',
   'disc_vip_gold': 'VIP Taç',
   'tournamentJoined': 'Katıldın! Ranked kazanınca puan topla.',
   'tournamentPrizes': 'Haftalık Ödüller',
@@ -1068,7 +1071,7 @@ const _en = {
   'winFxNeon': 'Neon Storm',
   'premiumHeroSub': 'Unlock perks, multiply your rewards',
   'bestOffer': 'BEST OFFER',
-  'securePayments': 'Payments are processed securely by Google Play / App Store',
+  'securePayments': 'Payments are processed securely by {store}',
   'disc_vip_gold': 'VIP Crown',
   'tournamentJoined': 'Joined! Earn points by winning ranked.',
   'tournamentPrizes': 'Weekly Prizes',
