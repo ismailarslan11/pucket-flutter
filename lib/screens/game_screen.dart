@@ -15,12 +15,10 @@ import '../services/meta_api.dart';
 import '../models/cosmetic_catalog.dart';
 import '../services/player_meta_service.dart';
 import '../services/settings_service.dart';
-import '../services/battle_pass_api.dart';
 import '../services/friends_api.dart';
 import '../services/share_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/game_board.dart';
-import '../widgets/ping_indicator.dart';
 import '../widgets/pucket_logo.dart';
 import '../widgets/pucket_button.dart';
 import '../widgets/yesa_effects.dart';
@@ -51,7 +49,6 @@ class _GameScreenState extends State<GameScreen> {
   Timer? _eloFallbackTimer;
   int _lastRoundAdKey = -1;
   int _lastWinTokenKey = -1;
-  int _lastBpXpKey = -1;
   int _lastQuestKey = -1;
 
   @override
@@ -73,7 +70,8 @@ class _GameScreenState extends State<GameScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final game = context.read<GameController>();
-      // Gizli bot: "AI antrenman" bildirimi gösterilmez.
+      // Fallback maçında "AI antrenman" bildirimi gösterilmez; mod etiketi
+      // zaten yapay zekâ rakip olduğunu yazıyor.
       game.onOpponentLeft = () {
         if (mounted) {
           final l10n = context.l10nRead;
@@ -161,7 +159,6 @@ class _GameScreenState extends State<GameScreen> {
 
     if (game.phase == GamePhase.gameover && _lastPhase != GamePhase.gameover) {
       _maybeAwardWinTokens(game);
-      _maybeAwardBattlePassXp(game);
       _maybeBumpQuests(game);
       if (game.careerMode && game.matchFinished && game.careerOpponent != null) {
         final won = game.lastWinner == game.mySeat;
@@ -185,7 +182,8 @@ class _GameScreenState extends State<GameScreen> {
           });
         });
       } else if (game.isRanked && game.matchFinished) {
-        // Ranked (gerçek veya gizli bot): ELO ekranı göster.
+        // ELO ekranı yalnızca gerçek sıralama maçında açılır. Yapay zekâ maçı
+        // artık isRanked olmadığı için buraya hiç düşmez.
         if (game.pendingEloResult != null) {
           final r = game.pendingEloResult!;
           setState(() {
@@ -223,9 +221,11 @@ class _GameScreenState extends State<GameScreen> {
   void _maybeAwardWinTokens(GameController game) {
     if (!game.matchFinished || game.lastWinner != game.mySeat) return;
     if (game.trainingMode || game.localDuoMode || game.careerMode) return;
-    // Gizli bot (fallback) gerçek maç gibi jeton verir — botluğu belli olmasın.
-    // Ama oyuncunun bilerek seçtiği "Bota Karşı" modunda jeton verilmez.
-    if (game.aiMode && !game.isBotFallback) return;
+    // Yapay zekâ maçlarının hepsi aynı ödülü verir. Önceden yalnızca gizli
+    // fallback maçı jeton veriyor, oyuncunun bilerek seçtiği "Bilgisayara Karşı"
+    // vermiyordu. Bu asimetri, etiketsiz modu "gerçek maç" konumuna koyuyordu;
+    // çiftçiliğe karşı da bir koruma sağlamıyordu (iki mod da aynı ölçüde
+    // tekrarlanabilir). Ayrım kaldırıldı.
     final key = game.visualGeneration;
     if (_lastWinTokenKey == key) return;
     _lastWinTokenKey = key;
@@ -254,18 +254,6 @@ class _GameScreenState extends State<GameScreen> {
           win: won,
           career: game.careerMode && won,
         );
-  }
-
-  void _maybeAwardBattlePassXp(GameController game) {
-    if (!game.matchFinished) return;
-    if (game.trainingMode || game.localDuoMode) return;
-    // "Bota Karşı" modu XP vermez (farm önlenir); gizli bot fallback verir.
-    if (game.aiMode && !game.isBotFallback && !game.careerMode) return;
-    if (_lastBpXpKey == game.visualGeneration) return;
-    _lastBpXpKey = game.visualGeneration;
-    final won = game.lastWinner == game.mySeat;
-    final uid = context.read<AuthService>().getUid();
-    BattlePassApi.addXp(uid, won ? 50 : 20);
   }
 
   void _maybeShowRoundAd(GameController game) {
@@ -311,7 +299,6 @@ class _GameScreenState extends State<GameScreen> {
                 return Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    _topBar(g, l10n),
                     if (g.reconnecting)
                       Container(
                         width: double.infinity,
@@ -410,7 +397,7 @@ class _GameScreenState extends State<GameScreen> {
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: AppColors.morDahaKoyu.withValues(alpha: 0.85),
+        color: AppColors.laciDerin.withValues(alpha: 0.85),
         shape: BoxShape.circle,
         border: Border.all(color: ring, width: 2),
         boxShadow: AppShadows.neon(ring, blur: 10),
@@ -427,7 +414,7 @@ class _GameScreenState extends State<GameScreen> {
         height: 42,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: AppColors.morDahaKoyu.withValues(alpha: 0.7),
+          color: AppColors.laciDerin.withValues(alpha: 0.7),
           border: Border.all(color: AppColors.beyaz.withValues(alpha: 0.3)),
         ),
         child: const Icon(Icons.emoji_emotions_rounded, color: AppColors.accentYellow, size: 24),
@@ -480,107 +467,107 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
-  Widget _topBar(GameController game, l10n) {
-    final lbl0 = game.localDuoMode ? game.localPlayerRed.toUpperCase() : l10n.youRed;
-    final lbl1 = game.localDuoMode
-        ? game.localPlayerBlue.toUpperCase()
-        : game.careerMode || game.isBotFallback
-            ? game.opponentName.toUpperCase()
-            : game.aiMode
-                ? l10n.botBlue
-                : (game.opponentName.isNotEmpty ? game.opponentName.toUpperCase() : l10n.blue);
-
-    return Container(
-      height: 52,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        border: Border(
-          bottom: BorderSide(color: AppColors.fieldBlue.withValues(alpha: 0.25)),
-        ),
-      ),
-      child: Row(
-        children: [
-          Expanded(child: _scoreBox(lbl0, game.roundWins[0], AppColors.red, alignEnd: false)),
-          if (game.careerMode ||
-              game.isBotFallback ||
-              game.trainingMode ||
-              game.localDuoMode ||
-              (!game.aiMode && game.opponentName.isNotEmpty))
-            Flexible(
-              flex: 0,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      game.localDuoMode
-                          ? l10n.localDuoMode
-                          : game.trainingMode
-                          ? l10n.trainingMode
-                          // Gizli bot: ranked ise "RANKED", değilse "ONLINE" göster.
-                          : game.careerMode
-                              ? l10n.careerMode
-                              : (game.isRanked ? l10n.ranked : l10n.online),
-                      style: TextStyle(
-                        fontSize: 7,
-                        color: game.careerMode ? AppColors.gold : AppColors.textDim,
-                        letterSpacing: 1,
-                        fontWeight: game.careerMode ? FontWeight.w800 : FontWeight.normal,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
+  /// Üst şerit: yalnızca süre ve duraklat.
+  ///
+  /// Önce burada büyük skor kutuları, mod etiketi, raunt noktaları, oda kodu ve
+  /// ping vardı. Hepsi kaldırıldı; tahtaya yer açıldı. Raunt skoru artık iki yarı
+  /// sahanın ortasında soluk rakamlar olarak duruyor.
+  Widget _roundRow(GameController game, String timer, l10n) {
+    final Widget timerWidget = game.timedMode
+        ? Builder(builder: (_) {
+            // Uzatmada sayaç rengi değişir: oyuncu normal sürenin bittiğini ve
+            // skorun eşit olduğunu fark etmeli.
+            final c = game.inExtraTime ? AppColors.red : AppColors.gold;
+            return Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
+              decoration: BoxDecoration(
+                color: c.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: c.withValues(alpha: 0.5)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    game.inExtraTime
+                        ? Icons.timelapse_rounded
+                        : Icons.timer_rounded,
+                    color: c,
+                    size: 15,
+                  ),
+                  const SizedBox(width: 5),
+                  Text(
+                    timer,
+                    style: TextStyle(
+                      color: c,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 16,
+                      letterSpacing: 1,
                     ),
+                  ),
+                  if (game.inExtraTime) ...[
+                    const SizedBox(width: 5),
                     Text(
-                      game.localDuoMode
-                          ? l10n.localDuoSimultaneous
-                          : game.trainingMode
-                          ? (game.trainingGoalLabel.isNotEmpty ? game.trainingGoalLabel : l10n.trainingMode)
-                          : game.isBotFallback
-                              ? '${game.opponentElo}'
-                              : game.careerMode
-                                  ? game.opponentLeague
-                                  : '${game.opponentElo}',
+                      l10n.extraTime,
                       style: TextStyle(
-                        fontSize: 10,
-                        color: game.careerMode ? AppColors.textMuted : AppColors.gold,
-                        fontWeight: FontWeight.w800,
+                        color: c,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 9,
+                        letterSpacing: 1,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
                     ),
                   ],
+                ],
+              ),
+            );
+          })
+        : Text(
+            timer,
+            style: const TextStyle(
+              color: AppColors.gold,
+              fontWeight: FontWeight.w900,
+              fontSize: 15,
+              letterSpacing: 1,
+            ),
+          );
+
+    return Container(
+      height: 34,
+      decoration: BoxDecoration(
+        color: AppColors.bgDeep,
+        border: Border(
+          bottom: BorderSide(color: AppColors.brandBlue.withValues(alpha: 0.2)),
+        ),
+      ),
+      child: Stack(
+        children: [
+          // Süre tam ortada dursun diye Stack: duraklat düğmesi onu kaydırmıyor.
+          Center(child: timerWidget),
+          Align(
+            alignment: Alignment.centerRight,
+            child: Padding(
+              padding: const EdgeInsets.only(right: 6),
+              child: IconButton(
+                onPressed: game.phase == GamePhase.gameover
+                    ? null
+                    : () {
+                        game.togglePause();
+                        setState(
+                            () => _showPause = game.phase == GamePhase.paused);
+                      },
+                icon: Icon(
+                  game.phase == GamePhase.paused
+                      ? Icons.play_arrow
+                      : Icons.pause,
+                  color: AppColors.textMuted,
+                  size: 18,
+                ),
+                style: IconButton.styleFrom(
+                  side: const BorderSide(color: AppColors.borderSubtle),
+                  minimumSize: const Size(28, 28),
+                  padding: EdgeInsets.zero,
                 ),
               ),
-            ),
-          Expanded(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Expanded(child: _scoreBox(lbl1, game.roundWins[1], AppColors.blue, alignEnd: true)),
-                IconButton(
-                  onPressed: game.phase == GamePhase.gameover
-                      ? null
-                      : () {
-                          game.togglePause();
-                          setState(() => _showPause = game.phase == GamePhase.paused);
-                        },
-                  icon: Icon(
-                    game.phase == GamePhase.paused ? Icons.play_arrow : Icons.pause,
-                    color: AppColors.textMuted,
-                    size: 20,
-                  ),
-                  style: IconButton.styleFrom(
-                    side: const BorderSide(color: AppColors.borderSubtle),
-                    minimumSize: const Size(32, 32),
-                    padding: EdgeInsets.zero,
-                  ),
-                ),
-              ],
             ),
           ),
         ],
@@ -588,161 +575,6 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
-  Widget _roundRow(GameController game, String timer, l10n) {
-    return Container(
-      height: 28,
-      decoration: BoxDecoration(
-        color: AppColors.bgDeep,
-        border: Border(
-          bottom: BorderSide(color: AppColors.brandBlue.withValues(alpha: 0.2)),
-        ),
-      ),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 8),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            ...[
-              Text(
-                'ROUND ${game.currentRound}/${GameController.maxRounds}',
-                style: TextStyle(
-                  fontSize: 9,
-                  fontWeight: FontWeight.w900,
-                  color: AppColors.fieldBlue.withValues(alpha: 0.45),
-                  letterSpacing: 2,
-                ),
-              ),
-              const SizedBox(width: 8),
-              _pip(game.roundWins[0] > 0, AppColors.red),
-              _pip(game.roundWins[0] > 1, AppColors.red),
-              Container(
-                width: 1,
-                height: 12,
-                margin: const EdgeInsets.symmetric(horizontal: 4),
-                color: const Color(0xFF2A4A66),
-              ),
-              _pip(game.roundWins[1] > 0, AppColors.blue),
-              _pip(game.roundWins[1] > 1, AppColors.blue),
-              const SizedBox(width: 8),
-              if (!game.timedMode)
-                Text(timer,
-                    style: const TextStyle(
-                        color: AppColors.gold,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 11)),
-            ],
-            if (game.timedMode)
-              Builder(builder: (_) {
-                // Uzatmada sayaç rengi değişir: oyuncu normal sürenin bittiğini
-                // ve skorun eşit olduğunu fark etmeli.
-                final c = game.inExtraTime ? AppColors.red : AppColors.gold;
-                return Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: c.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: c.withValues(alpha: 0.5)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        game.inExtraTime
-                            ? Icons.timelapse_rounded
-                            : Icons.timer_rounded,
-                        color: c,
-                        size: 15,
-                      ),
-                      const SizedBox(width: 5),
-                      Text(
-                        timer,
-                        style: TextStyle(
-                          color: c,
-                          fontWeight: FontWeight.w900,
-                          fontSize: 16,
-                          letterSpacing: 1,
-                        ),
-                      ),
-                      if (game.inExtraTime) ...[
-                        const SizedBox(width: 5),
-                        Text(
-                          l10n.extraTime,
-                          style: TextStyle(
-                            color: c,
-                            fontWeight: FontWeight.w900,
-                            fontSize: 9,
-                            letterSpacing: 1,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                );
-              }),
-            if (!game.aiMode && !game.localDuoMode && game.pingMs != null) ...[
-              const SizedBox(width: 6),
-              PingIndicator(pingMs: game.pingMs),
-            ],
-            if (game.roomCode.isNotEmpty) ...[
-              const SizedBox(width: 8),
-              Text(
-                game.localDuoMode
-                    ? l10n.localDuoMode
-                    : game.careerMode
-                    ? l10n.careerMode
-                    : game.isBotFallback
-                        ? game.roomCode
-                        : game.aiMode
-                            ? l10n.bot
-                            : game.roomCode,
-                style: TextStyle(
-                  color: game.careerMode ? AppColors.gold : AppColors.textFaint,
-                  fontSize: 9,
-                  letterSpacing: 1,
-                  fontWeight: game.careerMode ? FontWeight.w800 : FontWeight.normal,
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _pip(bool filled, Color color) {
-    return Container(
-      width: 9,
-      height: 9,
-      margin: const EdgeInsets.symmetric(horizontal: 2),
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: filled ? color : Colors.transparent,
-        border: Border.all(color: color, width: 1.5),
-      ),
-    );
-  }
-
-  Widget _scoreBox(String label, int score, Color color, {bool alignEnd = false}) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: alignEnd ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(fontSize: 8, letterSpacing: 1, fontWeight: FontWeight.bold, color: color),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          textAlign: alignEnd ? TextAlign.right : TextAlign.left,
-        ),
-        Text(
-          '$score',
-          style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, height: 1, color: color),
-        ),
-      ],
-    );
-  }
 
   Widget _bottomBar(GameController game, l10n) {
     return Container(
@@ -812,7 +644,7 @@ class _GameScreenState extends State<GameScreen> {
 
   Widget? _phaseOverlay(GameController game, l10n) {
     if (game.phase != GamePhase.gameover || _showElo || _showCareer) return null;
-    if (game.isRanked && game.matchFinished && !game.isBotFallback) return null;
+    if (game.isRanked && game.matchFinished) return null;
     // Süreli mod beraberliği: kazanan yok ama sonuç ekranı gösterilir.
     if (game.isDraw) return _buildDrawOverlay(game, l10n);
     if (game.lastWinner == null) return null;
@@ -928,10 +760,10 @@ class _GameScreenState extends State<GameScreen> {
         ];
       case 'neon':
         return const [
-          AppColors.camgobegi,
-          AppColors.acikCamgobegi,
-          AppColors.acikMor,
-          AppColors.pembe,
+          AppColors.gokAcik,
+          AppColors.gokDaha,
+          AppColors.acikMavi,
+          AppColors.parlakMavi,
           AppColors.neonYesil,
         ];
       default:
@@ -948,98 +780,109 @@ class _GameScreenState extends State<GameScreen> {
     VoidCallback? onPrimary,
   }) {
     return SizedBox.expand(
-      child: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              GlowPulse(
-                color: title.length <= 2 ? AppColors.neonYesil : AppColors.sariAna,
-                min: 0.2,
-                max: 0.55,
-                child: Text(
-                  title,
-                  textAlign: TextAlign.center,
-                  style: AppTextStyles.glow(title.length <= 2 ? AppColors.neonYesil : AppColors.sariAna)
-                      .copyWith(fontSize: title.length <= 2 ? 88 : 32),
+      child: Column(
+        children: [
+          Expanded(
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                  GlowPulse(
+                    color: title.length <= 2 ? AppColors.neonYesil : AppColors.sariAna,
+                    min: 0.2,
+                    max: 0.55,
+                    child: Text(
+                      title,
+                      textAlign: TextAlign.center,
+                      style: AppTextStyles.glow(title.length <= 2 ? AppColors.neonYesil : AppColors.sariAna)
+                          .copyWith(fontSize: title.length <= 2 ? 88 : 32),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Text(
+                    sub,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: AppColors.textMuted, fontSize: 13, height: 1.6),
+                  ),
+                  if (primaryLabel != null && onPrimary != null) ...[
+                    const SizedBox(height: 20),
+                    PucketButton(
+                      label: primaryLabel,
+                      pulse: true,
+                      width: 260,
+                      onPressed: () {
+                        onPrimary();
+                        if (mounted) setState(() => _showOverlay = false);
+                        if (!game.aiMode &&
+                            !game.trainingMode &&
+                            game.matchFinished &&
+                            game.myRematchPending) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(l10n.rematchSent)),
+                          );
+                        }
+                      },
+                    ),
+                  ],
+                  if (game.matchFinished) ...[
+                    const SizedBox(height: 14),
+                    PucketButton(
+                      label: l10n.shareResult,
+                      secondary: true,
+                      width: 260,
+                      onPressed: () {
+                        final auth = context.read<AuthService>();
+                        final won = game.lastWinner == game.mySeat;
+                        ShareService.shareMatchResult(
+                          playerName: auth.getName(),
+                          won: won,
+                          score: '${game.roundWins[0]} - ${game.roundWins[1]}',
+                          eloChange: _eloResult?.eloChange,
+                          newElo: _eloResult?.newElo,
+                          league: _eloResult?.newLeague,
+                        );
+                      },
+                    ),
+                  ],
+                  // Arkadaş ekleme yalnızca gerçek çevrimiçi rakip için.
+                  if (game.matchFinished &&
+                      !game.aiMode &&
+                      !game.isBotFallback &&
+                      game.opponentUid.isNotEmpty) ...[
+                    const SizedBox(height: 14),
+                    PucketButton(
+                      label: l10n.friendAdd,
+                      secondary: true,
+                      width: 260,
+                      onPressed: () async {
+                        final auth = context.read<AuthService>();
+                        final messenger = ScaffoldMessenger.of(context);
+                        final added = l10n.friendAdded;
+                        final err = await FriendsApi.addByUid(auth.getUid(), game.opponentUid);
+                        messenger.showSnackBar(SnackBar(content: Text(err ?? added)));
+                      },
+                    ),
+                  ],
+                  ],
                 ),
               ),
-              const SizedBox(height: 14),
-              Text(
-                sub,
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: AppColors.textMuted, fontSize: 13, height: 1.6),
-              ),
-              if (primaryLabel != null && onPrimary != null) ...[
-                const SizedBox(height: 20),
-                PucketButton(
-                  label: primaryLabel,
-                  pulse: true,
-                  width: 260,
-                  onPressed: () {
-                    onPrimary();
-                    if (mounted) setState(() => _showOverlay = false);
-                    if (!game.aiMode &&
-                        !game.trainingMode &&
-                        game.matchFinished &&
-                        game.myRematchPending) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text(l10n.rematchSent)),
-                      );
-                    }
-                  },
-                ),
-              ],
-              if (game.matchFinished) ...[
-                const SizedBox(height: 14),
-                PucketButton(
-                  label: l10n.shareResult,
-                  secondary: true,
-                  width: 260,
-                  onPressed: () {
-                    final auth = context.read<AuthService>();
-                    final won = game.lastWinner == game.mySeat;
-                    ShareService.shareMatchResult(
-                      playerName: auth.getName(),
-                      won: won,
-                      score: '${game.roundWins[0]} - ${game.roundWins[1]}',
-                      eloChange: _eloResult?.eloChange,
-                      newElo: _eloResult?.newElo,
-                      league: _eloResult?.newLeague,
-                    );
-                  },
-                ),
-              ],
-              // Gerçek çevrimiçi rakip: arkadaş ekleme sun (bot değilse).
-              if (game.matchFinished &&
-                  !game.aiMode &&
-                  !game.isBotFallback &&
-                  game.opponentUid.isNotEmpty) ...[
-                const SizedBox(height: 14),
-                PucketButton(
-                  label: l10n.friendAdd,
-                  secondary: true,
-                  width: 260,
-                  onPressed: () async {
-                    final auth = context.read<AuthService>();
-                    final messenger = ScaffoldMessenger.of(context);
-                    final added = l10n.friendAdded;
-                    final err = await FriendsApi.addByUid(auth.getUid(), game.opponentUid);
-                    messenger.showSnackBar(SnackBar(content: Text(err ?? added)));
-                  },
-                ),
-              ],
-              const SizedBox(height: 14),
-              PucketButton(
-                label: l10n.backToMenu,
-                secondary: true,
-                width: 260,
-                onPressed: () => AppRouter.goMenu(context),
-              ),
-            ],
+            ),
           ),
-        ),
+          // "Menüye dön" alt kenara sabitlendi. Ortadaki yığının sonundayken
+          // kaplamanın uzunluğuna göre yer değiştiriyor, uzun sonuç ekranlarında
+          // kaydırma gerektiriyordu; burada her maçta aynı yerde.
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 4, 24, 16),
+            child: PucketButton(
+              label: l10n.backToMenu,
+              secondary: true,
+              width: 260,
+              onPressed: () => AppRouter.goMenu(context),
+            ),
+          ),
+        ],
       ),
     );
   }

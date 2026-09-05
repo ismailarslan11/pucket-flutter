@@ -1,24 +1,88 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../l10n/l10n_extension.dart';
-import '../l10n/app_localizations.dart';
-import '../models/rank_tier.dart';
-import '../models/user_profile.dart';
 import '../services/auth_service.dart';
 import '../services/career_service.dart';
 import '../services/player_meta_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/ad_banner_widget.dart';
 import '../widgets/daily_quests_panel.dart';
+import '../widgets/pucket_logo.dart';
 import '../widgets/ranked_login_dialog.dart';
 import '../widgets/yesa_background.dart';
 import '../widgets/yesa_effects.dart';
-import '../widgets/yesa_menu_tile.dart';
 import 'app_router.dart';
 
-class MenuScreen extends StatelessWidget {
+/// Ana menü.
+///
+/// Önceki hâli dikey bir panel listesiydi: profil kartı, görev paneli, sonra
+/// oyun kartları — hepsi aynı boyda dikdörtgen. Hiyerarşi olmadığı için ekran
+/// bir ayarlar sayfası gibi okunuyordu. Bu düzen üç kademeye ayrılır:
+///
+///   1. İnce üst şerit — kimlik ve sayaçlar, kart değil
+///   2. Kahraman alan — süzülen logo + nabız atan OYNA
+///   3. İkincil modlar, sonra yuvarlak ikonlar — küçülen ağırlıkta
+///
+/// Görev listesi satır satır ekranda durmak yerine üst şeritteki alev
+/// rozetinin arkasına alındı; menüye giren oyuncu önce oynamayı görüyor.
+class MenuScreen extends StatefulWidget {
   const MenuScreen({super.key});
+
+  @override
+  State<MenuScreen> createState() => _MenuScreenState();
+}
+
+class _MenuScreenState extends State<MenuScreen>
+    with SingleTickerProviderStateMixin {
+  /// Tek denetleyici hem logonun süzülmesini hem OYNA'nın nabzını sürer —
+  /// iki ayrı denetleyici menüde gereksiz kare tüketiyordu.
+  late final AnimationController _idle;
+
+  @override
+  void initState() {
+    super.initState();
+    _idle = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2600),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _idle.dispose();
+    super.dispose();
+  }
+
+  void _openQuests() {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => Padding(
+        padding: const EdgeInsets.fromLTRB(14, 0, 14, 24),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 44,
+                height: 4,
+                margin: const EdgeInsets.symmetric(vertical: 12),
+                decoration: BoxDecoration(
+                  color: AppColors.buzMavi.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const DailyQuestsPanel(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,138 +91,122 @@ class MenuScreen extends StatelessWidget {
     final meta = context.watch<PlayerMetaService>();
     final l10n = context.l10n;
     final user = auth.user;
-    final tier = user != null ? RankTier.forElo(user.elo) : null;
 
     return Scaffold(
       body: YesaBackground(
         child: SafeArea(
           child: Column(
             children: [
-              if (user != null && tier != null)
-                _ProfileCard(user: user, tier: tier, tokens: meta.tokens, l10n: l10n),
+              if (user != null)
+                _TopBar(
+                  name: user.name,
+                  tokens: meta.tokens,
+                  onAvatar: () {
+                    if (!auth.canPlayRanked) {
+                      showRankedLoginDialog(context);
+                    } else {
+                      AppRouter.goProfile(context);
+                    }
+                  },
+                  onQuests: _openQuests,
+                  onPremium: () => AppRouter.goPremium(context),
+                ),
               Expanded(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(14, 8, 14, 14),
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      StaggerIn(index: 2, child: const DailyQuestsPanel()),
-                      const SizedBox(height: 16),
-                      // Ana oyun modu: süreli mod — tam genişlik, "OYNA" etiketli.
-                      // Bölüm başlığı yok: tek mod kaldığı için kartla aynı
-                      // kelimeyi iki kez tekrar ediyordu.
+                      // ── Kahraman alan ──────────────────────────────────
+                      _FloatingLogo(idle: _idle),
+                      const SizedBox(height: 18),
                       StaggerIn(
-                        index: 3,
-                        child: _MediumPlayCard(
+                        index: 1,
+                        child: _PlayButton(
                           label: l10n.menuTimed,
-                          icon: Icons.timer_rounded,
-                          color: AppColors.camgobegi,
+                          idle: _idle,
                           onPressed: () => _pickTimedDuration(context),
                         ),
                       ),
-                      const SizedBox(height: 10),
-                      // Kariyer — tam genişlik.
-                      StaggerIn(
-                        index: 4,
-                        child: _MediumPlayCard(
-                          label: l10n.menuCareer,
-                          icon: Icons.military_tech_rounded,
-                          color: AppColors.pembe,
-                          badge: '${career.careerPoints}p',
-                          onPressed: () => AppRouter.goCareer(context),
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      // Beş mini kutu: oda / katıl / antrenman / bot / 2 kişilik.
-                      StaggerIn(
-                        index: 5,
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: _MiniPlayTile(
-                                label: l10n.menuCreateRoom,
-                                icon: Icons.add_box_rounded,
-                                comingSoon: true,
-                                onPressed: () =>
-                                    AppRouter.goLobby(context, createRoom: true),
+                      const SizedBox(height: 12),
+
+                      // ── İkincil modlar ─────────────────────────────────
+                      Row(
+                        children: [
+                          Expanded(
+                            child: StaggerIn(
+                              index: 2,
+                              child: _ModeButton(
+                                label: l10n.menuCareer,
+                                icon: Icons.military_tech_rounded,
+                                color: AppColors.acikMavi,
+                                badge: '${career.careerPoints}p',
+                                onPressed: () => AppRouter.goCareer(context),
                               ),
                             ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: _MiniPlayTile(
-                                label: l10n.menuJoinRoom,
-                                icon: Icons.login_rounded,
-                                comingSoon: true,
-                                onPressed: () => AppRouter.goJoin(context),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: _MiniPlayTile(
-                                label: l10n.menuTraining,
-                                icon: Icons.fitness_center_rounded,
-                                onPressed: () => AppRouter.goTraining(context),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: _MiniPlayTile(
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: StaggerIn(
+                              index: 3,
+                              child: _ModeButton(
                                 label: l10n.menuVsBot,
                                 icon: Icons.smart_toy_rounded,
+                                color: AppColors.anaMavi,
                                 onPressed: () => AppRouter.goDifficulty(context),
                               ),
                             ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: _MiniPlayTile(
-                                label: l10n.menuLocalDuo,
-                                icon: Icons.people_alt_rounded,
-                                onPressed: () => AppRouter.goLocalDuo(context),
-                              ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+
+                      // ── Yuvarlak ikonlar ───────────────────────────────
+                      StaggerIn(
+                        index: 4,
+                        child: Wrap(
+                          spacing: 14,
+                          runSpacing: 14,
+                          alignment: WrapAlignment.center,
+                          children: [
+                            _IconOrb(
+                              label: l10n.menuTraining,
+                              icon: Icons.fitness_center_rounded,
+                              onPressed: () => AppRouter.goTraining(context),
+                            ),
+                            _IconOrb(
+                              label: l10n.menuLocalDuo,
+                              icon: Icons.people_alt_rounded,
+                              onPressed: () => AppRouter.goLocalDuo(context),
+                            ),
+                            _IconOrb(
+                              label: l10n.menuCosmetics,
+                              icon: Icons.storefront_rounded,
+                              onPressed: () => AppRouter.goCosmetics(context),
                             ),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 34),
-                      YesaSectionLabel(l10n.more),
-                      const SizedBox(height: 4),
-                      YesaMenuGrid(
-                        columns: 4,
-                        spacing: 12,
-                        children: [
-                          YesaMenuTile(
-                            label: l10n.battlePass,
-                            icon: Icons.military_tech_rounded,
-                            accent: true,
-                            staggerIndex: 12,
-                            onPressed: () => AppRouter.goBattlePass(context),
-                          ),
-                          YesaMenuTile(
-                            label: l10n.menuTutorial,
-                            icon: Icons.school_rounded,
-                            staggerIndex: 15,
-                            onPressed: () => AppRouter.goTutorial(context),
-                          ),
-                          YesaMenuTile(
-                            label: l10n.menuCosmetics,
-                            icon: Icons.storefront_rounded,
-                            staggerIndex: 15,
-                            onPressed: () => AppRouter.goCosmetics(context),
-                          ),
-                          YesaMenuTile(
-                            label: l10n.menuPremium,
-                            icon: Icons.workspace_premium_rounded,
-                            accent: true,
-                            staggerIndex: 16,
-                            onPressed: () => AppRouter.goPremium(context),
-                          ),
-                          YesaMenuTile(
-                            label: l10n.menuSettings,
-                            icon: Icons.settings_rounded,
-                            staggerIndex: 17,
-                            onPressed: () => AppRouter.goSettings(context),
-                          ),
-                        ],
+                      const SizedBox(height: 22),
+
+                      // ── Alt şerit ──────────────────────────────────────
+                      StaggerIn(
+                        index: 5,
+                        // Premium çubuğu üst şeritteki yıldıza taşındı; geriye
+                        // kalan iki düğme ortalanıyor, sola yaslı durmasınlar.
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            _SmallSquare(
+                              icon: Icons.help_outline_rounded,
+                              onPressed: () => AppRouter.goTutorial(context),
+                            ),
+                            const SizedBox(width: 12),
+                            _SmallSquare(
+                              icon: Icons.settings_rounded,
+                              onPressed: () => AppRouter.goSettings(context),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -180,14 +228,16 @@ class MenuScreen extends StatelessWidget {
         backgroundColor: AppColors.card,
         title: Text(
           l10n.timedPickTitle,
-          style: const TextStyle(color: AppColors.beyaz, fontWeight: FontWeight.w900),
+          style: const TextStyle(
+              color: AppColors.beyaz, fontWeight: FontWeight.w900),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
               l10n.timedPickHint,
-              style: const TextStyle(color: AppColors.textMuted, fontSize: 13, height: 1.5),
+              style: const TextStyle(
+                  color: AppColors.textMuted, fontSize: 13, height: 1.5),
             ),
             const SizedBox(height: 18),
             Row(
@@ -201,13 +251,10 @@ class MenuScreen extends StatelessWidget {
                         AppRouter.goLobby(context, timedSeconds: m * 60);
                       },
                       child: Container(
-                        height: 64,
+                        height: 68,
                         alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          gradient: AppGradients.neonPurple,
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: AppColors.beyaz.withValues(alpha: 0.3)),
-                        ),
+                        decoration:
+                            GameSurface.key(AppColors.turuncuAna, radius: 16),
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
@@ -216,12 +263,13 @@ class MenuScreen extends StatelessWidget {
                               style: const TextStyle(
                                 color: AppColors.beyaz,
                                 fontWeight: FontWeight.w900,
-                                fontSize: 22,
+                                fontSize: 24,
                               ),
                             ),
                             Text(
                               l10n.minutesShort,
-                              style: const TextStyle(color: AppColors.pusluBeyaz, fontSize: 10),
+                              style: const TextStyle(
+                                  color: AppColors.beyaz, fontSize: 10),
                             ),
                           ],
                         ),
@@ -238,117 +286,225 @@ class MenuScreen extends StatelessWidget {
   }
 }
 
-class _ProfileCard extends StatelessWidget {
-  const _ProfileCard({
-    required this.user,
-    required this.tier,
+// ═══════════════════════════════════════════════════════════════════════════
+
+/// İnce üst şerit: kimlik solda, sayaçlar sağda. Çerçevesiz olması menünün
+/// "form doldurma" hissini kırıyor.
+class _TopBar extends StatelessWidget {
+  const _TopBar({
+    required this.name,
     required this.tokens,
-    required this.l10n,
+    required this.onAvatar,
+    required this.onQuests,
+    required this.onPremium,
   });
 
-  final UserProfile user;
-  final RankTier tier;
+  final String name;
   final int tokens;
-  final AppLocalizations l10n;
+  final VoidCallback onAvatar;
+  final VoidCallback onQuests;
+  final VoidCallback onPremium;
 
   @override
   Widget build(BuildContext context) {
-    final auth = context.read<AuthService>();
-
     return Padding(
-      padding: const EdgeInsets.fromLTRB(14, 8, 14, 0),
-      child: StaggerIn(
-        index: 0,
-        child: GlowPulse(
-          color: AppColors.anaMor,
-          min: 0.2,
-          max: 0.5,
-          child: Container(
-            padding: const EdgeInsets.all(14),
-            decoration: YesaDecor.card(radius: 22),
-            child: Row(
-              children: [
-                GestureDetector(
-                  onTap: () {
-                    if (!auth.canPlayRanked) {
-                      showRankedLoginDialog(context);
-                    } else {
-                      AppRouter.goProfile(context);
-                    }
-                  },
-                  child: Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: AppGradients.heroPlay,
-                      border: Border.all(color: AppColors.beyaz.withValues(alpha: 0.55), width: 2),
-                      boxShadow: AppShadows.neon(AppColors.sariAna, blur: 10),
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w900,
-                        color: AppColors.morDahaKoyu,
-                        fontSize: 20,
-                      ),
-                    ),
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
+      child: Row(
+        children: [
+          GestureDetector(
+            onTap: onAvatar,
+            child: Container(
+              width: 42,
+              height: 42,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.turuncuAna,
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.turuncuAna.withValues(alpha: 0.5),
+                    blurRadius: 14,
                   ),
+                ],
+              ),
+              child: Text(
+                name.isEmpty ? '?' : name[0].toUpperCase(),
+                style: const TextStyle(
+                  color: AppColors.beyaz,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 19,
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        user.name,
-                        style: AppTextStyles.title.copyWith(fontSize: 15),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        l10n.tierName(tier).toUpperCase(),
-                        style: AppTextStyles.glow(tier.color).copyWith(fontSize: 10, letterSpacing: 0.8),
-                      ),
-                      Text(
-                        '${user.elo} ELO · ${user.wins}${l10n.winsLosses}${user.losses}',
-                        style: const TextStyle(color: AppColors.textMuted, fontSize: 10, fontWeight: FontWeight.w600),
-                      ),
-                      const SizedBox(height: 5),
-                      _TierProgress(elo: user.elo, tier: tier),
-                    ],
-                  ),
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    _StatPill(
-                      icon: Icons.monetization_on_rounded,
-                      value: '$tokens',
-                      gradient: AppGradients.heroPlay,
-                      onTap: () => AppRouter.goCosmetics(context),
-                    ),
-                    const SizedBox(height: 6),
-                    _StatPill(
-                      icon: Icons.emoji_events_outlined,
-                      value: '${user.elo}',
-                      gradient: AppGradients.neonPurple,
-                      onTap: null,
-                    ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: AppColors.beyaz,
+                fontWeight: FontWeight.w900,
+                fontSize: 15,
+              ),
+            ),
+          ),
+          // Premium girişi: altta koca turuncu bir düğmeydi, üst şeritte
+          // küçük bir yıldıza indi. Kalıcı ve ulaşılabilir ama menünün
+          // ana akışını kesmiyor.
+          GestureDetector(
+            onTap: onPremium,
+            child: const _Chip(
+              icon: Icons.star_rounded,
+              value: '',
+              gold: true,
+            ),
+          ),
+          const SizedBox(width: 7),
+          _Chip(icon: Icons.paid_rounded, value: '$tokens'),
+          const SizedBox(width: 7),
+          GestureDetector(
+            onTap: onQuests,
+            child: const _Chip(
+              icon: Icons.local_fire_department_rounded,
+              value: '',
+              accent: true,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Chip extends StatelessWidget {
+  const _Chip({
+    required this.icon,
+    required this.value,
+    this.accent = false,
+    this.gold = false,
+  });
+
+  final IconData icon;
+  final String value;
+  final bool accent;
+  final bool gold;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = gold
+        ? AppColors.sariAna
+        : accent
+            ? AppColors.turuncuAna
+            : AppColors.acikMavi;
+    return Container(
+      padding:
+          EdgeInsets.symmetric(horizontal: value.isEmpty ? 8 : 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppColors.laciDerin.withValues(alpha: 0.7),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: c.withValues(alpha: 0.6), width: 1.4),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 15, color: c),
+          if (value.isNotEmpty) ...[
+            const SizedBox(width: 5),
+            Text(
+              value,
+              style: const TextStyle(
+                color: AppColors.beyaz,
+                fontWeight: FontWeight.w900,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Logo yavaşça süzülür. Duran bir görsel menüyü ölü gösteriyordu; hareket
+/// az ama sürekli olduğu için ekran canlı okunuyor.
+class _FloatingLogo extends StatelessWidget {
+  const _FloatingLogo({required this.idle});
+
+  final Animation<double> idle;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: idle,
+      builder: (_, child) => Transform.translate(
+        offset: Offset(0, math.sin(idle.value * 2 * math.pi) * 5),
+        child: child,
+      ),
+      child: const PucketLogo(height: 96),
+    );
+  }
+}
+
+/// Menünün tek kahramanı. Diğer her şeyden belirgin biçimde iri ve nabız
+/// atıyor; menüye giren oyuncunun gözü buraya gitsin diye.
+class _PlayButton extends StatelessWidget {
+  const _PlayButton({
+    required this.label,
+    required this.idle,
+    required this.onPressed,
+  });
+
+  final String label;
+  final Animation<double> idle;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: idle,
+      builder: (_, child) {
+        final t = (math.sin(idle.value * 2 * math.pi) + 1) / 2; // 0..1
+        return Transform.scale(scale: 1 + t * 0.022, child: child);
+      },
+      child: ScalePress(
+        onTap: onPressed,
+        child: Container(
+          height: 96,
+          alignment: Alignment.center,
+          decoration: GameSurface.key(AppColors.turuncuAna, radius: 26),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.play_arrow_rounded,
+                  size: 44, color: AppColors.beyaz),
+              const SizedBox(width: 6),
+              Text(
+                label.toUpperCase(),
+                style: const TextStyle(
+                  color: AppColors.beyaz,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 30,
+                  letterSpacing: 2,
+                  shadows: [
+                    Shadow(
+                        color: Color(0xAA000000),
+                        offset: Offset(0, 3),
+                        blurRadius: 4),
                   ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 }
-/// Orta boy yatay oyun kartı — renkli ikon rozeti + etiket.
-class _MediumPlayCard extends StatelessWidget {
-  const _MediumPlayCard({
+
+class _ModeButton extends StatelessWidget {
+  const _ModeButton({
     required this.label,
     required this.icon,
     required this.color,
@@ -367,57 +523,54 @@ class _MediumPlayCard extends StatelessWidget {
     return ScalePress(
       onTap: onPressed,
       child: Container(
-        height: 58,
-        padding: const EdgeInsets.symmetric(horizontal: 10),
-        decoration: BoxDecoration(
-          gradient: AppGradients.tileSoft,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withValues(alpha: 0.55), width: 1.3),
-          boxShadow: [
-            BoxShadow(color: color.withValues(alpha: 0.25), blurRadius: 10),
-          ],
-        ),
-        child: Row(
+        height: 84,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+        decoration: GameSurface.key(color, radius: 20, glow: false),
+        // StackFit.expand olmadan Stack, konumlandırılmamış çocuğunu kendi
+        // doğal genişliğinde sol üste yaslıyordu: Column kendi içinde ortalı
+        // olsa da blok kartın solunda duruyordu. Genişleyince gerçekten ortalanır.
+        child: Stack(
+          fit: StackFit.expand,
           children: [
-            Container(
-              width: 36,
-              height: 36,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.18),
-                borderRadius: BorderRadius.circular(11),
-                border: Border.all(color: color.withValues(alpha: 0.5)),
-              ),
-              child: Icon(icon, size: 20, color: color),
-            ),
-            const SizedBox(width: 9),
-            Expanded(
-              child: Text(
-                label.toUpperCase(),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: AppColors.beyaz,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 11.5,
-                  height: 1.15,
-                  letterSpacing: 0.4,
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Icon(icon, size: 28, color: AppColors.beyaz),
+                const SizedBox(height: 6),
+                Text(
+                  label.toUpperCase(),
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppColors.beyaz,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 11,
+                    height: 1.1,
+                    letterSpacing: 0.6,
+                  ),
                 ),
-              ),
+              ],
             ),
             if (badge != null)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  badge!,
-                  style: TextStyle(
-                    color: color,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 9,
+              Positioned(
+                top: 0,
+                right: 0,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF000000).withValues(alpha: 0.35),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    badge!,
+                    style: const TextStyle(
+                      color: AppColors.beyaz,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 9.5,
+                    ),
                   ),
                 ),
               ),
@@ -428,196 +581,89 @@ class _MediumPlayCard extends StatelessWidget {
   }
 }
 
-/// Mini kare oyun kutusu — ikon üstte, kısa etiket altta.
-class _MiniPlayTile extends StatelessWidget {
-  const _MiniPlayTile({
+/// Yuvarlak ikon düğmesi. Kare kart yerine daire kullanmak listeden
+/// uzaklaştırıyor: göz sırayı tarıyor, satır okumuyor.
+class _IconOrb extends StatelessWidget {
+  const _IconOrb({
     required this.label,
     required this.icon,
     required this.onPressed,
-    this.comingSoon = false,
   });
 
   final String label;
   final IconData icon;
   final VoidCallback onPressed;
-  final bool comingSoon;
 
   @override
   Widget build(BuildContext context) {
-    final double dim = comingSoon ? 0.42 : 1.0;
-    return ScalePress(
-      onTap: comingSoon
-          ? () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('$label · ${context.l10nRead.comingSoon}'),
-                  duration: const Duration(milliseconds: 1400),
-                ),
-              );
-            }
-          : onPressed,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Opacity(
-            opacity: dim,
-            child: Container(
-              height: 64,
-              padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 6),
-              decoration: BoxDecoration(
-                color: AppColors.morDahaKoyu.withValues(alpha: 0.55),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: AppColors.lavanta.withValues(alpha: 0.28)),
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(icon, size: 20, color: AppColors.sariAna),
-                  const SizedBox(height: 4),
-                  Text(
-                    label,
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: AppColors.pusluBeyaz,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 7.5,
-                      height: 1.1,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          if (comingSoon)
-            Positioned(
-              top: -4,
-              right: -2,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                decoration: BoxDecoration(
-                  color: AppColors.sariAna,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  context.l10nRead.comingSoon,
-                  style: const TextStyle(
-                    color: AppColors.morDahaKoyu,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 6.5,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Bir sonraki lige ilerleme çubuğu — ince, tier renkli, parlayan uç.
-class _TierProgress extends StatelessWidget {
-  const _TierProgress({required this.elo, required this.tier});
-
-  final int elo;
-  final RankTier tier;
-
-  @override
-  Widget build(BuildContext context) {
-    // Mevcut ve sonraki ligin ELO eşiği.
-    final idx = RankTier.tiers.indexOf(tier);
-    final isMax = idx >= RankTier.tiers.length - 1;
-    final start = tier.minElo;
-    final end = isMax ? (elo < start + 300 ? start + 300 : elo) : RankTier.tiers[idx + 1].minElo;
-    final p = ((elo - start) / (end - start)).clamp(0.0, 1.0);
-
     return SizedBox(
-      width: 150,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(3),
-            child: SizedBox(
-              height: 5,
-              child: Stack(
-                children: [
-                  Container(color: AppColors.morDahaKoyu.withValues(alpha: 0.8)),
-                  FractionallySizedBox(
-                    widthFactor: p == 0 ? 0.02 : p,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [tier.color.withValues(alpha: 0.7), tier.color],
-                        ),
-                        boxShadow: [
-                          BoxShadow(color: tier.color.withValues(alpha: 0.7), blurRadius: 6),
-                        ],
-                      ),
-                    ),
-                  ),
+      width: 108,
+      child: ScalePress(
+        onTap: onPressed,
+        child: Column(
+          children: [
+            Container(
+              width: 76,
+              height: 76,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: const LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color(0xFF14456F), Color(0xFF0A2440)],
+                ),
+                border: Border.all(
+                  color: AppColors.acikMavi.withValues(alpha: 0.55),
+                  width: 2,
+                ),
+                boxShadow: const [
+                  BoxShadow(color: Color(0xFF04101E), offset: Offset(0, 4)),
+                  BoxShadow(
+                      color: Color(0x66000000),
+                      offset: Offset(0, 7),
+                      blurRadius: 10),
                 ],
               ),
+              child: Icon(icon, size: 32, color: AppColors.sariAna),
             ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            isMax ? '★ MAX' : '${RankTier.tiers[idx + 1].minElo - elo} ELO → ${RankTier.tiers[idx + 1].name}',
-            style: TextStyle(
-              color: tier.color.withValues(alpha: 0.9),
-              fontSize: 8,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 0.3,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _StatPill extends StatelessWidget {
-  const _StatPill({
-    required this.icon,
-    required this.value,
-    required this.onTap,
-    required this.gradient,
-  });
-
-  final IconData icon;
-  final String value;
-  final VoidCallback? onTap;
-  final Gradient gradient;
-
-  @override
-  Widget build(BuildContext context) {
-    return ScalePress(
-      onTap: onTap ?? () {},
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-        decoration: BoxDecoration(
-          gradient: gradient,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.beyaz.withValues(alpha: 0.3)),
-          boxShadow: AppShadows.neon(AppColors.anaMor, blur: 6),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 12, color: AppColors.morDahaKoyu),
-            const SizedBox(width: 4),
+            const SizedBox(height: 7),
             Text(
-              value,
+              label,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
               style: const TextStyle(
-                color: AppColors.morDahaKoyu,
-                fontWeight: FontWeight.w900,
-                fontSize: 11,
+                color: AppColors.textMuted,
+                fontWeight: FontWeight.w800,
+                fontSize: 10,
+                height: 1.15,
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+
+class _SmallSquare extends StatelessWidget {
+  const _SmallSquare({required this.icon, required this.onPressed});
+
+  final IconData icon;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return ScalePress(
+      onTap: onPressed,
+      child: Container(
+        width: 46,
+        height: 46,
+        alignment: Alignment.center,
+        decoration: GameSurface.key(AppColors.koyuMavi, radius: 14, glow: false),
+        child: Icon(icon, size: 21, color: AppColors.buzMavi),
       ),
     );
   }

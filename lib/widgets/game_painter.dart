@@ -97,6 +97,17 @@ class GamePainter extends CustomPainter {
 
     canvas.drawPicture(_fieldPictureFor(size, mySeat));
 
+    // Raunt skoru filigranı: zeminin üstünde, pulların altında. Aynı dönüşüm
+    // ikinci kez uygulanınca (180° + 180°) ekran eksenine dönülür, böylece
+    // koltuk 1'de rakamlar ters durmaz.
+    canvas.save();
+    if (mySeat == 1 && !localDuo) {
+      canvas.translate(size.width, size.height);
+      canvas.rotate(math.pi);
+    }
+    _drawRoundWins(canvas, size, localDuo ? 0 : mySeat);
+    canvas.restore();
+
     for (var i = 0; i < discs.length; i++) {
       _drawDisc(
         canvas,
@@ -114,6 +125,48 @@ class GamePainter extends CustomPainter {
     }
     _drawParticles(canvas);
     canvas.restore();
+  }
+
+  // Rakamlar her karede yeniden dizilmesin: değer veya ölçü değişmedikçe
+  // aynı TextPainter kullanılıyor. Tahta oynanış boyunca 60 fps yenileniyor.
+  TextPainter? _winTop;
+  TextPainter? _winBottom;
+  String _winKey = '';
+
+  /// Her takımın kazandığı raunt sayısı, kendi yarı sahasının ortasında.
+  ///
+  /// Önce üst şeritte dolan daireler vardı; şerit süre ve duraklat dışında
+  /// boşaltılınca skor tahtaya indi. Oyuncu gözünü kendi yarısından ayırmadan
+  /// kaçta kaç olduğunu görüyor.
+  void _drawRoundWins(Canvas canvas, Size size, int bottomOwner) {
+    final topOwner = 1 - bottomOwner;
+    final fontSize = size.width * 0.34;
+    final key = '${game.roundWins[topOwner]}:${game.roundWins[bottomOwner]}'
+        ':$topOwner:${fontSize.toStringAsFixed(1)}';
+    if (key != _winKey) {
+      TextPainter build(int owner) => TextPainter(
+            text: TextSpan(
+              text: '${game.roundWins[owner]}',
+              style: TextStyle(
+                color: (owner == 0 ? AppColors.red : AppColors.blue)
+                    .withValues(alpha: 0.14),
+                fontSize: fontSize,
+                fontWeight: FontWeight.w900,
+                height: 1,
+              ),
+            ),
+            textDirection: TextDirection.ltr,
+          )..layout();
+      _winTop = build(topOwner);
+      _winBottom = build(bottomOwner);
+      _winKey = key;
+    }
+    void put(TextPainter? tp, double cy) {
+      if (tp == null) return;
+      tp.paint(canvas, Offset((size.width - tp.width) / 2, cy - tp.height / 2));
+    }
+    put(_winTop, size.height * 0.25);
+    put(_winBottom, size.height * 0.75);
   }
 
   void _drawParticles(Canvas canvas) {
@@ -443,6 +496,8 @@ class GamePainter extends CustomPainter {
         old.oppDiscColor != oppDiscColor ||
         old.boardTheme != boardTheme ||
         old.game.mySeat != game.mySeat ||
-        old.game.localDuoMode != game.localDuoMode;
+        old.game.localDuoMode != game.localDuoMode ||
+        old.game.roundWins[0] != game.roundWins[0] ||
+        old.game.roundWins[1] != game.roundWins[1];
   }
 }

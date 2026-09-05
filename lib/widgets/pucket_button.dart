@@ -48,8 +48,8 @@ class PucketButton extends StatelessWidget {
             decoration: BoxDecoration(
               gradient: AppGradients.secondaryBtn,
               borderRadius: BorderRadius.circular(radius),
-              border: Border.all(color: AppColors.lavanta.withValues(alpha: 0.4), width: 1.2),
-              boxShadow: AppShadows.depth(AppColors.morDahaKoyu),
+              border: Border.all(color: AppColors.buzMavi.withValues(alpha: 0.4), width: 1.2),
+              boxShadow: AppShadows.depth(AppColors.laciDerin),
             ),
             padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 22),
             alignment: Alignment.center,
@@ -69,8 +69,8 @@ class PucketButton extends StatelessWidget {
 
     final isHero = primary || gradient == AppGradients.play || gradient == AppGradients.heroPlay;
     final bgGradient = gradient ?? (isHero ? AppGradients.heroPlay : AppGradients.neonPurple);
-    final glowColor = shadowColor ?? (isHero ? AppColors.sariAna : AppColors.acikMor);
-    final textColor = isHero ? AppColors.morDahaKoyu : AppColors.beyaz;
+    final glowColor = shadowColor ?? (isHero ? AppColors.sariAna : AppColors.acikMavi);
+    final textColor = isHero ? AppColors.laciDerin : AppColors.beyaz;
 
     return SizedBox(
       width: btnWidth,

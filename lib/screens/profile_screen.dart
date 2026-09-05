@@ -70,7 +70,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           shape: BoxShape.circle,
                           gradient: AppGradients.neonPurple,
                           border: Border.all(color: AppColors.beyaz.withValues(alpha: 0.3)),
-                          boxShadow: AppShadows.depth(AppColors.morDahaKoyu),
+                          boxShadow: AppShadows.depth(AppColors.laciDerin),
                         ),
                         child: const Icon(Icons.arrow_back_rounded, color: AppColors.beyaz, size: 20),
                       ),
@@ -134,7 +134,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                               style: const TextStyle(
                                                 fontWeight: FontWeight.w900,
                                                 fontSize: 24,
-                                                color: AppColors.morDahaKoyu,
+                                                color: AppColors.laciDerin,
                                               ),
                                             ),
                                     ),
@@ -178,7 +178,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             index: 1,
                             child: Text(
                               l10n.achievements.toUpperCase(),
-                              style: AppTextStyles.label.copyWith(color: AppColors.lavanta, letterSpacing: 1.4),
+                              style: AppTextStyles.label.copyWith(color: AppColors.buzMavi, letterSpacing: 1.4),
                             ),
                           ),
                           const SizedBox(height: 10),
@@ -200,7 +200,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             index: 3,
                             child: Text(
                               l10n.matchHistory.toUpperCase(),
-                              style: AppTextStyles.label.copyWith(color: AppColors.lavanta, letterSpacing: 1.4),
+                              style: AppTextStyles.label.copyWith(color: AppColors.buzMavi, letterSpacing: 1.4),
                             ),
                           ),
                           const SizedBox(height: 10),
@@ -265,7 +265,7 @@ class _AchievementChip extends StatelessWidget {
         color: done ? null : AppColors.card,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: done ? AppColors.beyaz.withValues(alpha: 0.35) : AppColors.borderSubtle),
-        boxShadow: done ? AppShadows.neon(AppColors.acikMor, blur: 6) : null,
+        boxShadow: done ? AppShadows.neon(AppColors.acikMavi, blur: 6) : null,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

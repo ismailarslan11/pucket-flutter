@@ -73,7 +73,7 @@ class _GameBoardState extends State<GameBoard> with SingleTickerProviderStateMix
     final game = _game ?? context.read<GameController>();
     final disc = meta.discColor(auth.getUid());
     final board = meta.boardTheme(auth.getUid());
-    // Rakip kozmetiği gerçek çevrimiçi maçta ve gizli bot maçında gösterilir
+    // Rakip kozmetiği gerçek çevrimiçi maçta ve yapay zekâ maçında gösterilir
     // (bot da gerçek oyuncu gibi bazen premium pul kullanır).
     final oppDisc = (game.isBotFallback || (!game.aiMode && !game.localDuoMode))
         ? game.opponentDiscColor

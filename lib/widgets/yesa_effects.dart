@@ -61,11 +61,16 @@ class StaggerIn extends StatefulWidget {
     required this.index,
     required this.child,
     this.delayMs = 45,
+    this.bounce = false,
   });
 
   final int index;
   final Widget child;
   final int delayMs;
+
+  /// Elastik yaylanma: kahraman öğelerin girişinde kullanılır. Kayarak
+  /// belirmek sakin, yaylanarak belirmek oyunsu okunuyor.
+  final bool bounce;
 
   @override
   State<StaggerIn> createState() => _StaggerInState();
@@ -75,13 +80,24 @@ class _StaggerInState extends State<StaggerIn> with SingleTickerProviderStateMix
   late AnimationController _ctrl;
   late Animation<double> _fade;
   late Animation<Offset> _slide;
+  late Animation<double> _scale;
 
   @override
   void initState() {
     super.initState();
-    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 420));
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: Duration(milliseconds: widget.bounce ? 720 : 420),
+    );
     _fade = CurvedAnimation(parent: _ctrl, curve: Curves.easeOutCubic);
-    _slide = Tween<Offset>(begin: const Offset(0, 0.12), end: Offset.zero).animate(_fade);
+    _slide = Tween<Offset>(begin: const Offset(0, 0.12), end: Offset.zero)
+        .animate(widget.bounce
+            ? CurvedAnimation(parent: _ctrl, curve: Curves.elasticOut)
+            : _fade);
+    _scale = Tween<double>(begin: widget.bounce ? 0.82 : 1.0, end: 1.0).animate(
+        CurvedAnimation(
+            parent: _ctrl,
+            curve: widget.bounce ? Curves.elasticOut : Curves.linear));
     Future.delayed(Duration(milliseconds: widget.index * widget.delayMs), () {
       if (mounted) _ctrl.forward();
     });
@@ -97,7 +113,10 @@ class _StaggerInState extends State<StaggerIn> with SingleTickerProviderStateMix
   Widget build(BuildContext context) {
     return FadeTransition(
       opacity: _fade,
-      child: SlideTransition(position: _slide, child: widget.child),
+      child: SlideTransition(
+        position: _slide,
+        child: ScaleTransition(scale: _scale, child: widget.child),
+      ),
     );
   }
 }
@@ -274,7 +293,7 @@ class _RadarPulseState extends State<RadarPulse> with SingleTickerProviderStateM
 
   @override
   Widget build(BuildContext context) {
-    final color = widget.color ?? AppColors.camgobegi;
+    final color = widget.color ?? AppColors.gokAcik;
     return SizedBox(
       width: widget.size,
       height: widget.size,
@@ -377,9 +396,9 @@ class _ConfettiPainter extends CustomPainter {
 
   static const _colors = [
     AppColors.sariAna,
-    AppColors.acikMor,
-    AppColors.camgobegi,
-    AppColors.pembe,
+    AppColors.acikMavi,
+    AppColors.gokAcik,
+    AppColors.parlakMavi,
     AppColors.neonYesil,
     AppColors.turuncuAna,
   ];

@@ -140,7 +140,7 @@ class _UsernameScreenState extends State<UsernameScreen> {
                       shape: BoxShape.circle,
                       gradient: AppGradients.neonPurple,
                       border: Border.all(color: AppColors.beyaz.withValues(alpha: 0.3)),
-                      boxShadow: AppShadows.depth(AppColors.morDahaKoyu),
+                      boxShadow: AppShadows.depth(AppColors.laciDerin),
                     ),
                     child: const Icon(Icons.arrow_back_rounded,
                         color: AppColors.beyaz, size: 20),

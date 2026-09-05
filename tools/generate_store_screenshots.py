@@ -41,10 +41,10 @@ class C:
 
 SCENES = [
     ("01_hero", "Disk Flicking'in\nYeni Adresi", "PLAY. POCKET. WIN.", C.PURPLE, "hero"),
-    ("02_menu", "Online\nMultiplayer", "Gerçek rakiplerle anında oyna", C.CYAN, "menu"),
+    ("02_menu", "Tek Dokunuşla\nBaşla", "Süre seç, hemen oyna", C.CYAN, "menu"),
     ("03_gameplay", "Strateji\n& Refleks", "Diskini fırlat, kapıyı geç", C.PINK, "gameplay"),
-    ("04_ranked", "ELO ile\nYüksel", "Liglerde zirveye çık", C.YELLOW, "ranked"),
-    ("05_match", "Anında\nEşleşme", "Dünyanın her yerinden oyuncular", C.PURPLE, "match"),
+    ("04_ranked", "Kariyer\nModu", "Rakipleri sırayla geç", C.YELLOW, "ranked"),
+    ("05_match", "Yapay Zekâ\nRakip", "Dört zorluk seviyesi", C.PURPLE, "match"),
     ("06_login", "Hemen\nBaşla", "Google, Apple veya misafir", C.CYAN, "login"),
 ]
 
@@ -130,7 +130,7 @@ def scene_hero() -> Image.Image:
     paste_logo(img, ((PHONE[0] - 180) // 2, 260), 180)
     draw_tagline(draw, 470, PHONE[0] // 2)
     f = font(11)
-    t = "ONLINE MULTIPLAYER"
+    t = "DISC FLICKING GAME"
     bb = draw.textbbox((0, 0), t, font=f)
     draw.text(((PHONE[0] - bb[2]) // 2, 500), t, fill=C.CYAN, font=f)
     return img
@@ -331,7 +331,7 @@ def feature_graphic() -> Image.Image:
         logo = logo.resize((lw, lh), Image.Resampling.LANCZOS)
         img.paste(logo, (int(w * 0.05), (h - lh) // 2), logo)
     draw.text((int(w * 0.38), int(h * 0.28)), "PUCKET", fill=C.WHITE, font=font(54, bold=True))
-    draw.text((int(w * 0.38), int(h * 0.52)), "Online Disk Flicking", fill=C.MUTED, font=font(24))
+    draw.text((int(w * 0.38), int(h * 0.52)), "Disk Flicking", fill=C.MUTED, font=font(24))
     x = int(w * 0.38)
     for text, color in [("PLAY.", C.PURPLE_L), (" POCKET.", C.PINK), (" WIN.", C.CYAN)]:
         draw.text((x, int(h * 0.68)), text, fill=color, font=font(22, bold=True))

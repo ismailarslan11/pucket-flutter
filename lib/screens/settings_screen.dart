@@ -42,7 +42,7 @@ class SettingsScreen extends StatelessWidget {
                           shape: BoxShape.circle,
                           gradient: AppGradients.neonPurple,
                           border: Border.all(color: AppColors.beyaz.withValues(alpha: 0.3)),
-                          boxShadow: AppShadows.depth(AppColors.morDahaKoyu),
+                          boxShadow: AppShadows.depth(AppColors.laciDerin),
                         ),
                         child: const Icon(Icons.arrow_back_rounded, color: AppColors.beyaz, size: 20),
                       ),
@@ -286,7 +286,7 @@ class SettingsScreen extends StatelessWidget {
                 ),
                 child: Text(price ?? '',
                     style: const TextStyle(
-                        color: AppColors.morDahaKoyu, fontWeight: FontWeight.w900, fontSize: 12)),
+                        color: AppColors.laciDerin, fontWeight: FontWeight.w900, fontSize: 12)),
               ),
             )
           else
@@ -316,7 +316,7 @@ class SettingsScreen extends StatelessWidget {
                   color: selected ? null : AppColors.card,
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(color: selected ? AppColors.beyaz.withValues(alpha: 0.35) : AppColors.borderSubtle),
-                  boxShadow: selected ? AppShadows.neon(AppColors.acikMor, blur: 6) : null,
+                  boxShadow: selected ? AppShadows.neon(AppColors.acikMavi, blur: 6) : null,
                 ),
                 child: Text(
                   '${lang.flag} ${lang.label}',

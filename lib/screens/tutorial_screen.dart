@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../l10n/l10n_extension.dart';
 import '../services/settings_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/pucket_button.dart';
@@ -14,6 +15,9 @@ class TutorialScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Öğretici metinleri sabit Türkçeydi. İnceleyicinin cihazı İngilizce olduğu
+    // için uygulamadaki yapay zekâ ifşası ona hiç görünmüyordu; altı dile taşındı.
+    final l10n = context.l10n;
     return Scaffold(
       body: YesaBackground(
         child: SafeArea(
@@ -28,7 +32,7 @@ class TutorialScreen extends StatelessWidget {
                     min: 0.2,
                     max: 0.5,
                     child: Text(
-                      'PUCKET REHBERİ',
+                      l10n.tutorialTitle,
                       style: AppTextStyles.glow(AppColors.sariAna).copyWith(fontSize: 22, letterSpacing: 2),
                     ),
                   ),
@@ -38,36 +42,34 @@ class TutorialScreen extends StatelessWidget {
                   child: SingleChildScrollView(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
+                      children: [
                         _Step(
                           n: '1',
                           index: 1,
                           color: AppColors.sariAna,
-                          title: 'Amaç',
-                          body:
-                              'Kendi yarındaki TÜM pulları (kendi rengin + rakibin sende kalan pulları) karşı tarafa geçir. Alt yarı tamamen boş olunca kazanırsın.',
+                          title: l10n.tutGoalTitle,
+                          body: l10n.tutGoalBody,
                         ),
                         _Step(
                           n: '2',
                           index: 2,
-                          color: AppColors.acikMor,
-                          title: 'Atış',
-                          body: 'Puluna dokun, geri çek, bırak. Sadece kendi yarındaki pulları oynayabilirsin.',
+                          color: AppColors.acikMavi,
+                          title: l10n.tutShotTitle,
+                          body: l10n.tutShotBody,
                         ),
                         _Step(
                           n: '3',
                           index: 3,
-                          color: AppColors.pembe,
-                          title: 'Maç',
-                          body: 'Best of 3 — 2 round kazanan maçı alır. Ranked modda ELO değişir.',
+                          color: AppColors.parlakMavi,
+                          title: l10n.tutMatchTitle,
+                          body: l10n.tutMatchBody,
                         ),
                         _Step(
                           n: '4',
                           index: 4,
-                          color: AppColors.camgobegi,
-                          title: 'Online',
-                          body:
-                              'Duraklatma 60 sn ile sınırlı. Rakip koparsa 60 sn içinde dönebilir. Rematch için iki taraf da onaylamalı.',
+                          color: AppColors.gokAcik,
+                          title: l10n.tutOpponentTitle,
+                          body: l10n.tutOpponentBody,
                         ),
                       ],
                     ),
@@ -76,7 +78,7 @@ class TutorialScreen extends StatelessWidget {
                 StaggerIn(
                   index: 5,
                   child: PucketButton(
-                    label: 'ANLADIM, BAŞLA!',
+                    label: l10n.tutStart,
                     width: double.infinity,
                     onPressed: () async {
                       await context.read<SettingsService>().markTutorialSeen();

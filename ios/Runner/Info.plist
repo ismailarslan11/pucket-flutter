@@ -48,7 +48,7 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSAppleSignInUsageDescription</key>
-	<string>Ranked maçlara katılmak ve ilerlemenizi kaydetmek için Apple ile giriş yapın.</string>
+	<string>İlerlemenizi kaydetmek ve cihazlar arasında taşımak için Apple ile giriş yapın.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

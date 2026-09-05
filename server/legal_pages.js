@@ -1,5 +1,5 @@
-const SUPPORT = 'yesastudioo@gmail.com';
-const UPDATED = '30 Haziran 2026';
+const SUPPORT = 'yesaworks@gmail.com';
+const UPDATED = '22 Temmuz 2026';
 
 function page(title, body) {
   return `<!DOCTYPE html>
@@ -28,7 +28,7 @@ function page(title, body) {
 
 function privacyHtml() {
   return page('Gizlilik Politikası', `
-    <p>PUCKET ("uygulama"), çevrimiçi disk fırlatma oyunudur. Bu politika hangi verileri topladığımızı ve nasıl kullandığımızı açıklar.</p>
+    <p>PUCKET ("uygulama"), bir disk fırlatma oyunudur. Süreli mod ve kariyer modunda rakip yapay zekâdır; hesap, ilerleme ve sıralama için sunucu kullanılır. Bu politika hangi verileri topladığımızı ve nasıl kullandığımızı açıklar.</p>
 
     <h2>Toplanan veriler</h2>
     <ul>
@@ -40,7 +40,7 @@ function privacyHtml() {
 
     <h2>Verilerin kullanımı</h2>
     <ul>
-      <li>Online eşleşme ve ranked maçlar</li>
+      <li>Hesap ve ilerleme kaydı</li>
       <li>İlerleme ve sıralama tablosu</li>
       <li>Push bildirimleri (izin verirseniz)</li>
       <li>Reklam gösterimi (Google AdMob)</li>
@@ -50,7 +50,7 @@ function privacyHtml() {
     <ul>
       <li>Google Firebase (kimlik doğrulama, bildirimler)</li>
       <li>Google AdMob (reklamlar)</li>
-      <li>Render.com (oyun sunucusu barındırma)</li>
+      <li>Oyun sunucusu (Türkiye'de barındırılan özel sunucu)</li>
     </ul>
 
     <h2>Reklamlar ve AB kullanıcıları</h2>
@@ -78,7 +78,9 @@ function termsHtml() {
     <h2>Hesap ve davranış</h2>
     <ul>
       <li>Hile, ELO manipülasyonu, bot kullanımı ve taciz yasaktır.</li>
-      <li>Ranked maçlar sunucu kayıtlarına dayanır.</li>
+      <li>Süreli mod, kariyer ve bilgisayara karşı modlarında rakip yapay zekâdır; gerçek oyuncularla eşleştirme yapılmaz.</li>
+      <li>Yapay zekâ maçları ELO'yu ve sıralama tablosunu etkilemez.</li>
+      
       <li>Hesabınız ihlal durumunda askıya alınabilir.</li>
     </ul>
 

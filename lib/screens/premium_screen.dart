@@ -12,7 +12,6 @@ import '../services/settings_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/yesa_background.dart';
 import '../widgets/yesa_effects.dart';
-import 'app_router.dart';
 
 /// Premium mağaza — vitrin, VIP paketi, karşılaştırma, reklam kaldırma,
 /// jeton paketleri ve Battle Pass premium.
@@ -28,7 +27,6 @@ class PremiumScreen extends StatelessWidget {
 
     final vipProduct = purchases.productFor(ProductIds.vip);
     final removeAdsProduct = purchases.productFor(ProductIds.removeAds);
-    final bpProduct = purchases.productFor(ProductIds.battlePassPremium);
 
     return Scaffold(
       body: YesaBackground(
@@ -49,7 +47,7 @@ class PremiumScreen extends StatelessWidget {
                           shape: BoxShape.circle,
                           gradient: AppGradients.neonPurple,
                           border: Border.all(color: AppColors.beyaz.withValues(alpha: 0.3)),
-                          boxShadow: AppShadows.depth(AppColors.morDahaKoyu),
+                          boxShadow: AppShadows.depth(AppColors.laciDerin),
                         ),
                         child: const Icon(Icons.arrow_back_rounded, color: AppColors.beyaz, size: 20),
                       ),
@@ -148,22 +146,6 @@ class PremiumScreen extends StatelessWidget {
                           ),
                         ),
                       ],
-                    ),
-                    const SizedBox(height: 20),
-                    _SectionHeader(
-                      icon: Icons.military_tech_rounded,
-                      label: l10n.battlePass.toUpperCase(),
-                      color: AppColors.vurguMoru,
-                    ),
-                    const SizedBox(height: 12),
-                    StaggerIn(
-                      index: 5,
-                      child: _BattlePassCard(
-                        price: bpProduct?.price,
-                        onBuy: bpProduct == null
-                            ? null
-                            : () => purchases.buy(ProductIds.battlePassPremium),
-                      ),
                     ),
                     const SizedBox(height: 18),
                     if (!purchases.available)
@@ -309,11 +291,13 @@ class _PremiumHero extends StatelessWidget {
 // ── Bölüm başlığı ──────────────────────────────────────────────────────
 
 class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.icon, required this.label, this.color = AppColors.sariAna});
+  const _SectionHeader({required this.icon, required this.label});
 
   final IconData icon;
   final String label;
-  final Color color;
+
+  // Sezon yolu bölümü kaldırılınca farklı renk isteyen tek çağıran kalmadı.
+  static const color = AppColors.sariAna;
 
   @override
   Widget build(BuildContext context) {
@@ -626,7 +610,7 @@ class _CompareTable extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 6),
       decoration: BoxDecoration(
-        color: AppColors.morDahaKoyu.withValues(alpha: 0.6),
+        color: AppColors.laciDerin.withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: AppColors.beyaz.withValues(alpha: 0.12)),
       ),
@@ -741,7 +725,7 @@ class _RemoveAdsCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: AppColors.morDahaKoyu.withValues(alpha: 0.6),
+        color: AppColors.laciDerin.withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: AppColors.beyaz.withValues(alpha: 0.12)),
       ),
@@ -791,7 +775,7 @@ class _RemoveAdsCard extends StatelessWidget {
                 child: Text(
                   price ?? '—',
                   style: const TextStyle(
-                    color: AppColors.morDahaKoyu,
+                    color: AppColors.laciDerin,
                     fontWeight: FontWeight.w900,
                     fontSize: 12,
                   ),
@@ -840,7 +824,7 @@ class _TokenPack extends StatelessWidget {
                   colors: [Color(0xFF3A2E08), Color(0xFF251A05)],
                 )
               : null,
-          color: highlighted ? null : AppColors.morDahaKoyu.withValues(alpha: 0.6),
+          color: highlighted ? null : AppColors.laciDerin.withValues(alpha: 0.6),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: highlighted
@@ -938,85 +922,6 @@ class _TokenPack extends StatelessWidget {
 }
 
 // ── Battle Pass premium kartı ──────────────────────────────────────────
-
-class _BattlePassCard extends StatelessWidget {
-  const _BattlePassCard({required this.price, required this.onBuy});
-
-  final String? price;
-  final VoidCallback? onBuy;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppColors.vurguMoru.withValues(alpha: 0.25),
-            AppColors.morDahaKoyu.withValues(alpha: 0.6),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.vurguMoru.withValues(alpha: 0.5)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 38,
-            height: 38,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: AppColors.vurguMoru.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Icon(Icons.military_tech_rounded, color: AppColors.vurguMoru, size: 22),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '${l10n.battlePass} — ${l10n.battlePassPremium}',
-                  style: const TextStyle(
-                    color: AppColors.beyaz,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 13,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  l10n.bpCardSub,
-                  style: const TextStyle(color: AppColors.textMuted, fontSize: 10.5, height: 1.3),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          ScalePress(
-            onTap: () => AppRouter.goBattlePass(context),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              decoration: BoxDecoration(
-                gradient: AppGradients.neonPurple,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                price ?? l10n.openLabel,
-                style: const TextStyle(
-                  color: AppColors.beyaz,
-                  fontWeight: FontWeight.w900,
-                  fontSize: 12,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 /// Ödemenin geçtiği mağazanın adı. iOS'ta rakip platformun adı görünmemeli —
 /// App Store incelemesi "Google Play" ibaresini 2.3.10 (Accurate Metadata)

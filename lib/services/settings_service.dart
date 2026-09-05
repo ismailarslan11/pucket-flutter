@@ -14,7 +14,7 @@ class SettingsService extends ChangeNotifier {
   bool firstMatchPlayed = false;
   bool adsRemoved = false;
   bool reachabilityHintShown = false;
-  /// Son "kolay" gizli bottan bu yana oynanan maç sayısı. Oyuncu üst üste
+  /// Son "kolay" yapay zekâ rakipten bu yana oynanan maç sayısı. Oyuncu üst üste
   /// kaybedip oyundan kopmasın diye periyodik olarak kolay rakip verilir.
   int botMatchesSinceEasy = 0;
   AppLanguage language = AppLanguage.tr;

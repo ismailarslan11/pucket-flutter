@@ -23,7 +23,6 @@ import 'services/consent_service.dart';
 import 'services/api_config.dart';
 import 'services/audio_service.dart';
 import 'services/auth_service.dart';
-import 'services/bot_names.dart';
 import 'services/career_service.dart';
 import 'services/firebase_engagement_service.dart';
 import 'services/firebase_init.dart';
@@ -32,7 +31,6 @@ import 'services/deep_link_service.dart';
 import 'widgets/reachability_hint.dart';
 import 'services/deep_link_listener.dart';
 import 'services/disc_image_cache.dart';
-import 'services/battle_pass_api.dart';
 import 'services/meta_api.dart';
 import 'services/player_meta_service.dart';
 import 'services/purchase_service.dart';
@@ -67,10 +65,6 @@ void main() async {
   }
 
   await auth.initFirebase();
-
-  // Gizli bot rakiplerine gerçek kullanıcı adı vermek için isim havuzunu
-  // arka planda doldur (başarısız olursa yerleşik yedek liste kullanılır).
-  unawaited(BotNames.refresh(excludeName: auth.getName()));
 
   final playerMeta = PlayerMetaService();
   final audio = AudioService(settings);
@@ -137,9 +131,6 @@ void _handlePurchase(
       ads.adsRemoved = true;
       unawaited(settings.setAdsRemoved(true));
       unawaited(MetaApi.unlockVip(auth.getUid()).then((_) => meta.load(auth.getUid())));
-      break;
-    case ProductIds.battlePassPremium:
-      unawaited(BattlePassApi.unlockPremium(auth.getUid()));
       break;
   }
 }

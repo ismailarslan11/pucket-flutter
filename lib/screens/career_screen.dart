@@ -126,7 +126,7 @@ class _TopBar extends StatelessWidget {
                 shape: BoxShape.circle,
                 gradient: AppGradients.neonPurple,
                 border: Border.all(color: AppColors.beyaz.withValues(alpha: 0.3)),
-                boxShadow: AppShadows.depth(AppColors.morDahaKoyu),
+                boxShadow: AppShadows.depth(AppColors.laciDerin),
               ),
               child: const Icon(Icons.arrow_back_rounded, color: AppColors.beyaz, size: 20),
             ),
@@ -289,11 +289,11 @@ class _Badge extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 12, color: AppColors.morDahaKoyu),
+          Icon(icon, size: 12, color: AppColors.laciDerin),
           const SizedBox(width: 4),
           Text(
             text,
-            style: const TextStyle(color: AppColors.morDahaKoyu, fontWeight: FontWeight.w900, fontSize: 11),
+            style: const TextStyle(color: AppColors.laciDerin, fontWeight: FontWeight.w900, fontSize: 11),
           ),
         ],
       ),
@@ -412,7 +412,7 @@ class _SeasonProgressBar extends StatelessWidget {
             children: [
               Text(
                 'KARİYER İLERLEYİŞİ',
-                style: AppTextStyles.label.copyWith(color: AppColors.lavanta, letterSpacing: 1.2),
+                style: AppTextStyles.label.copyWith(color: AppColors.buzMavi, letterSpacing: 1.2),
               ),
               Text(
                 '$done/$total',
@@ -452,7 +452,7 @@ class _StatRow extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: _StatTile(icon: Icons.flag_rounded, value: '$total', label: 'Rakip', color: AppColors.camgobegi),
+          child: _StatTile(icon: Icons.flag_rounded, value: '$total', label: 'Rakip', color: AppColors.gokAcik),
         ),
         const SizedBox(width: 10),
         Expanded(

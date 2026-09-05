@@ -488,7 +488,7 @@ class _CosmeticsScreenState extends State<CosmeticsScreen> {
                     : fx.id == 'neon'
                         ? Icons.bolt_rounded
                         : Icons.celebration_rounded,
-                color: fx.id == 'neon' ? AppColors.pembe : AppColors.gold,
+                color: fx.id == 'neon' ? AppColors.parlakMavi : AppColors.gold,
                 size: 24,
               ),
               title: Text(l10n.winFxName(fx.id)),
@@ -901,7 +901,7 @@ class _EmoteChip extends StatelessWidget {
         width: 74,
         padding: const EdgeInsets.symmetric(vertical: 8),
         decoration: BoxDecoration(
-          color: AppColors.morDahaKoyu.withValues(alpha: 0.6),
+          color: AppColors.laciDerin.withValues(alpha: 0.6),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: unlocked

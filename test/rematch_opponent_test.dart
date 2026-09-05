@@ -15,7 +15,8 @@ GameController _botMatch() => GameController(
       ..matchDurationSec = 60
       ..opponentName = 'EskiRakip'
       ..opponentElo = 1234
-      ..roomCode = 'AAAAAA'
+      ..opponentDiscColor = 'green'
+      ..roomCode = ''
       ..matchFinished = true;
 
 void main() {
@@ -23,17 +24,18 @@ void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
   group('yeni maç = yeni rakip', () {
-    test('gizli bot maçında rakip baştan üretilir', () {
+    test('yapay zekâ maçında rakip baştan üretilir', () {
       fakeAsync((async) {
         final game = _botMatch();
         game.rematchLocal();
         async.flushMicrotasks();
 
-        expect(game.opponentName, isNot('EskiRakip'),
-            reason: 'aynı rakiple devam etmemeli');
-        expect(game.roomCode, isNot('AAAAAA'),
-            reason: 'yeni eşleşme yeni oda kodu demek');
-        expect(game.opponentName, isNotEmpty);
+        // Rakip artık ad taşımıyor: sahte insan adı, maçı insan maçı sandıran
+        // şeydi. Yeni maçın "yeni rakip" olması zorluk ve görsel üzerinden.
+        expect(game.opponentName, isEmpty,
+            reason: 'yapay zekâ rakibe ad verilmemeli');
+        expect(game.roomCode, isEmpty,
+            reason: 'yapay zekâ maçının odası yok — sahte oda kodu üretilmemeli');
         expect(game.currentRound, 1);
         expect(game.roundWins, [0, 0]);
         expect(game.matchFinished, isFalse);
@@ -41,18 +43,23 @@ void main() {
       });
     });
 
-    test('art arda yeniden maçlar farklı rakipler üretir', () {
+    test('art arda yeniden maçlar rakibi yeniden kurar', () {
       fakeAsync((async) {
         final game = _botMatch();
-        final names = <String>{};
-        for (var i = 0; i < 6; i++) {
+        final discs = <String>{};
+        final levels = <AiLevel>{};
+        for (var i = 0; i < 20; i++) {
           game.matchFinished = true;
           game.rematchLocal();
           async.flushMicrotasks();
-          names.add(game.opponentName);
+          discs.add(game.opponentDiscColor);
+          levels.add(game.aiLevel);
+          expect(game.opponentName, isEmpty);
         }
-        expect(names.length, greaterThan(1),
-            reason: 'her maçta aynı isim çıkmamalı');
+        expect(discs.length, greaterThan(1),
+            reason: 'her maçta aynı rakip görseli çıkmamalı');
+        expect(levels.length, greaterThan(1),
+            reason: 'zorluk maçtan maça değişmeli');
         game.dispose();
       });
     });

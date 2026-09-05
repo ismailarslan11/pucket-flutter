@@ -8,7 +8,6 @@ import '../game/ai_bot.dart';
 import '../game/game_controller.dart';
 import '../l10n/l10n_extension.dart';
 import '../services/auth_service.dart';
-import '../services/bot_names.dart';
 import '../services/settings_service.dart';
 import '../services/share_service.dart';
 import '../services/websocket_service.dart';
@@ -45,7 +44,6 @@ class _LobbyScreenState extends State<LobbyScreen> {
   Timer? _botFallback;
   Timer? _watchdog;
   GameController? _game;
-  List<String> _matchMsgs = [];
   bool _errorShown = false;
 
   bool get _showRoomCode => widget.timedSeconds == null && _roomCode != '——';
@@ -75,63 +73,43 @@ class _LobbyScreenState extends State<LobbyScreen> {
   Future<void> _doInit() async {
     final l10n = context.l10nRead;
 
-    // Süreli mod: gerçek çevrimiçi eşleşme yok. Kısa bir "rakip aranıyor"
-    // hissinden sonra gizli bota düşülür (kullanıcı gerçek oyuncu sanır).
+    // Süreli mod rakibi her zaman yapay zekâdır — bu ekranda gerçek eşleştirme
+    // aranmıyor. Eskiden burada 3 saniyelik sahte bir "rakip aranıyor" gösterisi
+    // dönüyor, sonra "rakip bulundu!" yazıp bota düşülüyordu; hiçbir yerde yapay
+    // zekâ olduğu söylenmiyordu. Aldatıcı olan gecikme değil, gecikmenin bir
+    // arama gibi sunulmasıydı: ikisi de kaldırıldı.
     if (widget.timedSeconds != null) {
       _watchdog?.cancel();
-      // Bot rakibe gerçek kullanıcı adı ver: arama süresi boyunca havuzu tazele.
-      unawaited(BotNames.refresh(excludeName: context.read<AuthService>().getName()));
       final settings = context.read<SettingsService>();
-      // İlk maç garantili kolay gizli bot — kazanılabilir ilk deneyim.
       final firstMatch = !settings.firstMatchPlayed;
       if (firstMatch) await settings.markFirstMatchPlayed();
       if (!mounted) return;
 
-      _matchMsgs = [l10n.lobbyMatchMsg1, l10n.lobbyMatchMsg2, l10n.lobbyMatchMsg3];
       setState(() {
-        _title = l10n.lobbyMatching;
-        _message = l10n.lobbyQuickSearching;
-        _roomCode = '——';
+        // Başlık nötr: bu ekran ~700 ms görünüyor ve hiçbir iddiada bulunmuyor.
+        _title = l10n.matchStarting;
+        _message = '';
+        _roomCode = '';
         _showShare = false;
-        _spinning = true;
+        _spinning = false;
       });
 
       if (firstMatch) {
-        // İlk deneyimi hemen başlat (garantili kolay rakip).
-        Future.delayed(const Duration(milliseconds: 1200), () {
-          if (mounted) _launchHiddenBot(AiLevel.easy);
+        // İlk deneyim garantili kolay rakiple başlar.
+        Future.delayed(const Duration(milliseconds: 700), () {
+          if (mounted) _launchAiMatch(AiLevel.easy);
         });
         return;
       }
 
-      // Zorluk: genelde zorlu, her 5-6 maçta bir kolay (oyuncu kopmasın).
-      final pick = pickHiddenBotLevel(settings.botMatchesSinceEasy);
+      final pick = pickBotLevel(settings.botMatchesSinceEasy);
       unawaited(settings.setBotMatchesSinceEasy(pick.nextCounter));
-
-      var idx = 0;
-      _msgTimer = Timer.periodic(const Duration(milliseconds: 900), (_) {
-        if (!mounted) return;
-        setState(() {
-          idx = (idx + 1) % _matchMsgs.length;
-          _message = _matchMsgs[idx];
-        });
-      });
-      _botFallback = Timer(const Duration(seconds: 3), () {
-        if (!mounted) return;
-        _msgTimer?.cancel();
-        // Gizli bot: "rakip bulundu" göster, "AI" ibaresi yok.
-        setState(() {
-          _message = l10n.lobbyOpponentFound;
-          _spinning = false;
-        });
-        Future.delayed(const Duration(milliseconds: 900), () {
-          if (mounted) _launchHiddenBot(pick.level);
-        });
+      _botFallback = Timer(const Duration(milliseconds: 700), () {
+        if (mounted) _launchAiMatch(pick.level);
       });
       return;
     }
 
-    _matchMsgs = [l10n.lobbyMatchMsg1, l10n.lobbyMatchMsg2, l10n.lobbyMatchMsg3];
     _title = l10n.lobbyWaiting;
     _message = l10n.lobbyConnecting;
 
@@ -193,8 +171,8 @@ class _LobbyScreenState extends State<LobbyScreen> {
     }
   }
 
-  /// Süreli modsa süreli maç, değilse normal gizli bot maçı başlatır.
-  void _launchHiddenBot(AiLevel level) {
+  /// Süreli modsa süreli maç, değilse yapay zekâ maçı başlatır.
+  void _launchAiMatch(AiLevel level) {
     final secs = widget.timedSeconds;
     if (secs != null) {
       AppRouter.startTimed(context, secs, level: level);

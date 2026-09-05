@@ -98,7 +98,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
                           shape: BoxShape.circle,
                           gradient: AppGradients.neonPurple,
                           border: Border.all(color: AppColors.beyaz.withValues(alpha: 0.3)),
-                          boxShadow: AppShadows.depth(AppColors.morDahaKoyu),
+                          boxShadow: AppShadows.depth(AppColors.laciDerin),
                         ),
                         child: const Icon(Icons.arrow_back_rounded, color: AppColors.beyaz, size: 20),
                       ),
@@ -139,7 +139,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: AppColors.acikMor),
+                            borderSide: const BorderSide(color: AppColors.acikMavi),
                           ),
                         ),
                         onSubmitted: (_) => _add(),
@@ -153,7 +153,7 @@ class _FriendsScreenState extends State<FriendsScreen> {
                         decoration: BoxDecoration(
                           gradient: AppGradients.neonPurple,
                           borderRadius: BorderRadius.circular(12),
-                          boxShadow: AppShadows.neon(AppColors.acikMor, blur: 8),
+                          boxShadow: AppShadows.neon(AppColors.acikMavi, blur: 8),
                         ),
                         child: Text(
                           l10n.friendAdd,
@@ -249,7 +249,7 @@ class _FriendRow extends StatelessWidget {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: AppColors.neonYesil,
-                      border: Border.all(color: AppColors.morDahaKoyu, width: 2),
+                      border: Border.all(color: AppColors.laciDerin, width: 2),
                     ),
                   ),
                 ),
@@ -286,7 +286,7 @@ class _FriendRow extends StatelessWidget {
               ),
               child: Text(
                 l10n.friendChallenge,
-                style: const TextStyle(color: AppColors.morDahaKoyu, fontWeight: FontWeight.w900, fontSize: 11),
+                style: const TextStyle(color: AppColors.laciDerin, fontWeight: FontWeight.w900, fontSize: 11),
               ),
             ),
           ),

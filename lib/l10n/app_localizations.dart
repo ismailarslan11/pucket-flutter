@@ -17,7 +17,7 @@ class AppLocalizations {
   String get menu => _t('menu');
   String get or => _t('or');
   String get more => _t('more');
-  String get onlineMultiplayer => _t('onlineMultiplayer');
+  String get appTagline => _t('appTagline');
   String get winsLosses => _t('winsLosses');
   String get yes => _t('yes');
   String get no => _t('no');
@@ -76,7 +76,6 @@ class AppLocalizations {
   String get authContinueLogin => _t('authContinueLogin');
   String get authGoogle => _t('authGoogle');
   String get authGuest => _t('authGuest');
-  String get authGoogleHint => _t('authGoogleHint');
   String get authGoogleSetup => _t('authGoogleSetup');
   String get authGoogleNotConfigured => _t('authGoogleNotConfigured');
   String get authRankedHint => _t('authRankedHint');
@@ -129,9 +128,19 @@ class AppLocalizations {
 
   // ── Game ──
   String get youRed => _t('youRed');
-  String get botBlue => _t('botBlue');
-  String get botMode => _t('botMode');
-  String get bot => _t('bot');
+  String get tutorialTitle => _t('tutorialTitle');
+  String get tutGoalTitle => _t('tutGoalTitle');
+  String get tutGoalBody => _t('tutGoalBody');
+  String get tutShotTitle => _t('tutShotTitle');
+  String get tutShotBody => _t('tutShotBody');
+  String get tutMatchTitle => _t('tutMatchTitle');
+  String get tutMatchBody => _t('tutMatchBody');
+  String get tutOpponentTitle => _t('tutOpponentTitle');
+  String get tutOpponentBody => _t('tutOpponentBody');
+  String get tutStart => _t('tutStart');
+  String get privacyBodyText => _t('privacyBodyText');
+  String get termsBodyText => _t('termsBodyText');
+  String get matchStarting => _t('matchStarting');
   String get ranked => _t('ranked');
   String get online => _t('online');
   String get blue => _t('blue');
@@ -207,27 +216,14 @@ class AppLocalizations {
   String get diffHardShort => _t('diffHardShort');
 
   // ── Queue ──
-  String get queueSearching => _t('queueSearching');
-  String get queueSearchingElo => _t('queueSearchingElo');
-  String get queueSearchingMatch => _t('queueSearchingMatch');
-  String get queueFound => _t('queueFound');
-  String get queueBotStarting => _t('queueBotStarting');
-  String get queueRankedTitle => _t('queueRankedTitle');
   String get queueYourElo => _t('queueYourElo');
   String get queueLeave => _t('queueLeave');
   String get queueNoServer => _t('queueNoServer');
   String get queueCancel => _t('queueCancel');
-  String get botFallbackLabel => _t('botFallbackLabel');
   String get botFallbackEloHint => _t('botFallbackEloHint');
   String get lobbyWaiting => _t('lobbyWaiting');
-  String get lobbyMatching => _t('lobbyMatching');
   String get lobbyConnecting => _t('lobbyConnecting');
-  String get lobbyQuickSearching => _t('lobbyQuickSearching');
-  String get lobbyMatchMsg1 => _t('lobbyMatchMsg1');
-  String get lobbyMatchMsg2 => _t('lobbyMatchMsg2');
-  String get lobbyMatchMsg3 => _t('lobbyMatchMsg3');
   String get lobbyOpponentFound => _t('lobbyOpponentFound');
-  String get lobbyBotFallback => _t('lobbyBotFallback');
   String get lobbyRoomCreated => _t('lobbyRoomCreated');
   String get lobbyJoining => _t('lobbyJoining');
   String get lobbyWaitFriend => _t('lobbyWaitFriend');
@@ -254,7 +250,6 @@ class AppLocalizations {
   String get restorePurchases => _t('restorePurchases');
   String get iapUnavailable => _t('iapUnavailable');
   String get menuPremium => _t('menuPremium');
-  String get menuRankedSub => _t('menuRankedSub');
   String get vipTitle => _t('vipTitle');
   String get vipSubtitle => _t('vipSubtitle');
   String get vipPerkNoAds => _t('vipPerkNoAds');
@@ -281,7 +276,6 @@ class AppLocalizations {
   String get tokenGuide => _t('tokenGuide');
   String get bonus10 => _t('bonus10');
   String get bonus20 => _t('bonus20');
-  String get bpCardSub => _t('bpCardSub');
   String get premiumNotes => _t('premiumNotes');
   String get openLabel => _t('openLabel');
   String get premiumHeroSub => _t('premiumHeroSub');
@@ -314,13 +308,6 @@ class AppLocalizations {
   String get tournament => _t('tournament');
   String get tournamentJoined => _t('tournamentJoined');
   String get tournamentPrizes => _t('tournamentPrizes');
-  String get battlePass => _t('battlePass');
-  String get battlePassClaim => _t('battlePassClaim');
-  String get battlePassClaimed => _t('battlePassClaimed');
-  String get battlePassLocked => _t('battlePassLocked');
-  String get battlePassPremium => _t('battlePassPremium');
-  String get battlePassFree => _t('battlePassFree');
-  String get battlePassUnlockSoon => _t('battlePassUnlockSoon');
   String get friends => _t('friends');
   String get friendsEmpty => _t('friendsEmpty');
   String get friendAdd => _t('friendAdd');
@@ -459,11 +446,11 @@ const _tr = {
   'menu': 'MENÜ',
   'or': 'veya',
   'more': 'daha fazla',
-  'onlineMultiplayer': 'ONLINE MULTIPLAYER',
+  'appTagline': 'DİSK FIRLATMA OYUNU',
   'winsLosses': 'G',
   'yes': 'Evet',
   'no': 'Hayır',
-  'menuRanked': 'RANKED MAÇ',
+  'menuRanked': 'GİRİŞ YAP',
   'menuQuick': 'HIZLI EŞLEŞTİR',
   'menuTimed': 'OYNA',
   'menuQuickSub': 'Hemen rakip bul, maça başla',
@@ -512,10 +499,9 @@ const _tr = {
   'authContinueLogin': 'Devam etmek için giriş yap',
   'authGoogle': 'Google ile Giriş Yap',
   'authGuest': 'Misafir Olarak Devam Et',
-  'authGoogleHint': 'Google ile giriş yaparak sıralama listesine katılır,\nilerlemen kaydedilir.',
   'authGoogleSetup': 'Google girişi için: bash tool/setup_firebase.sh',
   'authGoogleNotConfigured': 'Google girişi yapılandırılmamış — misafir olarak devam edebilirsin',
-  'authRankedHint': 'Google veya Apple ile giriş yaparak sıralama listesine katılır,\nilerlemen kaydedilir.',
+  'authRankedHint': 'Google veya Apple ile giriş yaparak ilerlemeni buluta kaydedersin.',
   'usernameTitle': 'KULLANICI ADI',
   'usernameGuestHint': 'Misafir olarak devam — adın benzersiz olmalı',
   'usernameSetHint': 'Oyuncu adını belirle',
@@ -556,9 +542,7 @@ const _tr = {
   'kpAlreadyEarned': 'Rakibi yeniden yendin — KP zaten alınmıştı',
   'opponentBeatYou': '{name} seni yendi — tekrar dene!',
   'youRed': 'SEN',
-  'botBlue': 'BOT',
-  'botMode': 'BOT MODU',
-  'bot': 'BOT',
+  'matchStarting': 'Maç başlıyor...',
   'ranked': 'RANKED',
   'online': 'ONLINE',
   'blue': 'MAVİ',
@@ -599,26 +583,13 @@ const _tr = {
   'tierDiamond': 'Elmas',
   'tierMaster': 'Usta',
   'tierLegend': 'Efsane',
-  'queueSearching': 'Rakip aranıyor...',
-  'queueSearchingElo': 'ELO seviyenizde rakip aranıyor...',
-  'queueSearchingMatch': 'Eşleştirme kuruluyor...',
-  'queueFound': 'Rakip bulundu!',
-  'queueBotStarting': 'Gerçek rakip bulunamadı — AI antrenman başlıyor...',
-  'queueRankedTitle': 'RANKED MAÇ',
   'queueYourElo': 'ELO PUANINIZ',
   'queueLeave': 'KUYRUKTAN ÇIK',
   'queueNoServer': 'Sunucu yok — AI antrenman moduna geçiliyor',
-  'botFallbackLabel': 'AI PRATİK',
   'botFallbackEloHint': 'ELO etkilenmez',
   'lobbyWaiting': 'BEKLENİYOR',
-  'lobbyMatching': 'EŞLEŞTİRİLİYOR',
   'lobbyConnecting': 'Bağlanıyor...',
-  'lobbyQuickSearching': 'Rakip aranıyor...',
-  'lobbyMatchMsg1': 'Oyuncu aranıyor...',
-  'lobbyMatchMsg2': 'Eşleştirme kuruluyor...',
-  'lobbyMatchMsg3': 'Bağlantı kuruluyor...',
   'lobbyOpponentFound': 'Rakip bulundu! Başlıyor...',
-  'lobbyBotFallback': 'Gerçek rakip bulunamadı — AI antrenman modu',
   'lobbyRoomCreated': 'ODA OLUŞTURULDU',
   'lobbyJoining': 'KATILINIYOR',
   'lobbyWaitFriend': 'Arkadaşın katılmasını bekle',
@@ -640,7 +611,6 @@ const _tr = {
   'afkSub': 'Uzun süre hamle yapmadınız — maç sonlandırıldı.',
   'signOut': 'Çıkış Yap',
   'friends': 'Arkadaşlar',
-  'battlePass': 'Sezon Yolu',
   'tournament': 'Turnuva',
   'shop': 'Mağaza',
   'removeAds': 'Reklamları Kaldır',
@@ -649,7 +619,6 @@ const _tr = {
   'restorePurchases': 'Satın Alımları Geri Yükle',
   'iapUnavailable': 'Mağaza şu an kullanılamıyor',
   'menuPremium': 'Premium',
-  'menuRankedSub': 'ELO kazan · Ligde yüksel',
   'vipTitle': 'PUCKET VIP',
   'vipSubtitle': 'Tek seferlik satın alım — kalıcı ayrıcalıklar',
   'vipPerkNoAds': 'Tüm reklamlar kalkar',
@@ -676,11 +645,10 @@ const _tr = {
   'tokenGuide': 'Premium pullar 250–750 jeton · Emoji pullar 40–90 jeton',
   'bonus10': '+%10 BONUS',
   'bonus20': '+%20 BONUS',
-  'bpCardSub': 'Sezonluk ödül yolunun premium kolunu açar — ekstra jeton ve kozmetikler',
   'premiumNotes': 'Satın alımlar hesabına bağlıdır. Cihaz değiştirirsen "Satın Alımları Geri Yükle" yeterli. Jetonların sunucuda güvende tutulur.',
   'openLabel': 'İncele',
   'noInternetTitle': 'İnternet Bağlantısı Yok',
-  'noInternetBody': 'PUCKET çevrimiçi bir oyundur.\nDevam etmek için Wi-Fi veya mobil veriyi aç.',
+  'noInternetBody': 'Giriş ve ilerleme kaydı için internet gerekir.\nWi-Fi veya mobil veriyi aç.',
   'noInternetRetry': 'TEKRAR DENE',
   'noInternetChecking': 'Bağlantı kontrol ediliyor…',
   'boardThemeLava': 'Lav',
@@ -701,12 +669,6 @@ const _tr = {
   'disc_vip_gold': 'VIP Taç',
   'tournamentJoined': 'Katıldın! Ranked kazanınca puan topla.',
   'tournamentPrizes': 'Haftalık Ödüller',
-  'battlePassClaim': 'Al',
-  'battlePassClaimed': 'Alındı',
-  'battlePassLocked': 'Kilitli',
-  'battlePassPremium': 'Premium',
-  'battlePassFree': 'Ücretsiz',
-  'battlePassUnlockSoon': 'Premium yakında',
   'friendsEmpty': 'Henüz arkadaşın yok. Kullanıcı adıyla ekle!',
   'friendAdd': 'Arkadaş Ekle',
   'friendAddHint': 'Kullanıcı adı',
@@ -812,7 +774,7 @@ const _tr = {
   'profileEmpty': 'Profil yok',
   'matchHistory': 'SON MAÇLAR',
   'refresh': 'YENİLE',
-  'noHistory': 'Henüz maç geçmişi yok.\nRanked oyna veya sunucuya bağlan.',
+  'noHistory': 'Henüz maç geçmişi yok.',
   'rankedLabel': 'Ranked',
   'casualLabel': 'Casual',
   'achievements': 'BAŞARIMLAR',
@@ -823,6 +785,18 @@ const _tr = {
   'rankError': 'Sıralama yüklenemedi',
   'rematch': 'TEKRAR OYNA',
   'pauseRemaining': 'Kalan: {sec} sn',
+  'tutorialTitle': 'PUCKET REHBERİ',
+  'tutGoalTitle': 'Amaç',
+  'tutGoalBody': 'Kendi yarındaki TÜM pulları (kendi rengin + rakibin sende kalan pulları) karşı tarafa geçir. Alt yarı tamamen boş olunca kazanırsın.',
+  'tutShotTitle': 'Atış',
+  'tutShotBody': 'Puluna dokun, geri çek, bırak. Sadece kendi yarındaki pulları oynayabilirsin.',
+  'tutMatchTitle': 'Maç',
+  'tutMatchBody': 'Best of 3 — 2 round kazanan maçı alır.',
+  'tutOpponentTitle': 'Rakip',
+  'tutOpponentBody': 'Süreli mod, kariyer ve bilgisayara karşı modlarında rakip yapay zekâdır; gerçek oyuncularla eşleştirme yapılmaz.',
+  'tutStart': 'ANLADIM, BAŞLA!',
+  'privacyBodyText': '• Google veya Apple ile giriş yaparsan hesabın Firebase\'de tutulur; misafir modda yerel anonim kimlik kullanılır.\n• Kullanıcı adı, ELO, lig ve maç sonuçları sunucuda saklanır.\n• Reklam: Google AdMob; cihaz tanımlayıcıları kullanılabilir.\n• Üçüncü taraflar: Firebase (Google), AdMob, oyun sunucusu.\n• Hesabını Ayarlar\'dan kalıcı olarak silebilirsin.\n• İletişim: {email}',
+  'termsBodyText': '• Oyun 13+ yaş içindir.\n• Hile ve taciz yasaktır.\n• Süreli mod, kariyer ve bilgisayara karşı modlarında rakip yapay zekâdır; gerçek oyuncularla eşleştirme yapılmaz.\n• Yapay zekâ maçları ELO\'yu ve sıralama tablosunu etkilemez.\n• Uygulama "olduğu gibi" sunulur; kesinti olabilir.',
 };
 
 const _en = {
@@ -833,11 +807,11 @@ const _en = {
   'menu': 'MENU',
   'or': 'or',
   'more': 'more',
-  'onlineMultiplayer': 'ONLINE MULTIPLAYER',
+  'appTagline': 'DISC FLICKING GAME',
   'winsLosses': 'W',
   'yes': 'Yes',
   'no': 'No',
-  'menuRanked': 'RANKED MATCH',
+  'menuRanked': 'SIGN IN',
   'menuQuick': 'QUICK MATCH',
   'menuTimed': 'PLAY',
   'menuQuickSub': 'Find an opponent and jump in',
@@ -886,10 +860,9 @@ const _en = {
   'authContinueLogin': 'Sign in to continue',
   'authGoogle': 'Sign in with Google',
   'authGuest': 'Continue as Guest',
-  'authGoogleHint': 'Sign in with Google to join ranked\nand save your progress.',
   'authGoogleSetup': 'For Google sign-in: bash tool/setup_firebase.sh',
   'authGoogleNotConfigured': 'Google sign-in not configured — continue as guest',
-  'authRankedHint': 'Sign in with Google or Apple to join ranked\nand save your progress.',
+  'authRankedHint': 'Sign in with Google or Apple to save your progress to the cloud.',
   'usernameTitle': 'USERNAME',
   'usernameGuestHint': 'Guest mode — pick a unique name',
   'usernameSetHint': 'Choose your player name',
@@ -930,9 +903,7 @@ const _en = {
   'kpAlreadyEarned': 'Beat them again — CP already earned',
   'opponentBeatYou': '{name} beat you — try again!',
   'youRed': 'YOU',
-  'botBlue': 'BOT',
-  'botMode': 'BOT MODE',
-  'bot': 'BOT',
+  'matchStarting': 'Starting match...',
   'ranked': 'RANKED',
   'online': 'ONLINE',
   'blue': 'BLUE',
@@ -973,26 +944,13 @@ const _en = {
   'tierDiamond': 'Diamond',
   'tierMaster': 'Master',
   'tierLegend': 'Legend',
-  'queueSearching': 'Searching for opponent...',
-  'queueSearchingElo': 'Searching for opponent at your ELO...',
-  'queueSearchingMatch': 'Matching players...',
-  'queueFound': 'Opponent found!',
-  'queueBotStarting': 'No human opponent — starting AI practice...',
-  'queueRankedTitle': 'RANKED MATCH',
   'queueYourElo': 'YOUR ELO',
   'queueLeave': 'LEAVE QUEUE',
   'queueNoServer': 'No server — switching to AI practice',
-  'botFallbackLabel': 'AI PRACTICE',
   'botFallbackEloHint': 'ELO not affected',
   'lobbyWaiting': 'WAITING',
-  'lobbyMatching': 'MATCHING',
   'lobbyConnecting': 'Connecting...',
-  'lobbyQuickSearching': 'Searching for opponent...',
-  'lobbyMatchMsg1': 'Looking for players...',
-  'lobbyMatchMsg2': 'Setting up match...',
-  'lobbyMatchMsg3': 'Connecting...',
   'lobbyOpponentFound': 'Opponent found! Starting...',
-  'lobbyBotFallback': 'No human opponent — AI practice mode',
   'lobbyRoomCreated': 'ROOM CREATED',
   'lobbyJoining': 'JOINING',
   'lobbyWaitFriend': 'Waiting for your friend to join',
@@ -1014,7 +972,6 @@ const _en = {
   'afkSub': 'No move for too long — match ended.',
   'signOut': 'Sign Out',
   'friends': 'Friends',
-  'battlePass': 'Season Pass',
   'tournament': 'Tournament',
   'shop': 'Shop',
   'removeAds': 'Remove Ads',
@@ -1023,7 +980,6 @@ const _en = {
   'restorePurchases': 'Restore Purchases',
   'iapUnavailable': 'Store unavailable right now',
   'menuPremium': 'Premium',
-  'menuRankedSub': 'Earn ELO · Climb the league',
   'vipTitle': 'PUCKET VIP',
   'vipSubtitle': 'One-time purchase — permanent perks',
   'vipPerkNoAds': 'All ads removed',
@@ -1050,11 +1006,10 @@ const _en = {
   'tokenGuide': 'Premium discs cost 250–750 tokens · Emoji discs 40–90',
   'bonus10': '+10% BONUS',
   'bonus20': '+20% BONUS',
-  'bpCardSub': 'Unlocks the premium reward track — extra tokens and cosmetics',
   'premiumNotes': 'Purchases are tied to your account. On a new device just tap "Restore Purchases". Your tokens are stored safely on the server.',
   'openLabel': 'View',
   'noInternetTitle': 'No Internet Connection',
-  'noInternetBody': 'PUCKET is an online game.\nTurn on Wi-Fi or mobile data to continue.',
+  'noInternetBody': 'Sign-in and progress sync need internet.\nTurn on Wi-Fi or mobile data.',
   'noInternetRetry': 'TRY AGAIN',
   'noInternetChecking': 'Checking connection…',
   'boardThemeLava': 'Lava',
@@ -1075,12 +1030,6 @@ const _en = {
   'disc_vip_gold': 'VIP Crown',
   'tournamentJoined': 'Joined! Earn points by winning ranked.',
   'tournamentPrizes': 'Weekly Prizes',
-  'battlePassClaim': 'Claim',
-  'battlePassClaimed': 'Claimed',
-  'battlePassLocked': 'Locked',
-  'battlePassPremium': 'Premium',
-  'battlePassFree': 'Free',
-  'battlePassUnlockSoon': 'Premium coming soon',
   'friendsEmpty': 'No friends yet. Add by username!',
   'friendAdd': 'Add Friend',
   'friendAddHint': 'Username',
@@ -1186,7 +1135,7 @@ const _en = {
   'profileEmpty': 'No profile',
   'matchHistory': 'RECENT MATCHES',
   'refresh': 'REFRESH',
-  'noHistory': 'No match history yet.\nPlay ranked or connect to server.',
+  'noHistory': 'No match history yet.',
   'rankedLabel': 'Ranked',
   'casualLabel': 'Casual',
   'achievements': 'ACHIEVEMENTS',
@@ -1197,6 +1146,18 @@ const _en = {
   'rankError': 'Could not load leaderboard',
   'rematch': 'REMATCH',
   'pauseRemaining': 'Remaining: {sec}s',
+  'tutorialTitle': 'PUCKET GUIDE',
+  'tutGoalTitle': 'Goal',
+  'tutGoalBody': 'Send EVERY disc on your half (your own colour plus any of the opponent\'s that landed on you) to the other side. Clear your half to win.',
+  'tutShotTitle': 'Shooting',
+  'tutShotBody': 'Touch a disc, pull back, release. You can only play discs on your own half.',
+  'tutMatchTitle': 'Match',
+  'tutMatchBody': 'Best of 3 — first to win 2 rounds takes the match.',
+  'tutOpponentTitle': 'Opponent',
+  'tutOpponentBody': 'In timed, career and vs-computer modes the opponent is AI; no matchmaking with real players takes place.',
+  'tutStart': 'GOT IT, LET\'S GO!',
+  'privacyBodyText': '• Signing in with Google or Apple stores your account in Firebase; guest mode uses a local anonymous id.\n• Your name, rating, league and match results are stored on our server.\n• Ads: Google AdMob; device identifiers may be used.\n• Third parties: Firebase (Google), AdMob, game server.\n• You can permanently delete your account from Settings.\n• Contact: {email}',
+  'termsBodyText': '• The game is for ages 13 and up.\n• Cheating and harassment are not allowed.\n• In timed, career and vs-computer modes the opponent is AI; no matchmaking with real players takes place.\n• AI matches do not affect your rating or the leaderboard.\n• The app is provided "as is"; interruptions may occur.',
 };
 
 const _de = {
@@ -1207,11 +1168,11 @@ const _de = {
   'menu': 'MENÜ',
   'or': 'oder',
   'more': 'mehr',
-  'onlineMultiplayer': 'ONLINE MULTIPLAYER',
+  'appTagline': 'DISC-FLICK-SPIEL',
   'winsLosses': 'S',
   'yes': 'Ja',
   'no': 'Nein',
-  'menuRanked': 'RANKED-MATCH',
+  'menuRanked': 'ANMELDEN',
   'menuQuick': 'SCHNELLSUCHE',
   'menuTimed': 'SPIELEN',
   'menuQuickSub': 'Gegner finden und loslegen',
@@ -1260,10 +1221,9 @@ const _de = {
   'authContinueLogin': 'Zum Fortfahren anmelden',
   'authGoogle': 'Mit Google anmelden',
   'authGuest': 'Als Gast fortfahren',
-  'authGoogleHint': 'Mit Google anmelden für Rangliste\nund gespeicherten Fortschritt.',
   'authGoogleSetup': 'Google-Anmeldung: bash tool/setup_firebase.sh',
   'authGoogleNotConfigured': 'Google nicht konfiguriert — als Gast fortfahren',
-  'authRankedHint': 'Mit Google anmelden für Rangliste\nund gespeicherten Fortschritt.',
+  'authRankedHint': 'Mit Google oder Apple anmelden, um deinen Fortschritt zu sichern.',
   'usernameTitle': 'BENUTZERNAME',
   'usernameGuestHint': 'Gastmodus — einzigartiger Name nötig',
   'usernameSetHint': 'Spielername wählen',
@@ -1304,9 +1264,7 @@ const _de = {
   'kpAlreadyEarned': 'Schon besiegt — KP bereits erhalten',
   'opponentBeatYou': '{name} hat gewonnen — nochmal!',
   'youRed': 'DU',
-  'botBlue': 'BOT',
-  'botMode': 'BOT-MODUS',
-  'bot': 'BOT',
+  'matchStarting': 'Spiel startet...',
   'ranked': 'RANKED',
   'online': 'ONLINE',
   'blue': 'BLAU',
@@ -1347,26 +1305,13 @@ const _de = {
   'tierDiamond': 'Diamant',
   'tierMaster': 'Meister',
   'tierLegend': 'Legende',
-  'queueSearching': 'Gegner wird gesucht...',
-  'queueSearchingElo': 'Gegner auf deinem ELO-Niveau...',
-  'queueSearchingMatch': 'Spieler werden zusammengeführt...',
-  'queueFound': 'Gegner gefunden!',
-  'queueBotStarting': 'Kein menschlicher Gegner — KI-Training startet...',
-  'queueRankedTitle': 'RANKED-MATCH',
   'queueYourElo': 'DEIN ELO',
   'queueLeave': 'WARTESCHLANGE VERLASSEN',
   'queueNoServer': 'Kein Server — KI-Trainingsmodus',
-  'botFallbackLabel': 'KI-TRAINING',
   'botFallbackEloHint': 'ELO unverändert',
   'lobbyWaiting': 'WARTEN',
-  'lobbyMatching': 'MATCHMAKING',
   'lobbyConnecting': 'Verbinden...',
-  'lobbyQuickSearching': 'Gegner wird gesucht...',
-  'lobbyMatchMsg1': 'Spieler werden gesucht...',
-  'lobbyMatchMsg2': 'Match wird vorbereitet...',
-  'lobbyMatchMsg3': 'Verbindung wird aufgebaut...',
   'lobbyOpponentFound': 'Gegner gefunden! Start...',
-  'lobbyBotFallback': 'Kein Gegner — KI-Trainingsmodus',
   'lobbyRoomCreated': 'RAUM ERSTELLT',
   'lobbyJoining': 'BEITRETEN',
   'lobbyWaitFriend': 'Warte auf deinen Freund',
@@ -1388,7 +1333,6 @@ const _de = {
   'afkSub': 'Zu lange inaktiv — Match beendet.',
   'signOut': 'Abmelden',
   'friends': 'Freunde',
-  'battlePass': 'Saison-Pass',
   'tournament': 'Turnier',
   'shop': 'Shop',
   'removeAds': 'Werbung entfernen',
@@ -1398,12 +1342,6 @@ const _de = {
   'iapUnavailable': 'Store derzeit nicht verfügbar',
   'tournamentJoined': 'Beigetreten! Punkte durch Ranked-Siege.',
   'tournamentPrizes': 'Wöchentliche Preise',
-  'battlePassClaim': 'Abholen',
-  'battlePassClaimed': 'Abgeholt',
-  'battlePassLocked': 'Gesperrt',
-  'battlePassPremium': 'Premium',
-  'battlePassFree': 'Gratis',
-  'battlePassUnlockSoon': 'Premium bald',
   'friendsEmpty': 'Noch keine Freunde. Per Benutzername hinzufügen!',
   'friendAdd': 'Freund hinzufügen',
   'friendAddHint': 'Benutzername',
@@ -1520,6 +1458,18 @@ const _de = {
   'rankError': 'Rangliste nicht geladen',
   'rematch': 'REVANCHE',
   'pauseRemaining': 'Verbleibend: {sec}s',
+  'tutorialTitle': 'PUCKET-ANLEITUNG',
+  'tutGoalTitle': 'Ziel',
+  'tutGoalBody': 'Bringe ALLE Scheiben auf deiner Hälfte auf die andere Seite. Wer seine Hälfte leert, gewinnt.',
+  'tutShotTitle': 'Schuss',
+  'tutShotBody': 'Scheibe antippen, zurückziehen, loslassen. Du kannst nur Scheiben auf deiner Hälfte spielen.',
+  'tutMatchTitle': 'Spiel',
+  'tutMatchBody': 'Best of 3 — wer zwei Runden gewinnt, gewinnt das Spiel.',
+  'tutOpponentTitle': 'Gegner',
+  'tutOpponentBody': 'In den Modi Zeitspiel, Karriere und Gegen den Computer ist der Gegner eine KI; es findet kein Matchmaking mit echten Spielern statt.',
+  'tutStart': 'ALLES KLAR, LOS!',
+  'privacyBodyText': '• Bei Anmeldung mit Google oder Apple wird dein Konto in Firebase gespeichert; im Gastmodus wird eine lokale anonyme ID verwendet.\n• Name, Wertung, Liga und Spielergebnisse werden auf unserem Server gespeichert.\n• Werbung: Google AdMob; Gerätekennungen können verwendet werden.\n• Dritte: Firebase (Google), AdMob, Spielserver.\n• Du kannst dein Konto in den Einstellungen dauerhaft löschen.\n• Kontakt: {email}',
+  'termsBodyText': '• Das Spiel ist ab 13 Jahren.\n• Betrug und Belästigung sind verboten.\n• In den Modi Zeitspiel, Karriere und Gegen den Computer ist der Gegner eine KI; es findet kein Matchmaking mit echten Spielern statt.\n• KI-Spiele beeinflussen weder Wertung noch Rangliste.\n• Die App wird "wie besehen" bereitgestellt; Unterbrechungen sind möglich.',
 };
 
 const _es = {
@@ -1530,11 +1480,11 @@ const _es = {
   'menu': 'MENÚ',
   'or': 'o',
   'more': 'más',
-  'onlineMultiplayer': 'MULTIJUGADOR ONLINE',
+  'appTagline': 'JUEGO DE DISCOS',
   'winsLosses': 'G',
   'yes': 'Sí',
   'no': 'No',
-  'menuRanked': 'PARTIDA RANKED',
+  'menuRanked': 'INICIAR SESIÓN',
   'menuQuick': 'PARTIDA RÁPIDA',
   'menuTimed': 'JUGAR',
   'menuQuickSub': 'Encuentra rival y empieza ya',
@@ -1583,10 +1533,9 @@ const _es = {
   'authContinueLogin': 'Inicia sesión para continuar',
   'authGoogle': 'Iniciar con Google',
   'authGuest': 'Continuar como invitado',
-  'authGoogleHint': 'Inicia con Google para ranked\ny guardar progreso.',
   'authGoogleSetup': 'Google: bash tool/setup_firebase.sh',
   'authGoogleNotConfigured': 'Google no configurado — continúa como invitado',
-  'authRankedHint': 'Inicia con Google para ranked\ny guardar progreso.',
+  'authRankedHint': 'Inicia sesión con Google o Apple para guardar tu progreso.',
   'usernameTitle': 'NOMBRE DE USUARIO',
   'usernameGuestHint': 'Modo invitado — nombre único',
   'usernameSetHint': 'Elige tu nombre',
@@ -1627,9 +1576,7 @@ const _es = {
   'kpAlreadyEarned': 'Ya ganaste PC por este rival',
   'opponentBeatYou': '{name} te ganó — ¡intenta de nuevo!',
   'youRed': 'TÚ',
-  'botBlue': 'BOT',
-  'botMode': 'MODO BOT',
-  'bot': 'BOT',
+  'matchStarting': 'Iniciando partida...',
   'ranked': 'RANKED',
   'online': 'ONLINE',
   'blue': 'AZUL',
@@ -1670,26 +1617,13 @@ const _es = {
   'tierDiamond': 'Diamante',
   'tierMaster': 'Maestro',
   'tierLegend': 'Leyenda',
-  'queueSearching': 'Buscando rival...',
-  'queueSearchingElo': 'Buscando rival en tu ELO...',
-  'queueSearchingMatch': 'Emparejando jugadores...',
-  'queueFound': '¡Rival encontrado!',
-  'queueBotStarting': 'Sin rival humano — entrenamiento con IA...',
-  'queueRankedTitle': 'PARTIDA RANKED',
   'queueYourElo': 'TU ELO',
   'queueLeave': 'SALIR DE COLA',
   'queueNoServer': 'Sin servidor — modo entrenamiento IA',
-  'botFallbackLabel': 'IA ENTRENAMIENTO',
   'botFallbackEloHint': 'ELO no afectado',
   'lobbyWaiting': 'ESPERANDO',
-  'lobbyMatching': 'EMPAREJANDO',
   'lobbyConnecting': 'Conectando...',
-  'lobbyQuickSearching': 'Buscando rival...',
-  'lobbyMatchMsg1': 'Buscando jugadores...',
-  'lobbyMatchMsg2': 'Preparando partida...',
-  'lobbyMatchMsg3': 'Conectando...',
   'lobbyOpponentFound': '¡Rival encontrado! Iniciando...',
-  'lobbyBotFallback': 'Sin rival humano — modo IA',
   'lobbyRoomCreated': 'SALA CREADA',
   'lobbyJoining': 'UNIÉNDOSE',
   'lobbyWaitFriend': 'Espera a tu amigo',
@@ -1711,7 +1645,6 @@ const _es = {
   'afkSub': 'Sin movimiento — partida terminada.',
   'signOut': 'Cerrar sesión',
   'friends': 'Amigos',
-  'battlePass': 'Pase de Temporada',
   'tournament': 'Torneo',
   'shop': 'Tienda',
   'removeAds': 'Quitar anuncios',
@@ -1721,12 +1654,6 @@ const _es = {
   'iapUnavailable': 'Tienda no disponible ahora',
   'tournamentJoined': '¡Te uniste! Gana puntos ganando ranked.',
   'tournamentPrizes': 'Premios Semanales',
-  'battlePassClaim': 'Reclamar',
-  'battlePassClaimed': 'Reclamado',
-  'battlePassLocked': 'Bloqueado',
-  'battlePassPremium': 'Premium',
-  'battlePassFree': 'Gratis',
-  'battlePassUnlockSoon': 'Premium pronto',
   'friendsEmpty': 'Aún no tienes amigos. ¡Agrega por nombre de usuario!',
   'friendAdd': 'Agregar amigo',
   'friendAddHint': 'Nombre de usuario',
@@ -1843,6 +1770,18 @@ const _es = {
   'rankError': 'Error al cargar',
   'rematch': 'REVANCHA',
   'pauseRemaining': 'Quedan: {sec}s',
+  'tutorialTitle': 'GUÍA DE PUCKET',
+  'tutGoalTitle': 'Objetivo',
+  'tutGoalBody': 'Pasa TODAS las fichas de tu mitad al otro lado. Ganas cuando tu mitad queda vacía.',
+  'tutShotTitle': 'Tiro',
+  'tutShotBody': 'Toca una ficha, tira hacia atrás y suelta. Solo puedes jugar fichas de tu mitad.',
+  'tutMatchTitle': 'Partida',
+  'tutMatchBody': 'Al mejor de 3 — quien gane 2 rondas gana la partida.',
+  'tutOpponentTitle': 'Rival',
+  'tutOpponentBody': 'En los modos por tiempo, carrera y contra la máquina el rival es una IA; no hay emparejamiento con jugadores reales.',
+  'tutStart': '¡ENTENDIDO, A JUGAR!',
+  'privacyBodyText': '• Al iniciar sesión con Google o Apple, tu cuenta se guarda en Firebase; el modo invitado usa un id anónimo local.\n• Tu nombre, puntuación, liga y resultados se guardan en nuestro servidor.\n• Anuncios: Google AdMob; pueden usarse identificadores del dispositivo.\n• Terceros: Firebase (Google), AdMob, servidor del juego.\n• Puedes eliminar tu cuenta de forma permanente desde Ajustes.\n• Contacto: {email}',
+  'termsBodyText': '• El juego es para mayores de 13 años.\n• No se permiten trampas ni acoso.\n• En los modos por tiempo, carrera y contra la máquina el rival es una IA; no hay emparejamiento con jugadores reales.\n• Las partidas contra la IA no afectan a la puntuación ni a la clasificación.\n• La app se ofrece "tal cual"; puede haber interrupciones.',
 };
 
 const _ar = {
@@ -1853,11 +1792,11 @@ const _ar = {
   'menu': 'القائمة',
   'or': 'أو',
   'more': 'المزيد',
-  'onlineMultiplayer': 'MULTIPLAYER ONLINE',
+  'appTagline': 'لعبة قذف الأقراص',
   'winsLosses': 'ف',
   'yes': 'نعم',
   'no': 'لا',
-  'menuRanked': 'مباراة مصنّفة',
+  'menuRanked': 'تسجيل الدخول',
   'menuQuick': 'مباراة سريعة',
   'menuTimed': 'العب',
   'menuQuickSub': 'ابحث عن خصم وابدأ فوراً',
@@ -1906,10 +1845,9 @@ const _ar = {
   'authContinueLogin': 'سجّل الدخول للمتابعة',
   'authGoogle': 'الدخول عبر Google',
   'authGuest': 'المتابعة كضيف',
-  'authGoogleHint': 'سجّل عبر Google للانضمام للتصنيف\nوحفظ تقدمك.',
   'authGoogleSetup': 'Google: bash tool/setup_firebase.sh',
   'authGoogleNotConfigured': 'Google غير مهيأ — تابع كضيف',
-  'authRankedHint': 'سجّل عبر Google للانضمام للتصنيف\nوحفظ تقدمك.',
+  'authRankedHint': 'سجّل الدخول عبر Google أو Apple لحفظ تقدّمك.',
   'usernameTitle': 'اسم المستخدم',
   'usernameGuestHint': 'وضع الضيف — اسم فريد مطلوب',
   'usernameSetHint': 'اختر اسم اللاعب',
@@ -1950,9 +1888,7 @@ const _ar = {
   'kpAlreadyEarned': 'سبق أن حصلت على النقاط',
   'opponentBeatYou': '{name} هزمك — حاول مجدداً!',
   'youRed': 'أنت',
-  'botBlue': 'بوت',
-  'botMode': 'وضع البوت',
-  'bot': 'بوت',
+  'matchStarting': 'تبدأ المباراة...',
   'ranked': 'RANKED',
   'online': 'ONLINE',
   'blue': 'أزرق',
@@ -1993,26 +1929,13 @@ const _ar = {
   'tierDiamond': 'ماس',
   'tierMaster': 'أستاذ',
   'tierLegend': 'أسطورة',
-  'queueSearching': 'البحث عن خصم...',
-  'queueSearchingElo': 'البحث عن خصم بنفس ELO...',
-  'queueSearchingMatch': 'جاري المطابقة...',
-  'queueFound': 'تم العثور على خصم!',
-  'queueBotStarting': 'لا يوجد خصم بشري — تدريب بالذكاء الاصطناعي...',
-  'queueRankedTitle': 'مباراة مصنفة',
   'queueYourElo': 'نقاط ELO',
   'queueLeave': 'مغادرة الطابور',
   'queueNoServer': 'لا يوجد خادم — وضع تدريب AI',
-  'botFallbackLabel': 'تدريب AI',
   'botFallbackEloHint': 'ELO غير متأثر',
   'lobbyWaiting': 'انتظار',
-  'lobbyMatching': 'مطابقة',
   'lobbyConnecting': 'جاري الاتصال...',
-  'lobbyQuickSearching': 'البحث عن خصم...',
-  'lobbyMatchMsg1': 'البحث عن لاعبين...',
-  'lobbyMatchMsg2': 'إعداد المباراة...',
-  'lobbyMatchMsg3': 'جاري الاتصال...',
   'lobbyOpponentFound': 'تم العثور على خصم! بدء...',
-  'lobbyBotFallback': 'لا خصم بشري — وضع تدريب AI',
   'lobbyRoomCreated': 'تم إنشاء الغرفة',
   'lobbyJoining': 'انضمام',
   'lobbyWaitFriend': 'انتظر انضمام صديقك',
@@ -2034,7 +1957,6 @@ const _ar = {
   'afkSub': 'بدون حركة لفترة طويلة — انتهت المباراة.',
   'signOut': 'تسجيل الخروج',
   'friends': 'الأصدقاء',
-  'battlePass': 'مسار الموسم',
   'tournament': 'البطولة',
   'shop': 'المتجر',
   'removeAds': 'إزالة الإعلانات',
@@ -2044,12 +1966,6 @@ const _ar = {
   'iapUnavailable': 'المتجر غير متاح الآن',
   'tournamentJoined': 'انضممت! اكسب نقاطاً بالفوز في التصنيف.',
   'tournamentPrizes': 'جوائز أسبوعية',
-  'battlePassClaim': 'استلام',
-  'battlePassClaimed': 'تم الاستلام',
-  'battlePassLocked': 'مقفل',
-  'battlePassPremium': 'مميز',
-  'battlePassFree': 'مجاني',
-  'battlePassUnlockSoon': 'المميز قريباً',
   'friendsEmpty': 'لا أصدقاء بعد. أضف باسم المستخدم!',
   'friendAdd': 'إضافة صديق',
   'friendAddHint': 'اسم المستخدم',
@@ -2166,6 +2082,18 @@ const _ar = {
   'rankError': 'فشل التحميل',
   'rematch': 'إعادة',
   'pauseRemaining': 'متبقي: {sec}ث',
+  'tutorialTitle': 'دليل PUCKET',
+  'tutGoalTitle': 'الهدف',
+  'tutGoalBody': 'مرّر كل الأقراص من نصفك إلى الجهة الأخرى. تفوز عندما يخلو نصفك.',
+  'tutShotTitle': 'التسديد',
+  'tutShotBody': 'المس القرص، اسحبه للخلف، ثم أفلته. يمكنك لعب أقراص نصفك فقط.',
+  'tutMatchTitle': 'المباراة',
+  'tutMatchBody': 'أفضل من 3 — من يفوز بجولتين يفوز بالمباراة.',
+  'tutOpponentTitle': 'الخصم',
+  'tutOpponentBody': 'في الوضع الموقوت والمسيرة وضد الكمبيوتر يكون الخصم ذكاءً اصطناعيًا؛ لا توجد مطابقة مع لاعبين حقيقيين.',
+  'tutStart': 'فهمت، هيا نبدأ!',
+  'privacyBodyText': '• عند تسجيل الدخول عبر Google أو Apple يُحفظ حسابك في Firebase؛ ووضع الضيف يستخدم معرفًا محليًا مجهولًا.\n• يُحفظ اسمك وتقييمك ودوريك ونتائج مبارياتك على خادمنا.\n• الإعلانات: Google AdMob؛ قد تُستخدم معرفات الجهاز.\n• أطراف ثالثة: Firebase (Google) وAdMob وخادم اللعبة.\n• يمكنك حذف حسابك نهائيًا من الإعدادات.\n• التواصل: {email}',
+  'termsBodyText': '• اللعبة لمن هم في سن 13 فأكثر.\n• الغش والمضايقة ممنوعان.\n• في الوضع الموقوت والمسيرة وضد الكمبيوتر يكون الخصم ذكاءً اصطناعيًا؛ لا توجد مطابقة مع لاعبين حقيقيين.\n• مباريات الذكاء الاصطناعي لا تؤثر على التقييم أو لوحة الصدارة.\n• يُقدَّم التطبيق "كما هو"؛ وقد تحدث انقطاعات.',
 };
 
 const _fr = {
@@ -2176,11 +2104,11 @@ const _fr = {
   'menu': 'MENU',
   'or': 'ou',
   'more': 'plus',
-  'onlineMultiplayer': 'MULTIJOUEUR EN LIGNE',
+  'appTagline': 'JEU DE PALETS',
   'winsLosses': 'V',
   'yes': 'Oui',
   'no': 'Non',
-  'menuRanked': 'MATCH CLASSÉ',
+  'menuRanked': 'SE CONNECTER',
   'menuQuick': 'MATCH RAPIDE',
   'menuTimed': 'JOUER',
   'menuQuickSub': 'Trouve un adversaire et joue',
@@ -2229,10 +2157,9 @@ const _fr = {
   'authContinueLogin': 'Connectez-vous pour continuer',
   'authGoogle': 'Connexion Google',
   'authGuest': 'Continuer en invité',
-  'authGoogleHint': 'Connectez-vous pour le classement\net sauvegarder votre progression.',
   'authGoogleSetup': 'Google : bash tool/setup_firebase.sh',
   'authGoogleNotConfigured': 'Google non configuré — continuez en invité',
-  'authRankedHint': 'Connectez-vous pour le classement\net sauvegarder votre progression.',
+  'authRankedHint': 'Connecte-toi avec Google ou Apple pour sauvegarder ta progression.',
   'usernameTitle': 'NOM D\'UTILISATEUR',
   'usernameGuestHint': 'Mode invité — nom unique requis',
   'usernameSetHint': 'Choisissez votre pseudo',
@@ -2273,9 +2200,7 @@ const _fr = {
   'kpAlreadyEarned': 'Déjà vaincu — points déjà gagnés',
   'opponentBeatYou': '{name} vous a battu — réessayez !',
   'youRed': 'VOUS',
-  'botBlue': 'BOT',
-  'botMode': 'MODE BOT',
-  'bot': 'BOT',
+  'matchStarting': 'La partie commence...',
   'ranked': 'CLASSÉ',
   'online': 'EN LIGNE',
   'blue': 'BLEU',
@@ -2316,26 +2241,13 @@ const _fr = {
   'tierDiamond': 'Diamant',
   'tierMaster': 'Maître',
   'tierLegend': 'Légende',
-  'queueSearching': 'Recherche d\'adversaire...',
-  'queueSearchingElo': 'Recherche à votre ELO...',
-  'queueSearchingMatch': 'Appariement en cours...',
-  'queueFound': 'Adversaire trouvé !',
-  'queueBotStarting': 'Pas d\'adversaire humain — entraînement IA...',
-  'queueRankedTitle': 'MATCH CLASSÉ',
   'queueYourElo': 'VOTRE ELO',
   'queueLeave': 'QUITTER LA FILE',
   'queueNoServer': 'Pas de serveur — mode entraînement IA',
-  'botFallbackLabel': 'IA ENTRAÎNEMENT',
   'botFallbackEloHint': 'ELO non affecté',
   'lobbyWaiting': 'EN ATTENTE',
-  'lobbyMatching': 'MATCHMAKING',
   'lobbyConnecting': 'Connexion...',
-  'lobbyQuickSearching': 'Recherche d\'adversaire...',
-  'lobbyMatchMsg1': 'Recherche de joueurs...',
-  'lobbyMatchMsg2': 'Préparation du match...',
-  'lobbyMatchMsg3': 'Connexion...',
   'lobbyOpponentFound': 'Adversaire trouvé ! Démarrage...',
-  'lobbyBotFallback': 'Pas d\'adversaire humain — mode IA',
   'lobbyRoomCreated': 'SALLE CRÉÉE',
   'lobbyJoining': 'REJOINDRE',
   'lobbyWaitFriend': 'Attendez votre ami',
@@ -2357,7 +2269,6 @@ const _fr = {
   'afkSub': 'Inactivité prolongée — match terminé.',
   'signOut': 'Se déconnecter',
   'friends': 'Amis',
-  'battlePass': 'Passe de Saison',
   'tournament': 'Tournoi',
   'shop': 'Boutique',
   'removeAds': 'Supprimer les pubs',
@@ -2367,12 +2278,6 @@ const _fr = {
   'iapUnavailable': 'Boutique indisponible',
   'tournamentJoined': 'Rejoint ! Gagnez des points en ranked.',
   'tournamentPrizes': 'Prix Hebdomadaires',
-  'battlePassClaim': 'Réclamer',
-  'battlePassClaimed': 'Réclamé',
-  'battlePassLocked': 'Verrouillé',
-  'battlePassPremium': 'Premium',
-  'battlePassFree': 'Gratuit',
-  'battlePassUnlockSoon': 'Premium bientôt',
   'friendsEmpty': 'Pas encore d\'amis. Ajoutez par nom d\'utilisateur !',
   'friendAdd': 'Ajouter un ami',
   'friendAddHint': 'Nom d\'utilisateur',
@@ -2489,4 +2394,16 @@ const _fr = {
   'rankError': 'Erreur chargement',
   'rematch': 'REVANCHE',
   'pauseRemaining': 'Reste: {sec}s',
+  'tutorialTitle': 'GUIDE PUCKET',
+  'tutGoalTitle': 'But',
+  'tutGoalBody': 'Envoie TOUS les palets de ta moitié de l\'autre côté. Tu gagnes quand ta moitié est vide.',
+  'tutShotTitle': 'Tir',
+  'tutShotBody': 'Touche un palet, tire vers l\'arrière, relâche. Tu ne peux jouer que les palets de ta moitié.',
+  'tutMatchTitle': 'Match',
+  'tutMatchBody': 'Au meilleur des 3 — le premier à gagner 2 manches remporte le match.',
+  'tutOpponentTitle': 'Adversaire',
+  'tutOpponentBody': 'En mode chronométré, carrière et contre l\'ordinateur, l\'adversaire est une IA ; aucun appariement avec de vrais joueurs n\'a lieu.',
+  'tutStart': 'COMPRIS, ON Y VA !',
+  'privacyBodyText': '• En te connectant avec Google ou Apple, ton compte est stocké dans Firebase ; le mode invité utilise un identifiant anonyme local.\n• Ton nom, ton classement, ta ligue et tes résultats sont stockés sur notre serveur.\n• Publicité : Google AdMob ; des identifiants d\'appareil peuvent être utilisés.\n• Tiers : Firebase (Google), AdMob, serveur de jeu.\n• Tu peux supprimer définitivement ton compte depuis les Réglages.\n• Contact : {email}',
+  'termsBodyText': '• Le jeu est destiné aux 13 ans et plus.\n• La triche et le harcèlement sont interdits.\n• En mode chronométré, carrière et contre l\'ordinateur, l\'adversaire est une IA ; aucun appariement avec de vrais joueurs n\'a lieu.\n• Les matchs contre l\'IA n\'affectent ni le classement ni le tableau des scores.\n• L\'application est fournie "en l\'état" ; des interruptions sont possibles.',
 };

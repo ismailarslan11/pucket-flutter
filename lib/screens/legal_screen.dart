@@ -43,25 +43,14 @@ class LegalScreen extends StatelessWidget {
     );
   }
 
-  static String _privacyBody(AppLocalizations l10n) => '''
-PUCKET — ${l10n.privacyPolicy}
+  // Gövdeler sabit Türkçeydi; inceleyicinin cihazı İngilizce olduğunda
+  // yapay zekâ ifşası hiç görünmüyordu. Altı dile taşındı.
+  static String _privacyBody(AppLocalizations l10n) =>
+      'PUCKET — ${l10n.privacyPolicy}\n\n'
+      '${l10n.privacyBodyText.replaceAll('{email}', LegalConfig.supportEmail)}';
 
-• ${l10n.authGoogleHint}
-• ELO, maç sonuçları ve kullanıcı adı sunucuda saklanır.
-• Misafir mod: yerel kimlik; ranked için Google girişi gerekir.
-• Reklam: Google AdMob; cihaz tanımlayıcıları kullanılabilir.
-• Üçüncü taraflar: Firebase (Google), AdMob, oyun sunucusu.
-• İletişim: ${LegalConfig.supportEmail}
-''';
-
-  static String _termsBody(AppLocalizations l10n) => '''
-PUCKET — ${l10n.termsOfUse}
-
-• Oyun 13+ yaş içindir.
-• Hile, ELO manipülasyonu ve taciz yasaktır.
-• Ranked maçlar sunucu kayıtlarına dayanır.
-• Uygulama "olduğu gibi" sunulur; kesinti olabilir.
-''';
+  static String _termsBody(AppLocalizations l10n) =>
+      'PUCKET — ${l10n.termsOfUse}\n\n${l10n.termsBodyText}';
 
   Future<void> _openUrl(BuildContext context) async {
     final target = url;
@@ -93,7 +82,7 @@ PUCKET — ${l10n.termsOfUse}
                           shape: BoxShape.circle,
                           gradient: AppGradients.neonPurple,
                           border: Border.all(color: AppColors.beyaz.withValues(alpha: 0.3)),
-                          boxShadow: AppShadows.depth(AppColors.morDahaKoyu),
+                          boxShadow: AppShadows.depth(AppColors.laciDerin),
                         ),
                         child: const Icon(Icons.arrow_back_rounded, color: AppColors.beyaz, size: 20),
                       ),

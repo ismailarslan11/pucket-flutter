@@ -6,11 +6,9 @@ import 'package:flutter/services.dart';
 
 import '../models/career_opponent.dart';
 import '../models/disc.dart';
-import '../models/rank_tier.dart';
 import '../services/api_config.dart';
 import '../services/audio_service.dart';
 import '../services/auth_service.dart';
-import '../services/bot_names.dart';
 import '../services/settings_service.dart';
 import '../services/websocket_service.dart';
 import 'ai_bot.dart';
@@ -284,24 +282,10 @@ class GameController extends ChangeNotifier {
     uiSync.bump();
   }
 
-  // Bot insanlaştırma: gizli bot ara sıra insan gibi emote atar.
-  Timer? _botEmoteTimer;
-  final _botEmoteRng = math.Random();
-
-  void _maybeBotEmote(List<String> pool, {double chance = 0.35}) {
-    if (!aiMode) return;
-    if (_botEmoteRng.nextDouble() > chance) return;
-    _botEmoteTimer?.cancel();
-    // İnsan gecikmesi: hemen değil, 0.8-2.2 sn sonra.
-    _botEmoteTimer = Timer(
-      Duration(milliseconds: 800 + _botEmoteRng.nextInt(1400)),
-      () {
-        if (phase == GamePhase.playing || phase == GamePhase.gameover) {
-          _showOppEmote(pool[_botEmoteRng.nextInt(pool.length)]);
-        }
-      },
-    );
-  }
+  // Bot emote atmaz. Bir zamanlar atıyordu ve gecikmesi bilinçli olarak
+  // "insan gecikmesi" (0.8-2.2 sn) diye ayarlanmıştı; maç ekranında rakibin
+  // yapay zekâ olduğu yazmadığı için, duygusal tepki veren bir rakip karşıda
+  // biri varmış izlenimi üretiyordu. Kaldırıldı.
 
   void Function(int ms)? onPingUpdate;
   void Function(String message)? onToast;
@@ -1043,38 +1027,34 @@ class GameController extends ChangeNotifier {
     timedMode = false;
     careerOpponent = null;
     isBotFallback = botFallback;
-    // Gizli bot: ranked kuyruğunda rakip bulunamayınca bota düşülse de
-    // oyuncu için maç ranked görünmeli (ELO değişir, "bot" ibaresi yok).
-    isRanked = botFallback && ranked;
+    // Yapay zekâ maçı hiçbir koşulda "ranked" değildir. Önceden ranked
+    // kuyruğundan gelen bot maçı ranked sayılıyor, ELO'yu değiştiriyor ve
+    // hiçbir yerde bot olduğu yazmıyordu; sıralama gerçek rekabeti yansıtmıyordu.
+    isRanked = false;
     aiLevel = level;
     _setSeat(0);
     if (botFallback) {
       final profile = BotFallbackProfile.generate(
         playerElo: auth?.user?.elo ?? 1000,
-        namePool: BotNames.pool,
       );
       roomCode = profile.roomCode;
-      opponentName = profile.name;
+      // Rakibe ad verilmiyor: sahte insan adı, maçı insan maçı sandıran şeydi.
+      opponentName = '';
       opponentElo = profile.elo;
       opponentLeague = profile.league;
-      // Gerçek oyuncu hissi: rakip bazen premium pul kullanır.
       opponentDiscColor = profile.discId;
     } else {
-      roomCode = 'BOT';
-      opponentName = 'Bot';
+      roomCode = '';
+      opponentName = '';
       opponentElo = 1000;
       opponentLeague = 'Bronz';
     }
     resetMatch();
     startCountdown();
-    // Gizli bot: maç başında bazen insan gibi selamlar.
-    if (botFallback) {
-      _maybeBotEmote(const ['👍', '🤝', '😎'], chance: 0.45);
-    }
   }
 
-  /// Süreli mod: gizli bota karşı, belirli süreyle. Süre dolunca alanında daha
-  /// az pul kalan kazanır; eşitse beraberlik.
+  /// Süreli mod: yapay zekâ rakibe karşı, belirli süreyle. Süre dolunca alanında
+  /// daha az pul kalan kazanır; eşitse beraberlik. Sıralamayı etkilemez.
   void startTimedGame(int durationSec, {AiLevel level = AiLevel.hard}) {
     ws.disconnect();
     aiMode = true;
@@ -1090,16 +1070,14 @@ class GameController extends ChangeNotifier {
     _setSeat(0);
     final profile = BotFallbackProfile.generate(
       playerElo: auth?.user?.elo ?? 1000,
-      namePool: BotNames.pool,
     );
     roomCode = profile.roomCode;
-    opponentName = profile.name;
+    opponentName = '';
     opponentElo = profile.elo;
     opponentLeague = profile.league;
     opponentDiscColor = profile.discId;
     resetMatch();
     startCountdown();
-    _maybeBotEmote(const ['👍', '🤝', '😎'], chance: 0.45);
   }
 
   /// Raunt sonucunu işler ve maçın bitip bitmediğine karar verir.
@@ -1183,10 +1161,8 @@ class GameController extends ChangeNotifier {
       );
       if (winner == mySeat) {
         audio?.playWin();
-        _maybeBotEmote(const ['😅', '😮', '👏']);
       } else {
         audio?.playLose();
-        _maybeBotEmote(const ['🔥', '😎', '🎯']);
       }
     }
     _markVisualGeneration();
@@ -1795,12 +1771,10 @@ class GameController extends ChangeNotifier {
     );
     if (winner == mySeat) {
       audio?.playWin();
-      // Bot kaybetti — bazen insan gibi hayıflanır/alkışlar.
-      _maybeBotEmote(const ['😅', '😮', '👏']);
+      // Bot kaybetti — bazen hayıflanır/alkışlar.
     } else {
       audio?.playLose();
       // Bot kazandı — bazen sevinir.
-      _maybeBotEmote(const ['🔥', '😎', '🎯']);
     }
 
     if (broadcast) {
@@ -1820,31 +1794,14 @@ class GameController extends ChangeNotifier {
       }
     }
 
-    // Gizli ranked bot: maç bitince gerçek maç gibi ELO uygula (istemci tarafı).
-    if (matchFinished && isBotFallback && isRanked && auth?.user != null) {
-      _applyBotEloResult(winner == mySeat);
-    }
+    // Yapay zekâ maçı ELO'ya dokunmaz. Önceden gizli bot maçı bitince istemci
+    // tarafında ELO hesaplanıp Firestore'a yazılıyordu: sıralama, hiç oynanmamış
+    // insan maçlarının sonucuyla doluyordu. Sıralama yalnızca gerçek maçlardan
+    // beslenir; o da sunucu tarafındaki matchEnd akışıyla olur.
 
     _markVisualGeneration();
     onRoundEnd?.call();
     notifyListeners();
-  }
-
-  void _applyBotEloResult(bool won) {
-    final u = auth!.user!;
-    const k = 32;
-    final expected = 1 / (1 + math.pow(10, (opponentElo - u.elo) / 400));
-    final change = (k * ((won ? 1 : 0) - expected)).round();
-    final newElo = (u.elo + change).clamp(0, 9999);
-    final newLeague = RankTier.forElo(newElo).name;
-    auth!.applyEloResult(newElo: newElo, newLeague: newLeague, won: won);
-    auth!.syncEloToFirestore(won, newElo, newLeague);
-    pendingEloResult = EloResult(
-      won: won,
-      eloChange: change,
-      newElo: newElo,
-      newLeague: newLeague,
-    );
   }
 
   void _finishRoundFromRemote(int winner) {
@@ -1884,7 +1841,7 @@ class GameController extends ChangeNotifier {
   void rematchLocal() {
     pendingEloResult = null;
     if (matchFinished) {
-      // Yeni maç = yeni rakip. Gizli bot maçlarında oyuncu gerçek biriyle
+      // Yeni maç = yeni rakip. Yapay zekâ maçlarında oyuncu gerçek biriyle
       // eşleştiğini sanıyor; aynı isimle arka arkaya karşılaşmak yanılsamayı
       // bozar. Kariyer/antrenman/2 kişilik modda rakip sabittir, dokunulmaz.
       if (isBotFallback && !careerMode && !trainingMode && !localDuoMode) {
@@ -1898,34 +1855,22 @@ class GameController extends ChangeNotifier {
     }
   }
 
-  /// Gizli bot maçı için yeni bir rakip üretir: ad, ELO, lig, pul kozmetiği,
-  /// oda kodu ve zorluk seviyesi baştan seçilir.
+  /// Yapay zekâ maçı için yeni bir rakip üretir: zorluk, pul kozmetiği ve iç
+  /// ELO baştan seçilir. Ad üretilmiyor.
   void _assignNewBotOpponent() {
-    final previousName = opponentName;
-    final pick = pickHiddenBotLevel(settings.botMatchesSinceEasy);
+    final pick = pickBotLevel(settings.botMatchesSinceEasy);
     unawaited(settings.setBotMatchesSinceEasy(pick.nextCounter));
     aiLevel = pick.level;
 
-    // Aynı ad üst üste gelmesin: havuz küçükse birkaç deneme sonra kabul et.
-    BotFallbackProfile profile;
-    var attempts = 0;
-    do {
-      profile = BotFallbackProfile.generate(
-        playerElo: auth?.user?.elo ?? 1000,
-        namePool: BotNames.pool,
-      );
-      attempts++;
-    } while (profile.name == previousName && attempts < 5);
-
+    final profile = BotFallbackProfile.generate(
+      playerElo: auth?.user?.elo ?? 1000,
+    );
     roomCode = profile.roomCode;
-    opponentName = profile.name;
+    opponentName = '';
     opponentElo = profile.elo;
     opponentLeague = profile.league;
     opponentDiscColor = profile.discId;
 
-    // Ad havuzu lobide tazeleniyor; burada yeniden ağa gitmeye gerek yok.
-    // Havuz boşsa generate() yerleşik listeye düşer.
-    _maybeBotEmote(const ['👍', '🤝', '😎'], chance: 0.45);
   }
 
   void continueToNextRound() {
@@ -2182,7 +2127,6 @@ class GameController extends ChangeNotifier {
     _matchStartTimer?.cancel();
     _myEmoteTimer?.cancel();
     _oppEmoteTimer?.cancel();
-    _botEmoteTimer?.cancel();
     ws.disconnect();
     super.dispose();
   }

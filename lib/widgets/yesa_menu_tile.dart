@@ -36,12 +36,12 @@ class YesaMenuTile extends StatelessWidget {
             color: accent ? AppColors.beyaz : AppColors.beyaz,
           );
     final subColor = featured
-        ? AppColors.morDahaKoyu.withValues(alpha: 0.65)
+        ? AppColors.laciDerin.withValues(alpha: 0.65)
         : AppColors.textMuted;
 
     final icColor = iconColor ??
         (featured
-            ? AppColors.morDahaKoyu
+            ? AppColors.laciDerin
             : accent
                 ? AppColors.beyaz
                 : AppColors.sariAna);
@@ -198,7 +198,7 @@ class YesaSectionLabel extends StatelessWidget {
           Text(
             text.toUpperCase(),
             style: AppTextStyles.label.copyWith(
-              color: AppColors.lavanta,
+              color: AppColors.buzMavi,
               letterSpacing: 1.4,
               fontSize: 11,
             ),
@@ -210,7 +210,7 @@ class YesaSectionLabel extends StatelessWidget {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    AppColors.anaMor.withValues(alpha: 0.6),
+                    AppColors.anaMavi.withValues(alpha: 0.6),
                     Colors.transparent,
                   ],
                 ),
@@ -243,7 +243,7 @@ class YesaRibbon extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 16, color: AppColors.morDahaKoyu),
+            Icon(icon, size: 16, color: AppColors.laciDerin),
             const SizedBox(width: 8),
             Flexible(
               child: Text(

@@ -10,18 +10,15 @@ import '../services/audio_service.dart';
 import '../screens/cosmetics_screen.dart';
 import '../game/training_layout.dart';
 import '../screens/training_screen.dart';
-import 'battle_pass_screen.dart';
 import 'career_screen.dart';
 import 'difficulty_screen.dart';
 import 'friends_screen.dart';
 import 'game_screen.dart';
-import 'instructions_screen.dart';
 import 'join_screen.dart';
 import 'local_duo_screen.dart';
 import 'lobby_screen.dart';
 import 'menu_screen.dart';
 import 'premium_screen.dart';
-import 'queue_screen.dart';
 import 'settings_screen.dart';
 import 'profile_screen.dart';
 import 'tutorial_screen.dart';
@@ -74,16 +71,9 @@ class AppRouter {
     );
   }
 
-  static void goInstructions(BuildContext context) {
-    Navigator.push(context, MaterialPageRoute(builder: (_) => const InstructionsScreen()));
-  }
 
   static void goSettings(BuildContext context) {
     Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
-  }
-
-  static void goQueue(BuildContext context) {
-    Navigator.push(context, MaterialPageRoute(builder: (_) => const QueueScreen()));
   }
 
   static void goLobby(
@@ -132,7 +122,7 @@ class AppRouter {
     goGame(context);
   }
 
-  /// Süreli mod: gizli bota karşı, seçilen süreyle.
+  /// Süreli mod: yapay zekâ rakibe karşı, seçilen süreyle.
   static void startTimed(
     BuildContext context,
     int durationSec, {
@@ -150,10 +140,6 @@ class AppRouter {
 
   static void goFriends(BuildContext context) {
     Navigator.push(context, MaterialPageRoute(builder: (_) => const FriendsScreen()));
-  }
-
-  static void goBattlePass(BuildContext context) {
-    Navigator.push(context, MaterialPageRoute(builder: (_) => const BattlePassScreen()));
   }
 
   static void goTutorial(BuildContext context) {

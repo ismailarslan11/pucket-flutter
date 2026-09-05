@@ -151,11 +151,11 @@ def main() -> int:
 
     cards = [
         ("01_open", draw_title_card("PUCKET", "Diskini fırlat · Rakibini yen", show_logo=True), 3.2),
-        ("02_hook", draw_title_card("ONLINE ARENA", "Gerçek rakipler · Anlık maçlar", show_logo=False), 2.4),
+        ("02_hook", draw_title_card("YAPAY ZEKÂ RAKİP", "Dört zorluk · Süreli maçlar", show_logo=False), 2.4),
     ]
     shots = [
         ("03_game", SHOTS / "03_gameplay.png", 4.0, "Hız · Strateji · Refleks"),
-        ("04_rank", SHOTS / "04_ranked.png", 3.5, "Ranked · ELO · Lig"),
+        ("04_rank", SHOTS / "04_ranked.png", 3.5, "Kariyer · Rakipleri sırayla geç"),
         ("05_friends", SHOTS / "05_match.png", 3.5, "Arkadaşınla oyna"),
         ("06_cta", SHOTS / "02_menu.png", 3.2, None),
     ]

@@ -1,6 +1,5 @@
 import 'dart:math' as math;
 
-import '../models/cosmetic_catalog.dart';
 import '../models/disc.dart';
 import '../models/rank_tier.dart';
 import 'game_constants.dart';
@@ -283,86 +282,80 @@ class AiBot {
   }
 }
 
-/// Gizli bot zorluk seçimi sonucu: kullanılacak seviye + yeni sayaç değeri.
-class HiddenBotPick {
-  const HiddenBotPick(this.level, this.nextCounter);
+/// Yapay zekâ zorluk seçimi sonucu: kullanılacak seviye + yeni sayaç değeri.
+class BotLevelPick {
+  const BotLevelPick(this.level, this.nextCounter);
   final AiLevel level;
   final int nextCounter;
 }
 
-/// Gizli botun zorluğunu seçer. Rakipler genelde zorludur, ama her 5-6 maçta
+/// Yapay zekâ rakibin zorluğunu seçer. Rakipler genelde zorludur, ama her 5-6 maçta
 /// bir kolay rakip düşer — oyuncu üst üste kaybedip oyunu bırakmasın diye.
 /// Kullanıcı bunu fark etmez; sadece "bu rakip daha zayıfmış" hisseder.
-HiddenBotPick pickHiddenBotLevel(int matchesSinceEasy) {
+BotLevelPick pickBotLevel(int matchesSinceEasy) {
   final rng = math.Random();
   // 6-8 maç zorlu geçtiyse sıradaki maç kolay olur. Merhamet aralığı geniş
   // tutuldu: kazanmak kolay olmamalı, ama üst üste kayıp da oyuncuyu kaçırır.
   final threshold = 6 + rng.nextInt(3);
   if (matchesSinceEasy >= threshold) {
-    return const HiddenBotPick(AiLevel.easy, 0);
+    return const BotLevelPick(AiLevel.easy, 0);
   }
-  // Ara sıra "orta" rakip de çıksın — hep aynı güçte olmasın (insan hissi).
-  final level = rng.nextDouble() < 0.18 ? AiLevel.medium : AiLevel.hard;
-  return HiddenBotPick(level, matchesSinceEasy + 1);
+  // Omurga "orta": rakip çoğunlukla dengeli oynar, ara sıra zorlu biri çıkar.
+  // Önceki dağılım tersiydi (%82 zor) ve oyuncuyu sürekli üstün bir rakiple
+  // karşılaştırıyordu; ortalama zorluk hedeflendiğinden ağırlık ortaya alındı.
+  final level = rng.nextDouble() < 0.30 ? AiLevel.hard : AiLevel.medium;
+  return BotLevelPick(level, matchesSinceEasy + 1);
 }
 
-/// Hızlı eşleşmede rakip bulunamazsa gerçek oyuncu gibi görünen profil.
+/// Yapay zekâ rakibin maç boyunca kullanılan özellikleri.
+///
+/// Rakibin ADI YOK ve bu bilinçli. Sahte bir insan adı ("Sofia", "Arda")
+/// göstermek, rakibi insan sanmanın tek sebebiydi; "· BOT" eki de o yanılsamayı
+/// telafi etmek için gerekiyordu. Ad hiç üretilmeyince taklit edilecek kimlik
+/// kalmıyor: arayüz rakibi doğrudan CPU olarak gösteriyor.
 class BotFallbackProfile {
-  final String name;
   final int elo;
   final String league;
   final String roomCode;
 
-  /// Rakibin pul kozmetiği — gerçek oyuncular gibi bazen premium pul kullanır.
+  /// Rakibin pul kozmetiği.
   final String discId;
 
   const BotFallbackProfile({
-    required this.name,
     required this.elo,
     required this.league,
     required this.roomCode,
     required this.discId,
   });
 
-  static const _names = [
-    'Arda', 'Zeynep', 'Marcus', 'Elena', 'Can', 'Mira', 'Leo', 'Aylin',
-    'Kaan', 'Sofia', 'Emre', 'Luna', 'Deniz', 'Nova', 'Berk', 'Yuki',
-    'Selin', 'Omar', 'Defne', 'Alex', 'Ece', 'Ryan', 'Melis', 'Luca',
-  ];
-
   static const _freeColors = ['green', 'blue', 'red', 'purple', 'gold'];
 
-  /// Rakip için pul seç: ~%30 premium görsel, ~%15 emoji, kalanı ücretsiz renk.
-  static String _pickDisc(math.Random rng) {
-    final r = rng.nextDouble();
-    if (r < 0.30) {
-      final list = CosmeticCatalog.premiumDiscs;
-      return list[rng.nextInt(list.length)].id;
-    } else if (r < 0.45) {
-      final list = CosmeticCatalog.emojiDiscs;
-      return list[rng.nextInt(list.length)].id;
-    }
-    return _freeColors[rng.nextInt(_freeColors.length)];
-  }
+  /// Rakip için pul seç: yalnızca ücretsiz renkler.
+  ///
+  /// Önceden %30 ihtimalle premium (250-750 jeton), %15 ihtimalle emoji (40-80
+  /// jeton) pul seçiliyordu; gerekçesi kodda "gerçek oyuncu hissi" diye
+  /// yazıyordu. Yapay zekâ rakibin satın alınabilir eşya taşıması, o eşyayı
+  /// gerçek oyuncuların aldığına dair sahte bir izlenim üretiyor ve satın almaya
+  /// yönlendiriyordu. Ücretli hiçbir kozmetik kullanılmıyor.
+  static String _pickDisc(math.Random rng) =>
+      _freeColors[rng.nextInt(_freeColors.length)];
 
-  factory BotFallbackProfile.generate({
-    int playerElo = 1000,
-    List<String> namePool = const [],
-  }) {
+  /// Yapay zekâ rakip üretir.
+  ///
+  /// Oda kodu üretilmiyor: bot maçının odası yok, kod uydurmak maçı gerçek bir
+  /// çevrimiçi oturum gibi gösteriyordu. Ad da üretilmiyor (bkz. sınıf notu).
+  ///
+  /// ELO yalnızca zorluk hissini oyuncunun seviyesine yaklaştırmak için var;
+  /// arayüzde gösterilmiyor, sıralamaya da yazılmıyor.
+  factory BotFallbackProfile.generate({int playerElo = 1000}) {
     final rng = math.Random();
-    // Öncelik: uygulamaya kayıtlı gerçek kullanıcı adları; yoksa yerleşik liste.
-    final pool = namePool.isNotEmpty ? namePool : _names;
-    final name = pool[rng.nextInt(pool.length)];
     final delta = rng.nextInt(130) + 20;
     final elo = (playerElo + (rng.nextBool() ? delta : -delta)).clamp(850, 1750);
     final league = RankTier.forElo(elo).name;
-    const hex = '0123456789ABCDEF';
-    final roomCode = List.generate(6, (_) => hex[rng.nextInt(16)]).join();
     return BotFallbackProfile(
-      name: name,
       elo: elo,
       league: league,
-      roomCode: roomCode,
+      roomCode: '',
       discId: _pickDisc(rng),
     );
   }

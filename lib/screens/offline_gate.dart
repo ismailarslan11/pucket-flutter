@@ -179,13 +179,13 @@ class _OfflineScreen extends StatelessWidget {
                               height: 18,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2.4,
-                                color: AppColors.morDahaKoyu,
+                                color: AppColors.laciDerin,
                               ),
                             )
                           : Text(
                               l10n.noInternetRetry,
                               style: const TextStyle(
-                                color: AppColors.morDahaKoyu,
+                                color: AppColors.laciDerin,
                                 fontWeight: FontWeight.w900,
                                 fontSize: 14,
                                 letterSpacing: 1.2,

@@ -49,7 +49,7 @@ class DailyQuestsPanel extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     const Icon(Icons.local_fire_department_rounded,
-                        size: 13, color: AppColors.morDahaKoyu),
+                        size: 13, color: AppColors.laciDerin),
                     const SizedBox(width: 3),
                     Text(
                       '$streak',
@@ -130,7 +130,7 @@ class DailyQuestsPanel extends StatelessWidget {
             child: LinearProgressIndicator(
               value: progress,
               minHeight: 5,
-              backgroundColor: AppColors.morDahaKoyu.withValues(alpha: 0.8),
+              backgroundColor: AppColors.laciDerin.withValues(alpha: 0.8),
               valueColor: AlwaysStoppedAnimation(
                 done ? AppColors.neonYesil : AppColors.sariAna,
               ),

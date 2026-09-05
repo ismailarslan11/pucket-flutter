@@ -12,10 +12,10 @@ class RankTier {
 
   static const tiers = [
     RankTier('Bronz', '', 0, AppColors.turuncuKoyu),
-    RankTier('Gümüş', '', 1100, AppColors.lavanta),
+    RankTier('Gümüş', '', 1100, AppColors.buzMavi),
     RankTier('Altın', '', 1200, AppColors.sariAna),
-    RankTier('Elmas', '', 1350, AppColors.acikMor),
-    RankTier('Usta', '', 1500, AppColors.vurguMoru),
+    RankTier('Elmas', '', 1350, AppColors.acikMavi),
+    RankTier('Usta', '', 1500, AppColors.vurguMavi),
     RankTier('Efsane', '', 1700, AppColors.turuncuAna),
   ];
 

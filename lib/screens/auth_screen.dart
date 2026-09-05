@@ -36,9 +36,9 @@ class AuthScreen extends StatelessWidget {
                       clipBehavior: Clip.none,
                       children: [
                         const Positioned(left: 10, top: 14, child: Twinkle(size: 14, phase: 0.0)),
-                        const Positioned(right: 16, top: 30, child: Twinkle(size: 10, phase: 0.4, color: AppColors.camgobegi)),
+                        const Positioned(right: 16, top: 30, child: Twinkle(size: 10, phase: 0.4, color: AppColors.gokAcik)),
                         const Positioned(right: 34, bottom: 6, child: Twinkle(size: 13, phase: 0.7)),
-                        const Positioned(left: 40, bottom: 18, child: Twinkle(size: 9, phase: 0.2, color: AppColors.lavanta)),
+                        const Positioned(left: 40, bottom: 18, child: Twinkle(size: 9, phase: 0.2, color: AppColors.buzMavi)),
                         FloatY(
                           amplitude: 5,
                           child: const PucketLogo(height: 120, showTagline: true),
@@ -48,7 +48,7 @@ class AuthScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    l10n.onlineMultiplayer,
+                    l10n.appTagline,
                     style: const TextStyle(
                       color: AppColors.accentYellow,
                       letterSpacing: 4,
@@ -117,12 +117,12 @@ class AuthScreen extends StatelessWidget {
                             onPressed: () => auth.signInAsGuest(),
                             style: OutlinedButton.styleFrom(
                               foregroundColor: AppColors.pusluBeyaz,
-                              side: BorderSide(color: AppColors.lavanta.withValues(alpha: 0.55), width: 1.4),
+                              side: BorderSide(color: AppColors.buzMavi.withValues(alpha: 0.55), width: 1.4),
                               minimumSize: const Size(double.infinity, 48),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                              backgroundColor: AppColors.anaMor.withValues(alpha: 0.12),
+                              backgroundColor: AppColors.anaMavi.withValues(alpha: 0.12),
                             ),
-                            icon: const Icon(Icons.rocket_launch_rounded, size: 18, color: AppColors.lavanta),
+                            icon: const Icon(Icons.rocket_launch_rounded, size: 18, color: AppColors.buzMavi),
                             label: Text(
                               l10n.authGuest,
                               style: const TextStyle(fontWeight: FontWeight.w700),

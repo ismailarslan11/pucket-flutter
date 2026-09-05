@@ -60,9 +60,9 @@ class _YesaStripePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final baseTop = warm ? AppColors.geceLacivert : AppColors.morDahaKoyu;
-    final baseMid = warm ? AppColors.morKoyu : AppColors.koyuMor;
-    final baseBottom = AppColors.morDahaKoyu;
+    final baseTop = warm ? AppColors.geceLacivert : AppColors.laciDerin;
+    final baseMid = warm ? AppColors.laciOrta : AppColors.koyuMavi;
+    final baseBottom = AppColors.laciDerin;
 
     canvas.drawRect(
       Offset.zero & size,
@@ -77,15 +77,15 @@ class _YesaStripePainter extends CustomPainter {
 
     final pulse = math.sin(t * math.pi * 2) * 0.5 + 0.5;
     _glow(canvas, size, Offset(0.1 + math.sin(t * math.pi * 2) * 0.04, 0.08), 150,
-        AppColors.anaMor.withValues(alpha: 0.30 + pulse * 0.10));
+        AppColors.anaMavi.withValues(alpha: 0.30 + pulse * 0.10));
     _glow(canvas, size, Offset(0.9 + math.cos(t * math.pi * 2) * 0.03, 0.12), 120,
-        AppColors.pembe.withValues(alpha: 0.22 + pulse * 0.08));
+        AppColors.parlakMavi.withValues(alpha: 0.22 + pulse * 0.08));
     _glow(canvas, size, Offset(0.75 + math.sin(t * math.pi * 2 + 1) * 0.05, 0.82), 170,
         AppColors.sariAna.withValues(alpha: 0.18 + pulse * 0.06));
     _glow(canvas, size, Offset(0.06, 0.65 + math.cos(t * math.pi * 2) * 0.04), 130,
-        AppColors.camgobegi.withValues(alpha: 0.24 + pulse * 0.08));
+        AppColors.gokAcik.withValues(alpha: 0.24 + pulse * 0.08));
     _glow(canvas, size, const Offset(0.5, 0.45), 200,
-        AppColors.vurguMoru.withValues(alpha: 0.10 + pulse * 0.05));
+        AppColors.vurguMavi.withValues(alpha: 0.10 + pulse * 0.05));
 
     // Yukarı süzülen pul halkaları — oyun teması.
     final ringPaint = Paint()..style = PaintingStyle.stroke;
@@ -97,7 +97,7 @@ class _YesaStripePainter extends CustomPainter {
       final y = 1.15 - ((t * speed + phase) % 1.3);
       final r = 7.0 + rng0.nextDouble() * 9;
       final fade = (1.15 - y).clamp(0.0, 1.0) * (y + 0.15).clamp(0.0, 1.0);
-      final col = i.isEven ? AppColors.acikMor : AppColors.camgobegi;
+      final col = i.isEven ? AppColors.acikMavi : AppColors.gokAcik;
       ringPaint
         ..color = col.withValues(alpha: 0.10 * fade)
         ..strokeWidth = 2.2;
@@ -135,8 +135,8 @@ class _YesaStripePainter extends CustomPainter {
         Rect.fromLTWH(x, -diag, stripeW / 2, diag * 3),
         Paint()
           ..color = i.isEven
-              ? AppColors.anaMor.withValues(alpha: 0.07)
-              : AppColors.morDahaKoyu.withValues(alpha: 0.12),
+              ? AppColors.anaMavi.withValues(alpha: 0.07)
+              : AppColors.laciDerin.withValues(alpha: 0.12),
       );
     }
     canvas.restore();
@@ -151,7 +151,7 @@ class _YesaStripePainter extends CustomPainter {
           colors: [
             Colors.transparent,
             Colors.transparent,
-            AppColors.morDahaKoyu.withValues(alpha: 0.55),
+            AppColors.laciDerin.withValues(alpha: 0.55),
           ],
           stops: const [0.0, 0.62, 1.0],
         ).createShader(Offset.zero & size),
@@ -164,7 +164,7 @@ class _YesaStripePainter extends CustomPainter {
         ..shader = LinearGradient(
           colors: [
             Colors.transparent,
-            AppColors.acikMor.withValues(alpha: 0.6),
+            AppColors.acikMavi.withValues(alpha: 0.6),
             AppColors.sariAna.withValues(alpha: 0.5),
             Colors.transparent,
           ],
