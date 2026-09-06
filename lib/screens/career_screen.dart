@@ -68,7 +68,7 @@ class CareerScreen extends StatelessWidget {
                     else if (next != null) ...[
                       StaggerIn(
                         index: 1,
-                        child: const YesaRibbon(text: 'Sıradaki Rakip', icon: Icons.sports_hockey_rounded),
+                        child: YesaRibbon(text: l10n.careerNextOpponent, icon: Icons.sports_hockey_rounded),
                       ),
                       const SizedBox(height: 10),
                       StaggerIn(index: 2, child: _NextMatchCard(next: next, l10n: l10n)),
@@ -200,12 +200,12 @@ class _SummaryCard extends StatelessWidget {
                     children: [
                       _Badge(
                         icon: Icons.emoji_events_rounded,
-                        text: '${career.careerPoints} KP',
+                        text: '${career.careerPoints} ${l10n.careerPointsShort}',
                         gradient: AppGradients.heroPlay,
                       ),
                       _Badge(
                         icon: Icons.check_circle_rounded,
-                        text: '${career.careerWins}G ${career.careerLosses}M',
+                        text: '${career.careerWins}${l10n.winsShort} ${career.careerLosses}${l10n.lossesShort}',
                         gradient: AppGradients.neonPurple,
                       ),
                     ],
@@ -334,7 +334,7 @@ class _NextMatchCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              const _VsSide(label: 'SEN', color: AppColors.sariAna, icon: Icons.person_rounded),
+              _VsSide(label: l10n.youLabel, color: AppColors.sariAna, icon: Icons.person_rounded),
               Text('VS', style: AppTextStyles.glow(AppColors.beyaz).copyWith(fontSize: 20)),
               _VsSide(label: next.name, color: tier.color, icon: Icons.smart_toy_rounded),
             ],
@@ -411,7 +411,7 @@ class _SeasonProgressBar extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'KARİYER İLERLEYİŞİ',
+                context.l10n.careerProgressTitle,
                 style: AppTextStyles.label.copyWith(color: AppColors.buzMavi, letterSpacing: 1.2),
               ),
               Text(
@@ -452,24 +452,24 @@ class _StatRow extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: _StatTile(icon: Icons.flag_rounded, value: '$total', label: 'Rakip', color: AppColors.gokAcik),
+          child: _StatTile(icon: Icons.flag_rounded, value: '$total', label: context.l10n.careerOpponents, color: AppColors.gokAcik),
         ),
         const SizedBox(width: 10),
         Expanded(
           child: _StatTile(
             icon: Icons.check_circle_rounded,
             value: '$wins',
-            label: 'Galibiyet',
+            label: context.l10n.careerWins,
             color: AppColors.neonYesil,
           ),
         ),
         const SizedBox(width: 10),
         Expanded(
-          child: _StatTile(icon: Icons.close_rounded, value: '$losses', label: 'Mağlubiyet', color: AppColors.kirmizi),
+          child: _StatTile(icon: Icons.close_rounded, value: '$losses', label: context.l10n.careerLosses, color: AppColors.kirmizi),
         ),
         const SizedBox(width: 10),
         Expanded(
-          child: _StatTile(icon: Icons.percent_rounded, value: '$accuracy%', label: 'İsabet', color: AppColors.sariAna),
+          child: _StatTile(icon: Icons.percent_rounded, value: '$accuracy%', label: context.l10n.careerAccuracy, color: AppColors.sariAna),
         ),
       ],
     );

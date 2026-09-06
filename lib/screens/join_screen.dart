@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../l10n/l10n_extension.dart';
 import 'package:flutter/services.dart';
 
 import '../theme/app_theme.dart';
@@ -47,9 +49,9 @@ class _JoinScreenState extends State<JoinScreen> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
-                  'Arkadaşının oda kodunu gir',
-                  style: TextStyle(color: AppColors.textMuted, fontSize: 12, letterSpacing: 2),
+                Text(
+                  context.l10n.joinEnterCode,
+                  style: const TextStyle(color: AppColors.textMuted, fontSize: 12, letterSpacing: 2),
                 ),
                 const SizedBox(height: 24),
                 TextField(
@@ -90,7 +92,7 @@ class _JoinScreenState extends State<JoinScreen> {
                 PucketButton(label: 'KATIL', onPressed: _join),
                 const SizedBox(height: 14),
                 PucketButton(
-                  label: 'GERİ',
+                  label: context.l10n.back,
                   secondary: true,
                   onPressed: () => Navigator.pop(context),
                 ),

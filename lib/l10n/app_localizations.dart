@@ -60,6 +60,31 @@ class AppLocalizations {
   String get settingsMusicVol => _t('settingsMusicVol');
   String get settingsSfxVol => _t('settingsSfxVol');
   String get settingsVibration => _t('settingsVibration');
+  String get aiOpponentTag => _t('aiOpponentTag');
+  String get careerPointsShort => _t('careerPointsShort');
+  String get winsShort => _t('winsShort');
+  String get lossesShort => _t('lossesShort');
+  String get careerOpponents => _t('careerOpponents');
+  String get careerWins => _t('careerWins');
+  String get unChecking => _t('unChecking');
+  String get unAvailable => _t('unAvailable');
+  String get unCheckFailed => _t('unCheckFailed');
+  String get unHintDefault => _t('unHintDefault');
+  String get unHintInvalid => _t('unHintInvalid');
+  String get unTaken => _t('unTaken');
+  String get unInvalid => _t('unInvalid');
+  String get unGuestSub => _t('unGuestSub');
+  String get unSetName => _t('unSetName');
+  String get unSaving => _t('unSaving');
+  String get careerNextOpponent => _t('careerNextOpponent');
+  String get careerProgressTitle => _t('careerProgressTitle');
+  String get careerLosses => _t('careerLosses');
+  String get careerAccuracy => _t('careerAccuracy');
+  String get joinEnterCode => _t('joinEnterCode');
+  String get adTooManyRequests => _t('adTooManyRequests');
+  String get adNetworkError => _t('adNetworkError');
+  String get settingsSoundSection => _t('settingsSoundSection');
+  String get settingsPrivacySection => _t('settingsPrivacySection');
   String get settingsVibrationSub => _t('settingsVibrationSub');
   String get settingsCopyFid => _t('settingsCopyFid');
   String get settingsFidCopied => _t('settingsFidCopied');
@@ -797,6 +822,31 @@ const _tr = {
   'tutStart': 'ANLADIM, BAŞLA!',
   'privacyBodyText': '• Google veya Apple ile giriş yaparsan hesabın Firebase\'de tutulur; misafir modda yerel anonim kimlik kullanılır.\n• Kullanıcı adı, ELO, lig ve maç sonuçları sunucuda saklanır.\n• Reklam: Google AdMob; cihaz tanımlayıcıları kullanılabilir.\n• Üçüncü taraflar: Firebase (Google), AdMob, oyun sunucusu.\n• Hesabını Ayarlar\'dan kalıcı olarak silebilirsin.\n• İletişim: {email}',
   'termsBodyText': '• Oyun 13+ yaş içindir.\n• Hile ve taciz yasaktır.\n• Süreli mod, kariyer ve bilgisayara karşı modlarında rakip yapay zekâdır; gerçek oyuncularla eşleştirme yapılmaz.\n• Yapay zekâ maçları ELO\'yu ve sıralama tablosunu etkilemez.\n• Uygulama "olduğu gibi" sunulur; kesinti olabilir.',
+  'settingsSoundSection': 'Ses & Titreşim',
+  'settingsPrivacySection': 'Gizlilik',
+  'unHintDefault': '2-16 karakter · İngilizce harf, rakam, _',
+  'unHintInvalid': 'Sadece İngilizce harf, rakam ve _ kullanılabilir',
+  'unTaken': 'Bu kullanıcı adı alınmış',
+  'unInvalid': 'Geçersiz kullanıcı adı',
+  'unGuestSub': 'Misafir olarak devam — adın benzersiz olmalı',
+  'unSetName': 'Oyuncu adını belirle',
+  'unSaving': 'KAYDEDİLİYOR...',
+  'careerNextOpponent': 'Sıradaki Rakip',
+  'careerProgressTitle': 'KARİYER İLERLEYİŞİ',
+  'careerLosses': 'Mağlubiyet',
+  'careerAccuracy': 'İsabet',
+  'joinEnterCode': 'Arkadaşının oda kodunu gir',
+  'adTooManyRequests': 'Çok sık istek — 2 dk bekle veya uygulamayı yeniden aç',
+  'adNetworkError': 'Ağ hatası — internet bağlantını kontrol et',
+  'unChecking': 'Kontrol ediliyor...',
+  'unAvailable': 'Bu ad müsait',
+  'unCheckFailed': 'Kontrol edilemedi — yine de devam edebilirsin',
+  'careerOpponents': 'Rakip',
+  'careerWins': 'Galibiyet',
+  'careerPointsShort': 'KP',
+  'winsShort': 'G',
+  'lossesShort': 'M',
+  'aiOpponentTag': 'CPU',
 };
 
 const _en = {
@@ -1158,6 +1208,31 @@ const _en = {
   'tutStart': 'GOT IT, LET\'S GO!',
   'privacyBodyText': '• Signing in with Google or Apple stores your account in Firebase; guest mode uses a local anonymous id.\n• Your name, rating, league and match results are stored on our server.\n• Ads: Google AdMob; device identifiers may be used.\n• Third parties: Firebase (Google), AdMob, game server.\n• You can permanently delete your account from Settings.\n• Contact: {email}',
   'termsBodyText': '• The game is for ages 13 and up.\n• Cheating and harassment are not allowed.\n• In timed, career and vs-computer modes the opponent is AI; no matchmaking with real players takes place.\n• AI matches do not affect your rating or the leaderboard.\n• The app is provided "as is"; interruptions may occur.',
+  'settingsSoundSection': 'Sound & Haptics',
+  'settingsPrivacySection': 'Privacy',
+  'unHintDefault': '2-16 characters · letters, digits, _',
+  'unHintInvalid': 'Only letters, digits and _ are allowed',
+  'unTaken': 'That username is taken',
+  'unInvalid': 'Invalid username',
+  'unGuestSub': 'Continue as guest — your name must be unique',
+  'unSetName': 'Choose your player name',
+  'unSaving': 'SAVING...',
+  'careerNextOpponent': 'Next Opponent',
+  'careerProgressTitle': 'CAREER PROGRESS',
+  'careerLosses': 'Losses',
+  'careerAccuracy': 'Accuracy',
+  'joinEnterCode': 'Enter your friend\'s room code',
+  'adTooManyRequests': 'Too many requests — wait 2 min or reopen the app',
+  'adNetworkError': 'Network error — check your connection',
+  'unChecking': 'Checking...',
+  'unAvailable': 'That name is available',
+  'unCheckFailed': 'Could not check — you can continue anyway',
+  'careerOpponents': 'Opponents',
+  'careerWins': 'Wins',
+  'careerPointsShort': 'CP',
+  'winsShort': 'W',
+  'lossesShort': 'L',
+  'aiOpponentTag': 'CPU',
 };
 
 const _de = {
@@ -1470,6 +1545,31 @@ const _de = {
   'tutStart': 'ALLES KLAR, LOS!',
   'privacyBodyText': '• Bei Anmeldung mit Google oder Apple wird dein Konto in Firebase gespeichert; im Gastmodus wird eine lokale anonyme ID verwendet.\n• Name, Wertung, Liga und Spielergebnisse werden auf unserem Server gespeichert.\n• Werbung: Google AdMob; Gerätekennungen können verwendet werden.\n• Dritte: Firebase (Google), AdMob, Spielserver.\n• Du kannst dein Konto in den Einstellungen dauerhaft löschen.\n• Kontakt: {email}',
   'termsBodyText': '• Das Spiel ist ab 13 Jahren.\n• Betrug und Belästigung sind verboten.\n• In den Modi Zeitspiel, Karriere und Gegen den Computer ist der Gegner eine KI; es findet kein Matchmaking mit echten Spielern statt.\n• KI-Spiele beeinflussen weder Wertung noch Rangliste.\n• Die App wird "wie besehen" bereitgestellt; Unterbrechungen sind möglich.',
+  'settingsSoundSection': 'Ton & Haptik',
+  'settingsPrivacySection': 'Datenschutz',
+  'unHintDefault': '2-16 Zeichen · Buchstaben, Ziffern, _',
+  'unHintInvalid': 'Nur Buchstaben, Ziffern und _ erlaubt',
+  'unTaken': 'Dieser Name ist vergeben',
+  'unInvalid': 'Ungültiger Name',
+  'unGuestSub': 'Als Gast fortfahren — dein Name muss eindeutig sein',
+  'unSetName': 'Wähle deinen Spielernamen',
+  'unSaving': 'WIRD GESPEICHERT...',
+  'careerNextOpponent': 'Nächster Gegner',
+  'careerProgressTitle': 'KARRIERE-FORTSCHRITT',
+  'careerLosses': 'Niederlagen',
+  'careerAccuracy': 'Treffer',
+  'joinEnterCode': 'Raumcode deines Freundes eingeben',
+  'adTooManyRequests': 'Zu viele Anfragen — 2 Min warten oder App neu öffnen',
+  'adNetworkError': 'Netzwerkfehler — prüfe deine Verbindung',
+  'unChecking': 'Wird geprüft...',
+  'unAvailable': 'Dieser Name ist frei',
+  'unCheckFailed': 'Prüfung fehlgeschlagen — du kannst trotzdem fortfahren',
+  'careerOpponents': 'Gegner',
+  'careerWins': 'Siege',
+  'careerPointsShort': 'KP',
+  'winsShort': 'S',
+  'lossesShort': 'N',
+  'aiOpponentTag': 'CPU',
 };
 
 const _es = {
@@ -1782,6 +1882,31 @@ const _es = {
   'tutStart': '¡ENTENDIDO, A JUGAR!',
   'privacyBodyText': '• Al iniciar sesión con Google o Apple, tu cuenta se guarda en Firebase; el modo invitado usa un id anónimo local.\n• Tu nombre, puntuación, liga y resultados se guardan en nuestro servidor.\n• Anuncios: Google AdMob; pueden usarse identificadores del dispositivo.\n• Terceros: Firebase (Google), AdMob, servidor del juego.\n• Puedes eliminar tu cuenta de forma permanente desde Ajustes.\n• Contacto: {email}',
   'termsBodyText': '• El juego es para mayores de 13 años.\n• No se permiten trampas ni acoso.\n• En los modos por tiempo, carrera y contra la máquina el rival es una IA; no hay emparejamiento con jugadores reales.\n• Las partidas contra la IA no afectan a la puntuación ni a la clasificación.\n• La app se ofrece "tal cual"; puede haber interrupciones.',
+  'settingsSoundSection': 'Sonido y vibración',
+  'settingsPrivacySection': 'Privacidad',
+  'unHintDefault': '2-16 caracteres · letras, dígitos, _',
+  'unHintInvalid': 'Solo se permiten letras, dígitos y _',
+  'unTaken': 'Ese nombre ya está en uso',
+  'unInvalid': 'Nombre no válido',
+  'unGuestSub': 'Continuar como invitado — tu nombre debe ser único',
+  'unSetName': 'Elige tu nombre de jugador',
+  'unSaving': 'GUARDANDO...',
+  'careerNextOpponent': 'Siguiente rival',
+  'careerProgressTitle': 'PROGRESO DE CARRERA',
+  'careerLosses': 'Derrotas',
+  'careerAccuracy': 'Precisión',
+  'joinEnterCode': 'Escribe el código de sala de tu amigo',
+  'adTooManyRequests': 'Demasiadas solicitudes — espera 2 min o reabre la app',
+  'adNetworkError': 'Error de red — comprueba tu conexión',
+  'unChecking': 'Comprobando...',
+  'unAvailable': 'Ese nombre está libre',
+  'unCheckFailed': 'No se pudo comprobar — puedes continuar igualmente',
+  'careerOpponents': 'Rivales',
+  'careerWins': 'Victorias',
+  'careerPointsShort': 'PC',
+  'winsShort': 'V',
+  'lossesShort': 'D',
+  'aiOpponentTag': 'CPU',
 };
 
 const _ar = {
@@ -2094,6 +2219,31 @@ const _ar = {
   'tutStart': 'فهمت، هيا نبدأ!',
   'privacyBodyText': '• عند تسجيل الدخول عبر Google أو Apple يُحفظ حسابك في Firebase؛ ووضع الضيف يستخدم معرفًا محليًا مجهولًا.\n• يُحفظ اسمك وتقييمك ودوريك ونتائج مبارياتك على خادمنا.\n• الإعلانات: Google AdMob؛ قد تُستخدم معرفات الجهاز.\n• أطراف ثالثة: Firebase (Google) وAdMob وخادم اللعبة.\n• يمكنك حذف حسابك نهائيًا من الإعدادات.\n• التواصل: {email}',
   'termsBodyText': '• اللعبة لمن هم في سن 13 فأكثر.\n• الغش والمضايقة ممنوعان.\n• في الوضع الموقوت والمسيرة وضد الكمبيوتر يكون الخصم ذكاءً اصطناعيًا؛ لا توجد مطابقة مع لاعبين حقيقيين.\n• مباريات الذكاء الاصطناعي لا تؤثر على التقييم أو لوحة الصدارة.\n• يُقدَّم التطبيق "كما هو"؛ وقد تحدث انقطاعات.',
+  'settingsSoundSection': 'الصوت والاهتزاز',
+  'settingsPrivacySection': 'الخصوصية',
+  'unHintDefault': '2-16 حرفًا · حروف وأرقام و _',
+  'unHintInvalid': 'يُسمح بالحروف والأرقام و _ فقط',
+  'unTaken': 'هذا الاسم مستخدم بالفعل',
+  'unInvalid': 'اسم غير صالح',
+  'unGuestSub': 'المتابعة كضيف — يجب أن يكون اسمك فريدًا',
+  'unSetName': 'اختر اسم اللاعب',
+  'unSaving': 'جارٍ الحفظ...',
+  'careerNextOpponent': 'الخصم التالي',
+  'careerProgressTitle': 'تقدّم المسيرة',
+  'careerLosses': 'الخسائر',
+  'careerAccuracy': 'الدقة',
+  'joinEnterCode': 'أدخل رمز غرفة صديقك',
+  'adTooManyRequests': 'طلبات كثيرة — انتظر دقيقتين أو أعد فتح التطبيق',
+  'adNetworkError': 'خطأ في الشبكة — تحقق من اتصالك',
+  'unChecking': 'جارٍ التحقق...',
+  'unAvailable': 'هذا الاسم متاح',
+  'unCheckFailed': 'تعذّر التحقق — يمكنك المتابعة على أي حال',
+  'careerOpponents': 'الخصوم',
+  'careerWins': 'الانتصارات',
+  'careerPointsShort': 'ن.م',
+  'winsShort': 'ف',
+  'lossesShort': 'خ',
+  'aiOpponentTag': 'CPU',
 };
 
 const _fr = {
@@ -2406,4 +2556,29 @@ const _fr = {
   'tutStart': 'COMPRIS, ON Y VA !',
   'privacyBodyText': '• En te connectant avec Google ou Apple, ton compte est stocké dans Firebase ; le mode invité utilise un identifiant anonyme local.\n• Ton nom, ton classement, ta ligue et tes résultats sont stockés sur notre serveur.\n• Publicité : Google AdMob ; des identifiants d\'appareil peuvent être utilisés.\n• Tiers : Firebase (Google), AdMob, serveur de jeu.\n• Tu peux supprimer définitivement ton compte depuis les Réglages.\n• Contact : {email}',
   'termsBodyText': '• Le jeu est destiné aux 13 ans et plus.\n• La triche et le harcèlement sont interdits.\n• En mode chronométré, carrière et contre l\'ordinateur, l\'adversaire est une IA ; aucun appariement avec de vrais joueurs n\'a lieu.\n• Les matchs contre l\'IA n\'affectent ni le classement ni le tableau des scores.\n• L\'application est fournie "en l\'état" ; des interruptions sont possibles.',
+  'settingsSoundSection': 'Son et vibrations',
+  'settingsPrivacySection': 'Confidentialité',
+  'unHintDefault': '2-16 caractères · lettres, chiffres, _',
+  'unHintInvalid': 'Seuls les lettres, chiffres et _ sont autorisés',
+  'unTaken': 'Ce nom est déjà pris',
+  'unInvalid': 'Nom invalide',
+  'unGuestSub': 'Continuer en invité — ton nom doit être unique',
+  'unSetName': 'Choisis ton nom de joueur',
+  'unSaving': 'ENREGISTREMENT...',
+  'careerNextOpponent': 'Prochain adversaire',
+  'careerProgressTitle': 'PROGRESSION CARRIÈRE',
+  'careerLosses': 'Défaites',
+  'careerAccuracy': 'Précision',
+  'joinEnterCode': 'Saisis le code de salon de ton ami',
+  'adTooManyRequests': 'Trop de requêtes — attends 2 min ou rouvre l\'app',
+  'adNetworkError': 'Erreur réseau — vérifie ta connexion',
+  'unChecking': 'Vérification...',
+  'unAvailable': 'Ce nom est disponible',
+  'unCheckFailed': 'Vérification impossible — tu peux continuer',
+  'careerOpponents': 'Adversaires',
+  'careerWins': 'Victoires',
+  'careerPointsShort': 'PC',
+  'winsShort': 'V',
+  'lossesShort': 'D',
+  'aiOpponentTag': 'CPU',
 };

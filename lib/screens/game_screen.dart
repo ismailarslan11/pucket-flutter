@@ -541,8 +541,28 @@ class _GameScreenState extends State<GameScreen> {
       ),
       child: Stack(
         children: [
-          // Süre tam ortada dursun diye Stack: duraklat düğmesi onu kaydırmıyor.
+          // Süre tam ortada dursun diye Stack: yanlardaki öğeler onu kaydırmıyor.
           Center(child: timerWidget),
+          // Yapay zekâ ifşası. Sessiz ama okunabilir: çerçevesiz, dolgusuz,
+          // soluk gri. Okunamayacak kadar silikleştirmek onu ifşa olmaktan
+          // çıkarır ve "etiketi koyup gizlemişler" okumasına yol açar —
+          // uygulamanın App Store'dan kaldırılma sebebi tam olarak buydu.
+          if (game.aiMode)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Padding(
+                padding: const EdgeInsets.only(left: 12),
+                child: Text(
+                  l10n.aiOpponentTag,
+                  style: TextStyle(
+                    color: AppColors.textMuted.withValues(alpha: 0.55),
+                    fontSize: 9,
+                    letterSpacing: 1.5,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ),
           Align(
             alignment: Alignment.centerRight,
             child: Padding(

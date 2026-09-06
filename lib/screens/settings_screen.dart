@@ -69,7 +69,7 @@ class SettingsScreen extends StatelessWidget {
                     StaggerIn(
                       index: 2,
                       child: _SettingsCard(
-                        title: 'SES & TİTREŞİM',
+                        title: l10n.settingsSoundSection.toUpperCase(),
                         children: [
                           _switchRow(
                             l10n.settingsMusic,
@@ -101,7 +101,7 @@ class SettingsScreen extends StatelessWidget {
                       StaggerIn(
                         index: 3,
                         child: _SettingsCard(
-                          title: 'GİZLİLİK',
+                          title: l10n.settingsPrivacySection.toUpperCase(),
                           children: [
                             _linkRow(
                               l10n.settingsAds,

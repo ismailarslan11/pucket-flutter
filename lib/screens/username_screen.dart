@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+
+import '../l10n/l10n_extension.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
@@ -28,7 +30,7 @@ class _UsernameScreenState extends State<UsernameScreen> {
   bool _available = false;
   bool _serverError = false;
   bool _submitting = false;
-  String _hint = '2-16 karakter · İngilizce harf, rakam, _';
+  String _hint = '';
 
   @override
   void initState() {
@@ -61,10 +63,10 @@ class _UsernameScreenState extends State<UsernameScreen> {
         _available = false;
         _checking = false;
         _hint = v.isEmpty
-            ? '2-16 karakter · İngilizce harf, rakam, _'
+            ? context.l10nRead.unHintDefault
             : v.length < 2
                 ? 'En az 2 karakter'
-                : 'Sadece İngilizce harf, rakam ve _ kullanılabilir';
+                : context.l10nRead.unHintInvalid;
       }
     });
   }
@@ -81,7 +83,7 @@ class _UsernameScreenState extends State<UsernameScreen> {
       _checking = true;
       _available = false;
       _serverError = false;
-      _hint = 'Kontrol ediliyor...';
+      _hint = context.l10nRead.unChecking;
     });
     final uid = context.read<AuthService>().getUid();
     final result = await UsernameApi.check(name, uid: uid);
@@ -96,13 +98,13 @@ class _UsernameScreenState extends State<UsernameScreen> {
       _available = result.isAvailable;
       _serverError = result.isServerError;
       if (result.isAvailable) {
-        _hint = 'Bu ad müsait';
+        _hint = context.l10nRead.unAvailable;
       } else if (result.isTaken) {
-        _hint = 'Bu kullanıcı adı alınmış';
+        _hint = context.l10nRead.unTaken;
       } else if (result.isInvalid) {
-        _hint = result.error ?? 'Geçersiz kullanıcı adı';
+        _hint = result.error ?? context.l10nRead.unInvalid;
       } else {
-        _hint = result.error ?? 'Kontrol edilemedi — yine de devam edebilirsin';
+        _hint = result.error ?? context.l10nRead.unCheckFailed;
       }
     });
   }
@@ -160,8 +162,8 @@ class _UsernameScreenState extends State<UsernameScreen> {
                   ),
                   Text(
                     auth.user?.isAnonymous ?? true
-                        ? 'Misafir olarak devam — adın benzersiz olmalı'
-                        : 'Oyuncu adını belirle',
+                        ? context.l10nRead.unGuestSub
+                        : context.l10nRead.unSetName,
                     textAlign: TextAlign.center,
                     style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
                   ),
@@ -259,7 +261,7 @@ class _UsernameScreenState extends State<UsernameScreen> {
                           opacity: canSubmit ? 1 : 0.4,
                           child: PucketButton(
                             pulse: true,
-                            label: _submitting ? 'KAYDEDİLİYOR...' : 'TAMAM',
+                            label: _submitting ? context.l10nRead.unSaving : context.l10nRead.ok,
                             width: double.infinity,
                             onPressed: canSubmit ? _submit : () {},
                           ),
@@ -300,7 +302,7 @@ class _UsernameScreenState extends State<UsernameScreen> {
         _submitting = false;
         _available = false;
         _serverError = !taken;
-        _hint = taken ? 'Bu kullanıcı adı alınmış' : err;
+        _hint = taken ? context.l10nRead.unTaken : err;
       });
       if (taken) _scheduleCheck(_ctrl.text.trim());
     }
