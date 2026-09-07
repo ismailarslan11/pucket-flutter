@@ -547,15 +547,14 @@ class AuthService extends ChangeNotifier {
     }
 
     // Firebase Auth kullanıcısını sil, sonra oturumu kapat.
+    //
+    // delete() eski oturumlarda 'requires-recent-login' ile düşer. Eskiden bu
+    // hata yutuluyor, kullanıcıya yine "hesabın silindi" deniyordu; Firebase
+    // Auth kaydı ise duruyordu. Artık once yeniden kimlik dogrulamayi deniyoruz,
+    // o da olmazsa basarisiz donuyoruz ki ekranda yanlis bilgi cikmasin.
+    var authRecordDeleted = true;
     if (_firebaseReady && !_isMacOS) {
-      try {
-        await _auth!.currentUser?.delete().timeout(const Duration(seconds: 8));
-      } catch (_) {
-        try {
-          await _auth!.signOut();
-          await GoogleSignIn.instance.signOut();
-        } catch (_) {}
-      }
+      authRecordDeleted = await _deleteFirebaseUser();
     }
 
     user = null;
@@ -566,7 +565,46 @@ class AuthService extends ChangeNotifier {
     await prefs.remove('pucket_user');
     _cachedGuestUid = null;
     notifyListeners();
-    return true;
+    return authRecordDeleted;
+  }
+
+  /// Firebase Auth kaydini siler. Gerekirse Google ile yeniden kimlik
+  /// dogrulayip tekrar dener. Basarisizsa oturumu kapatir ve false doner.
+  Future<bool> _deleteFirebaseUser() async {
+    final current = _auth!.currentUser;
+    if (current == null) return true;
+
+    try {
+      await current.delete().timeout(const Duration(seconds: 8));
+      return true;
+    } catch (_) {
+      // Genellikle 'requires-recent-login'. Anonim kullanicida yeniden
+      // dogrulanacak bir saglayici yok; digerlerinde Google ile deneriz.
+      if (!current.isAnonymous) {
+        try {
+          await _ensureGoogleSignInReady();
+          final googleUser = await GoogleSignIn.instance.authenticate();
+          final idToken = googleUser.authentication.idToken;
+          if (idToken != null) {
+            await current
+                .reauthenticateWithCredential(
+                    GoogleAuthProvider.credential(idToken: idToken))
+                .timeout(const Duration(seconds: 10));
+            await _auth!.currentUser?.delete().timeout(const Duration(seconds: 8));
+            return true;
+          }
+        } catch (_) {
+          // asagida oturum kapatilip false donulecek
+        }
+      }
+    }
+
+    lastError = 'Firebase hesap kaydi silinemedi';
+    try {
+      await _auth!.signOut();
+      await GoogleSignIn.instance.signOut();
+    } catch (_) {}
+    return false;
   }
 
   String getUid() {

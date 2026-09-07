@@ -54,5 +54,13 @@ String get apiBaseUrl {
   return kProductionServer;
 }
 
-bool get apiUsesProductionServer =>
-    !useLocalDevServer && apiBaseUrl.contains('onrender.com');
+/// Uzak sunucuya mi konusuyoruz? Uzun timeout ve tekrar denemeler buna bagli.
+/// Eskiden 'onrender.com' araniyordu; sunucu api.yesaworks.xyz'e tasininca bu
+/// kosul hep false dondu ve kullanici adi istekleri kisa timeout'a dustu.
+/// Artik sunucu adresi degistiginde bozulmayacak sekilde yerel olmayan her
+/// adres uretim sayiliyor.
+bool get apiUsesProductionServer {
+  if (useLocalDevServer) return false;
+  final base = apiBaseUrl;
+  return !base.contains('localhost') && !base.contains('127.0.0.1');
+}

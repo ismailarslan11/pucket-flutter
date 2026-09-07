@@ -19,8 +19,8 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 TARGET="${1:-appbundle}"
-WS_URL="${WS_URL:-wss://pucket-flutter-2.onrender.com}"
-API_URL="${API_URL:-https://pucket-flutter-2.onrender.com}"
+WS_URL="${WS_URL:-wss://api.yesaworks.xyz}"
+API_URL="${API_URL:-https://api.yesaworks.xyz}"
 TEST_ADS="${TEST_ADS:-0}"
 
 if [[ -f tool/admob.env ]]; then

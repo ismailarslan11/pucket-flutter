@@ -65,7 +65,7 @@ class _UsernameScreenState extends State<UsernameScreen> {
         _hint = v.isEmpty
             ? context.l10nRead.unHintDefault
             : v.length < 2
-                ? 'En az 2 karakter'
+                ? context.l10nRead.usernameMin2
                 : context.l10nRead.unHintInvalid;
       }
     });
@@ -156,9 +156,10 @@ class _UsernameScreenState extends State<UsernameScreen> {
                 children: [
                   const PucketLogo(height: 72),
                   const SizedBox(height: 12),
-                  const Text(
-                    'KULLANICI ADI',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, letterSpacing: 2),
+                  Text(
+                    context.l10nRead.usernameTitle,
+                    style: const TextStyle(
+                        fontSize: 20, fontWeight: FontWeight.w900, letterSpacing: 2),
                   ),
                   Text(
                     auth.user?.isAnonymous ?? true
@@ -219,7 +220,8 @@ class _UsernameScreenState extends State<UsernameScreen> {
                           ),
                           decoration: InputDecoration(
                             counterText: '',
-                            hintText: 'ör. PucketKing',
+                            // Dile bagli olmayan ornek: cihaz Ingilizceyken 'or.' Turkce goruntuyordu.
+                            hintText: 'PucketKing',
                             filled: true,
                             fillColor: AppColors.bgDeep,
                             border: OutlineInputBorder(
@@ -296,7 +298,7 @@ class _UsernameScreenState extends State<UsernameScreen> {
     }
     if (!mounted) return;
     if (!ok) {
-      final err = auth.lastError ?? 'Kaydedilemedi, tekrar dene';
+      final err = auth.lastError ?? context.l10nRead.unCheckFailed;
       final taken = err.contains('alınmış');
       setState(() {
         _submitting = false;

@@ -14,8 +14,21 @@ class LocalDuoScreen extends StatefulWidget {
 }
 
 class _LocalDuoScreenState extends State<LocalDuoScreen> {
-  final _p1 = TextEditingController(text: 'Oyuncu 1');
-  final _p2 = TextEditingController(text: 'Oyuncu 2');
+  final _p1 = TextEditingController();
+  final _p2 = TextEditingController();
+  bool _defaultsSet = false;
+
+  // Varsayilan adlar cihaz diline gore doldurulur. initState'te context.l10n
+  // henuz hazir olmadigi icin burada yapiliyor; daha once 'Oyuncu 1'/'Oyuncu 2'
+  // sabit Turkce yaziyordu ve Ingilizce cihazda da oyle goruntuyordu.
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_defaultsSet) return;
+    _defaultsSet = true;
+    _p1.text = context.l10n.localDuoP1Default;
+    _p2.text = context.l10n.localDuoP2Default;
+  }
 
   @override
   void dispose() {
@@ -37,8 +50,8 @@ class _LocalDuoScreenState extends State<LocalDuoScreen> {
     final p2 = _p2.text.trim();
     AppRouter.startLocalDuo(
       context,
-      playerRed: p1.isEmpty ? 'Oyuncu 1' : p1,
-      playerBlue: p2.isEmpty ? 'Oyuncu 2' : p2,
+      playerRed: p1.isEmpty ? context.l10n.localDuoP1Default : p1,
+      playerBlue: p2.isEmpty ? context.l10n.localDuoP2Default : p2,
     );
   }
 

@@ -39,9 +39,9 @@ class _JoinScreenState extends State<JoinScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                const Text(
-                  'ODAYA KATIL',
-                  style: TextStyle(
+                Text(
+                  context.l10n.menuJoinRoom,
+                  style: const TextStyle(
                     fontSize: 26,
                     fontWeight: FontWeight.w900,
                     color: AppColors.fieldBlue,
@@ -68,7 +68,7 @@ class _JoinScreenState extends State<JoinScreen> {
                   ),
                   decoration: InputDecoration(
                     counterText: '',
-                    hintText: 'ODA KODU',
+                    hintText: context.l10n.lobbyRoomCode,
                     hintStyle: TextStyle(
                       color: Colors.grey.shade700,
                       fontSize: 14,
@@ -89,7 +89,7 @@ class _JoinScreenState extends State<JoinScreen> {
                   onSubmitted: (_) => _join(),
                 ),
                 const SizedBox(height: 24),
-                PucketButton(label: 'KATIL', onPressed: _join),
+                PucketButton(label: context.l10n.menuJoinRoom, onPressed: _join),
                 const SizedBox(height: 14),
                 PucketButton(
                   label: context.l10n.back,
@@ -111,7 +111,7 @@ class _JoinScreenState extends State<JoinScreen> {
     final code = _controller.text.trim().toUpperCase();
     if (code.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Oda kodu gir')),
+        SnackBar(content: Text(context.l10n.lobbyRoomCode)),
       );
       return;
     }

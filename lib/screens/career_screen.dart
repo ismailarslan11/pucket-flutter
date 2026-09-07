@@ -341,7 +341,7 @@ class _NextMatchCard extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            '${l10n.difficultyLabel(next.aiLevel.name)} · ${next.displayElo} ELO · +${next.pointsReward} KP',
+            '${l10n.aiOpponentTag} · ${l10n.difficultyLabel(next.aiLevel.name)} · +${next.pointsReward} KP',
             style: const TextStyle(color: AppColors.textDim, fontSize: 11, fontWeight: FontWeight.w600),
             textAlign: TextAlign.center,
           ),
@@ -665,7 +665,7 @@ class _OpponentCard extends StatelessWidget {
                         style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: AppColors.beyaz),
                       ),
                       Text(
-                        '${l10n.difficultyLabel(opponent.aiLevel.name)} · ${opponent.displayElo} ELO · +${opponent.pointsReward} KP',
+                        '${l10n.aiOpponentTag} · ${l10n.difficultyLabel(opponent.aiLevel.name)} · +${opponent.pointsReward} KP',
                         style: const TextStyle(color: AppColors.textMuted, fontSize: 10),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
