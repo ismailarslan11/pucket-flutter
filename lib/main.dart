@@ -26,6 +26,8 @@ import 'services/auth_service.dart';
 import 'services/career_service.dart';
 import 'services/firebase_engagement_service.dart';
 import 'services/firebase_init.dart';
+import 'services/remote_config_service.dart';
+import 'screens/update_gate.dart';
 import 'services/settings_service.dart';
 import 'services/deep_link_service.dart';
 import 'widgets/reachability_hint.dart';
@@ -62,6 +64,8 @@ void main() async {
     FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
     unawaited(PushService.setup());
     unawaited(FirebaseEngagementService.init());
+    // Zorunlu güncelleme eşiğini marka animasyonunun altında çek.
+    RemoteConfigService.prewarm();
   }
 
   await auth.initFirebase();
@@ -184,7 +188,7 @@ class _RootAppState extends State<RootApp> {
       );
     }
     // İnternet yoksa oyuna sokma — bağlanınca kendiliğinden devam eder.
-    return const OfflineGate(child: PucketApp());
+    return const OfflineGate(child: UpdateGate(child: PucketApp()));
   }
 }
 

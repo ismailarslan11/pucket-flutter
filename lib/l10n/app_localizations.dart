@@ -302,6 +302,9 @@ class AppLocalizations {
   String get noInternetBody => _t('noInternetBody');
   String get noInternetRetry => _t('noInternetRetry');
   String get noInternetChecking => _t('noInternetChecking');
+  String get updateRequiredTitle => _t('updateRequiredTitle');
+  String get updateRequiredBody => _t('updateRequiredBody');
+  String get updateNow => _t('updateNow');
   String get cosmeticsEmotes => _t('cosmeticsEmotes');
   String get needTokensTitle => _t('needTokensTitle');
   String needTokensBody(int price, int have) =>
@@ -455,6 +458,9 @@ class AppLocalizations {
 }
 
 const _tr = {
+  'updateRequiredTitle': 'Güncelleme Gerekli',
+  'updateRequiredBody': 'Bu sürüm artık desteklenmiyor.\nOynamaya devam etmek için güncelle.',
+  'updateNow': 'GÜNCELLE',
   'ok': 'TAMAM',
   'back': 'GERİ',
   'save': 'KAYDET',
@@ -832,6 +838,9 @@ const _tr = {
 };
 
 const _en = {
+  'updateRequiredTitle': 'Update Required',
+  'updateRequiredBody': 'This version is no longer supported.\nUpdate the app to keep playing.',
+  'updateNow': 'UPDATE',
   'ok': 'OK',
   'back': 'BACK',
   'save': 'SAVE',
@@ -1209,6 +1218,13 @@ const _en = {
 };
 
 const _de = {
+  'updateRequiredTitle': 'Update erforderlich',
+  'updateRequiredBody': 'Diese Version wird nicht mehr unterstützt.\nAktualisiere die App, um weiterzuspielen.',
+  'updateNow': 'AKTUALISIEREN',
+  'noInternetTitle': 'Keine Internetverbindung',
+  'noInternetBody': 'Anmeldung und Fortschritt brauchen Internet.\nSchalte WLAN oder mobile Daten ein.',
+  'noInternetRetry': 'ERNEUT VERSUCHEN',
+  'noInternetChecking': 'Verbindung wird geprüft…',
   'ok': 'OK',
   'back': 'ZURÜCK',
   'save': 'SPEICHERN',
@@ -1537,6 +1553,13 @@ const _de = {
 };
 
 const _es = {
+  'updateRequiredTitle': 'Actualización Necesaria',
+  'updateRequiredBody': 'Esta versión ya no es compatible.\nActualiza la app para seguir jugando.',
+  'updateNow': 'ACTUALIZAR',
+  'noInternetTitle': 'Sin Conexión a Internet',
+  'noInternetBody': 'El inicio de sesión y el progreso necesitan internet.\nActiva el Wi-Fi o los datos móviles.',
+  'noInternetRetry': 'REINTENTAR',
+  'noInternetChecking': 'Comprobando la conexión…',
   'ok': 'OK',
   'back': 'ATRÁS',
   'save': 'GUARDAR',
@@ -1865,6 +1888,13 @@ const _es = {
 };
 
 const _ar = {
+  'updateRequiredTitle': 'تحديث مطلوب',
+  'updateRequiredBody': 'لم يعد هذا الإصدار مدعومًا.\nحدّث التطبيق لمواصلة اللعب.',
+  'updateNow': 'تحديث',
+  'noInternetTitle': 'لا يوجد اتصال بالإنترنت',
+  'noInternetBody': 'تسجيل الدخول وحفظ التقدم يحتاجان إلى إنترنت.\nفعّل Wi-Fi أو بيانات الجوال.',
+  'noInternetRetry': 'إعادة المحاولة',
+  'noInternetChecking': 'جارٍ التحقق من الاتصال…',
   'ok': 'موافق',
   'back': 'رجوع',
   'save': 'حفظ',
@@ -2193,6 +2223,13 @@ const _ar = {
 };
 
 const _fr = {
+  'updateRequiredTitle': 'Mise à Jour Requise',
+  'updateRequiredBody': 'Cette version n\'est plus prise en charge.\nMets à jour l\'app pour continuer à jouer.',
+  'updateNow': 'METTRE À JOUR',
+  'noInternetTitle': 'Pas de Connexion Internet',
+  'noInternetBody': 'La connexion et la sauvegarde nécessitent internet.\nActive le Wi-Fi ou les données mobiles.',
+  'noInternetRetry': 'RÉESSAYER',
+  'noInternetChecking': 'Vérification de la connexion…',
   'ok': 'OK',
   'back': 'RETOUR',
   'save': 'ENREGISTRER',
